@@ -1,0 +1,186 @@
+using CamCare.Models;
+using CamCare.Interfaces.Services;
+using CamCare.Interfaces.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Radzen;
+
+namespace CamCare.Services
+{
+    public abstract class DbService<TEntity, TVm>
+        where TEntity : class, new()
+        where TVm : class, new()
+    {
+        protected readonly IAppDbContextFactory _contextFactory;
+        protected readonly IMapper _mapper;
+        protected readonly ILogger _logger;
+        protected readonly NotificationService _notificationService;
+
+        protected DbService(IAppDbContextFactory contextFactory, IMapper mapper, ILogger logger, NotificationService notificationService)
+        {
+            _contextFactory = contextFactory;
+            _mapper = mapper;
+            _logger = logger;
+            _notificationService = notificationService;
+        }
+
+        private void NotifyError(string summary, int duration = 5000, NotificationSeverity severity = NotificationSeverity.Error)
+        {
+            NotifyError(summary, null, duration, severity);
+        }
+
+        private void NotifyError(string summary, string? message, int duration = 5000, NotificationSeverity severity = NotificationSeverity.Error)
+        {
+            _notificationService.Notify(new NotificationMessage
+            {
+                Severity = severity,
+                Summary = summary,
+                Detail = message,
+                Duration = duration
+            });
+        }
+
+        public virtual async Task<ServiceResponse<TVm>> GetByIdAsync(object id)
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+                var entity = await context.Set<TEntity>().FindAsync(id);
+                if (entity == null)
+                    return ServiceResponse.Failure<TVm>("Nicht gefunden");
+                var vm = _mapper.Map<TEntity, TVm>(entity);
+                return ServiceResponse.Success(vm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler in GetByIdAsync");
+                NotifyError("Fehler beim Abrufen des Datensatzes");
+                return ServiceResponse.Failure<TVm>("Fehler beim Abrufen des Datensatzes", ex);
+            }
+        }
+
+        public virtual async Task<ServiceResponse<List<TVm>>> GetAllAsync()
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+                var entities = await context.Set<TEntity>().ToListAsync();
+                var vms = entities.Select(e => _mapper.Map<TEntity, TVm>(e)).ToList();
+                return ServiceResponse.Success(vms);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler in GetAllAsync");
+                NotifyError("Fehler beim Abrufen der Daten");
+                return ServiceResponse.Failure<List<TVm>>("Fehler beim Abrufen der Daten", ex);
+            }
+        }
+
+        public virtual async Task<ServiceResponse<Paginated<TVm>>> GetAllAsync(LoadDataArgs args)
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+                var query = context.Set<TEntity>().AsQueryable();
+
+                // Filtering
+                if (!string.IsNullOrEmpty(args.Filter))
+                {
+                    // Hinweis: Für produktiven Einsatz sollte ein dynamischer Filterbuilder verwendet werden
+                    // oder ein externes Paket wie Z.EntityFramework.Plus.DynamicQuery
+                }
+
+                // Sorting
+                if (!string.IsNullOrEmpty(args.OrderBy))
+                {
+                    query = query.OrderBy(args.OrderBy);
+                }
+
+                var totalCount = await query.CountAsync();
+
+                // Paging
+                if (args.Skip.HasValue)
+                    query = query.Skip(args.Skip.Value);
+                if (args.Top.HasValue)
+                    query = query.Take(args.Top.Value);
+
+                var items = await query.ToListAsync();
+                var vms = items.Select(e => _mapper.Map<TEntity, TVm>(e)).ToList();
+
+                var paginated = new Paginated<TVm>
+                {
+                    Items = vms,
+                    TotalCount = totalCount
+                };
+                return ServiceResponse.Success(paginated);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler in GetAllAsync(LoadDataArgs)");
+                NotifyError("Fehler beim Abrufen der Daten");
+                return ServiceResponse.Failure<Paginated<TVm>>("Fehler beim Abrufen der Daten", ex);
+            }
+        }
+
+        public virtual async Task<ServiceResponse<TVm>> CreateAsync(TVm vm)
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+                var entity = new TEntity();
+                _mapper.Map(vm, entity);
+                context.Set<TEntity>().Add(entity);
+                await context.SaveChangesAsync();
+                var resultVm = _mapper.Map<TEntity, TVm>(entity);
+                return ServiceResponse.Success(resultVm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler in CreateAsync");
+                NotifyError("Fehler beim Erstellen des Datensatzes");
+                return ServiceResponse.Failure<TVm>("Fehler beim Erstellen des Datensatzes", ex);
+            }
+        }
+
+        public virtual async Task<ServiceResponse<TVm>> UpdateAsync(object id, TVm vm)
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+                var entity = await context.Set<TEntity>().FindAsync(id);
+                if (entity == null)
+                    return ServiceResponse.Failure<TVm>("Nicht gefunden");
+                _mapper.Map(vm, entity);
+                await context.SaveChangesAsync();
+                var resultVm = _mapper.Map<TEntity, TVm>(entity);
+                return ServiceResponse.Success(resultVm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler in UpdateAsync");
+                NotifyError("Fehler beim Aktualisieren des Datensatzes");
+                return ServiceResponse.Failure<TVm>("Fehler beim Aktualisieren des Datensatzes", ex);
+            }
+        }
+
+        public virtual async Task<ServiceResponse<bool>> DeleteAsync(object id)
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+                var entity = await context.Set<TEntity>().FindAsync(id);
+                if (entity == null)
+                    return ServiceResponse.Failure<bool>("Nicht gefunden");
+                context.Set<TEntity>().Remove(entity);
+                await context.SaveChangesAsync();
+                return ServiceResponse.Success(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler in DeleteAsync");
+                NotifyError("Fehler beim Löschen des Datensatzes");
+                return ServiceResponse.Failure<bool>("Fehler beim Löschen des Datensatzes", ex);
+            }
+        }
+    }
+}

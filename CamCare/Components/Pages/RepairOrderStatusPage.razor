@@ -1,0 +1,43 @@
+﻿@page "/RepairOrderStatusPage"
+
+
+<RadzenDataGrid TItem="RepairOrderStatusVm" Data="_data" LoadData="OnLoadData" Count="_totalCount" AllowPaging="true" PageSize="20">
+    <Columns>
+        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Name)" Title="Name" />
+        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Description)" Title="Description" />
+        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.BackgroundColor)" Title="Hintergrundfarbe">
+            <Template Context="item">
+                <div style="width:20px;height:20px;border-radius:50%;border:2px solid black;background-color:@item.BackgroundColor;display:inline-block;"></div>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.FontColor)" Title="Textfarbe" >
+            <Template Context="item">
+                <div style="width:20px;height:20px;border-radius:50%;border:2px solid black;background-color:@item.FontColor;display:inline-block;"></div>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Title="Beispiel">
+            <Template Context="item">
+                <RadzenBadge IsPill="true" Style="@($"background-color: {item.BackgroundColor}; color: {item.FontColor};")">
+                    @item.Name
+                </RadzenBadge>
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    [Inject] protected IRepairOrderStatusService RepairOrderStatusService { get; set; } = default!;
+
+    private IEnumerable<RepairOrderStatusVm>? _data;
+    private int _totalCount;
+
+    private async Task OnLoadData(LoadDataArgs args)
+    {
+        var response = await RepairOrderStatusService.GetAllAsync(args);
+        if(response.Success)
+        {
+            _data = response.Data?.Items;
+            _totalCount = response.Data?.TotalCount ?? 0;
+        }
+    }
+}
