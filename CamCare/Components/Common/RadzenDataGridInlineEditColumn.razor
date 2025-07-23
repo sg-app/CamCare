@@ -1,0 +1,27 @@
+﻿@typeparam TItem
+
+<RadzenDataGridColumn TItem="TItem" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="100px" Frozen="Frozen" FrozenPosition="FrozenPosition">
+    <Template Context="item">
+        <RadzenButtonGroup>
+
+        <RadzenButton Click="() => EditRow.InvokeAsync(item)" Icon="edit_square" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Secondary" Visible="@(CanEdit(item))" />
+        <RadzenButton Click="() => DeleteRow.InvokeAsync(item)" Icon="delete" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Danger" Visible="@(CanDelete(item))" />
+        </RadzenButtonGroup>
+    </Template>
+    <EditTemplate Context="item">
+        <RadzenButton Click="() => CancelEditRow.InvokeAsync(item)" Icon="close" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Info" />
+        <RadzenButton Click="() => SaveRow.InvokeAsync(item)" Icon="save" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Success" />
+    </EditTemplate>
+</RadzenDataGridColumn>
+
+@code
+{
+    [Parameter] public EventCallback<TItem> EditRow { get; set; }
+    [Parameter] public EventCallback<TItem> DeleteRow { get; set; }
+    [Parameter] public EventCallback<TItem> CancelEditRow { get; set; }
+    [Parameter] public EventCallback<TItem> SaveRow { get; set; }
+    [Parameter] public bool Frozen { get; set; } = true;
+    [Parameter] public FrozenColumnPosition FrozenPosition { get; set; } = FrozenColumnPosition.Right;
+    [Parameter] public Func<TItem, bool> CanEdit { get; set; } = _ => true;
+    [Parameter] public Func<TItem, bool> CanDelete { get; set; } = _ => true;
+}

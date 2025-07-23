@@ -174,15 +174,15 @@ namespace CamCare.Migrations
                 columns: new[] { "Id", "BackgroundColor", "CreatedAt", "Description", "FontColor", "Name", "Order", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { 1, "rgb(206, 206, 206)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur wurde von Kunden angemeldet.", "rbg(0, 0, 0)", "In Anlieferung", 1, null },
+                    { 1, "rgb(206, 206, 206)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur wurde von Kunden angemeldet.", "rgb(0, 0, 0)", "In Anlieferung", 1, null },
                     { 2, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur ist im Lager eingetroffen.", null, "Eingetroffen", 2, null },
                     { 3, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur wird von Mitarbeiter begutachtet.", null, "Begutachtung", 3, null },
-                    { 4, "rgb(76, 170, 232)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Begutachtung wurde vom Mitarbeiter abgeschlosen.", "rbg(0, 0, 0)", "Begutachtung abgeschlossen", 4, null },
+                    { 4, "rgb(76, 170, 232)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Begutachtung wurde vom Mitarbeiter abgeschlosen.", "rgb(0, 0, 0)", "Begutachtung abgeschlossen", 4, null },
                     { 5, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Angebot wurde erstellt.", null, "Angebot erstellt", 5, null },
                     { 6, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera befindet sich in der Reparatur.", null, "Reparatur", 6, null },
                     { 7, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur kann nicht fortgesetzt werden da Ersatzteile bestellt wurden.", null, "Warte auf Ersatzteile", 7, null },
                     { 8, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera ist fertig repariert.", null, "Reparatur fertig", 8, null },
-                    { 9, "rgb(125, 218, 88)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera wurde versendet.", "rbg(0, 0, 0)", "Versendet", 9, null }
+                    { 9, "rgb(125, 218, 88)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera wurde versendet.", "rgb(0, 0, 0)", "Versendet", 9, null }
                 });
 
             migrationBuilder.CreateIndex(

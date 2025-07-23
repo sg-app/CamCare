@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CamCare.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250722171820_Init")]
+    [Migration("20250723191033_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -226,7 +226,7 @@ namespace CamCare.Migrations
                             BackgroundColor = "rgb(206, 206, 206)",
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Reparatur wurde von Kunden angemeldet.",
-                            FontColor = "rbg(0, 0, 0)",
+                            FontColor = "rgb(0, 0, 0)",
                             Name = "In Anlieferung",
                             Order = 1
                         },
@@ -252,7 +252,7 @@ namespace CamCare.Migrations
                             BackgroundColor = "rgb(76, 170, 232)",
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Begutachtung wurde vom Mitarbeiter abgeschlosen.",
-                            FontColor = "rbg(0, 0, 0)",
+                            FontColor = "rgb(0, 0, 0)",
                             Name = "Begutachtung abgeschlossen",
                             Order = 4
                         },
@@ -294,7 +294,7 @@ namespace CamCare.Migrations
                             BackgroundColor = "rgb(125, 218, 88)",
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Kamera wurde versendet.",
-                            FontColor = "rbg(0, 0, 0)",
+                            FontColor = "rgb(0, 0, 0)",
                             Name = "Versendet",
                             Order = 9
                         });
