@@ -54,3 +54,8 @@ h1:focus {
             border-top-right-radius: var(--rz-button-border-radius);
             border-bottom-right-radius: var(--rz-button-border-radius);
         }
+
+.rz-grid-draggable td {
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+}

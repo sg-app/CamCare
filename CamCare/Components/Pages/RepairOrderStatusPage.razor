@@ -12,9 +12,10 @@
                 PageSize="20"
                 RowUpdate="OnRowUpdate"
                 RowCreate="OnRowCreate"
+                RowRender="OnRowRender"
                 Density="Density.Compact" AllowColumnResize="true">
     <EmptyTemplate>
-        <p style="color: lightgrey; font-size: 24px; text-align: center; margin: 2rem;">Keine Daten zum anzeigen vorhanden.</p>
+       <CamCareEmptyTemplate />
     </EmptyTemplate>
     <Columns>
         <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Name)" Title="Name" MinWidth="200px">
@@ -27,7 +28,8 @@
                 <RadzenTextBox @bind-Value="item.Description" />
             </EditTemplate>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.BackgroundColor)" Title="Hintergrundfarbe" Width="120px">
+        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Order)" Title="Order" Width="60px" SortOrder="SortOrder.Ascending" TextAlign="TextAlign.Right" />
+        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.BackgroundColor)"Title="Hintergrundfarbe" Width="120px">
             <Template Context="item">
                 <div style="width:20px;height:20px;border-radius:50%;border:2px solid black;background-color:@item.BackgroundColor;display:inline-block;"></div>
             </Template>
@@ -55,22 +57,50 @@
 @code {
     [Inject] protected IRepairOrderStatusService RepairOrderStatusService { get; set; } = default!;
     [Inject] protected DialogService DialogService { get; set; } = default!;
+    [Inject] protected IJSRuntime JSRuntime { get; set; } = default!;
 
     private RadzenDataGrid<RepairOrderStatusVm> _grid = default!;
-    private IEnumerable<RepairOrderStatusVm>? _data;
+    private IList<RepairOrderStatusVm>? _data;
     private int _totalCount;
     private bool _isLoading;
-
+    private RepairOrderStatusVm? draggedItem;
     private async Task OnLoadData(LoadDataArgs args)
     {
         _isLoading = true;
         var response = await RepairOrderStatusService.GetAllAsync(args);
         if (response.Success)
         {
-            _data = response.Data?.Items;
+            _data = response.Data?.Items.ToList();
             _totalCount = response.Data?.TotalCount ?? 0;
         }
         _isLoading = false;
+    }
+
+    private void OnRowRender(RowRenderEventArgs<RepairOrderStatusVm> args)
+    {
+        if (_data is null) return;
+
+        args.Attributes.Add("title", "Nehmen um die Zeilen zu sortieren");
+        args.Attributes.Add("style", "cursor:grab");
+        args.Attributes.Add("draggable", "true");
+        args.Attributes.Add("ondragover", "event.preventDefault();event.target.closest('.rz-data-row').classList.add('rz-grid-draggable')");
+        args.Attributes.Add("ondragleave", "event.target.closest('.rz-data-row').classList.remove('rz-grid-draggable')");
+        args.Attributes.Add("ondragstart", EventCallback.Factory.Create<DragEventArgs>(this, () => draggedItem = args.Data));
+        args.Attributes.Add("ondrop", EventCallback.Factory.Create<DragEventArgs>(this, async () =>
+        {
+            if (draggedItem is null) return;
+            var draggedIndex = _data.IndexOf(draggedItem);
+            var droppedIndex = _data.IndexOf(args.Data);
+            var draggedOrder = draggedItem.Order;
+            var droppedOrder = args.Data.Order;
+            _data.Remove(draggedItem);
+            _data.Insert(draggedIndex <= droppedIndex ? droppedIndex++ : droppedIndex, draggedItem);
+            draggedItem.Order = droppedOrder;
+            args.Data.Order = draggedOrder;
+            await RepairOrderStatusService.UpdateOrderAsync(_data);
+            await JSRuntime.InvokeVoidAsync("eval", $"document.querySelector('.rz-grid-draggable').classList.remove('rz-grid-draggable')");
+            await _grid.Reload();
+        }));
     }
 
     private async Task OnInsertClicked(MouseEventArgs args)

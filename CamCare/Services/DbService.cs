@@ -24,12 +24,12 @@ namespace CamCare.Services
             _notificationService = notificationService;
         }
 
-        private void NotifyError(string summary, int duration = 5000, NotificationSeverity severity = NotificationSeverity.Error)
+        protected void NotifyError(string summary, int duration = 5000, NotificationSeverity severity = NotificationSeverity.Error)
         {
             NotifyError(summary, null, duration, severity);
         }
 
-        private void NotifyError(string summary, string? message, int duration = 5000, NotificationSeverity severity = NotificationSeverity.Error)
+        protected void NotifyError(string summary, string? message, int duration = 5000, NotificationSeverity severity = NotificationSeverity.Error)
         {
             _notificationService.Notify(new NotificationMessage
             {

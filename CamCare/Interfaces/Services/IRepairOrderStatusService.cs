@@ -7,6 +7,6 @@ namespace CamCare.Interfaces.Services
 {
     public interface IRepairOrderStatusService : IDbService<RepairOrderStatus, RepairOrderStatusVm>
     {
-        // Hier können zusätzliche, spezifische Methoden ergänzt werden
+        Task<ServiceResponse<bool>> UpdateOrderAsync(IList<RepairOrderStatusVm> vms);
     }
 }
