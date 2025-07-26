@@ -1,5 +1,5 @@
 ﻿@page "/RepairOrderStatusPage"
-@using System.Text
+
 
 <InsertButton InsertClick="OnInsertClicked" />
 <RadzenDataGrid @ref="_grid"
@@ -45,7 +45,7 @@
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderStatusVm" Title="Beispiel" Width="80px">
             <Template Context="item">
-                <RadzenBadge Text="Text" IsPill="true" Style="@BadageStyle(item)" />
+                <RadzenBadge Text="Text" IsPill="true" Style="@item.BadageStyle" />
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridInlineEditColumn TItem="RepairOrderStatusVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
@@ -71,20 +71,6 @@
             _totalCount = response.Data?.TotalCount ?? 0;
         }
         _isLoading = false;
-    }
-
-    private string BadageStyle(RepairOrderStatusVm item)
-    {
-        var sb = new StringBuilder();
-        if(item.BackgroundColor != null)
-        {
-            sb.Append($"background-color: {item.BackgroundColor}; ");
-        }
-        if(item.FontColor != null)
-        {
-            sb.Append($"color: {item.FontColor}; ");
-        }
-        return sb.ToString();
     }
 
     private async Task OnInsertClicked(MouseEventArgs args)

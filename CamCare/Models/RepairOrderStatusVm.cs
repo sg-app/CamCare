@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace CamCare.Models
 {
     public class RepairOrderStatusVm
@@ -10,5 +12,21 @@ namespace CamCare.Models
         public string? FontColor { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        public string BadageStyle => GetBadageStyle();
+
+        private string GetBadageStyle()
+        {
+            var sb = new StringBuilder();
+            if (BackgroundColor != null)
+            {
+                sb.Append($"background-color: {BackgroundColor}; ");
+            }
+            if (FontColor != null)
+            {
+                sb.Append($"color: {FontColor}; ");
+            }
+            return sb.ToString();
+        }
     }
 }
