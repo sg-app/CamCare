@@ -1,0 +1,93 @@
+﻿@if (Value is not null)
+{
+    <RadzenTemplateForm TItem="CameraVm" Data="Value" Submit="OnSubmit">
+        <DataAnnotationsValidator />
+        <RadzenRow>
+            <RadzenColumn>
+                <RadzenFormField Text="Seriennummer" Style="width: 400px">
+                    <RadzenTextBox @bind-Value="Value.SerialNumber" />
+                </RadzenFormField>
+                <ValidationMessage For="@(() => Value.SerialNumber)" />
+            </RadzenColumn>
+        </RadzenRow>
+        <RadzenRow>
+            <RadzenColumn>
+                <RadzenFormField Text="Kameratyp" Style="width: 400px">
+                    <RadzenDropDown @bind-Value="@Value.CameraTypeId"
+                                    Data="_cameraTypes"
+                                    LoadData="OnCameraTypeLoadData"
+                                    Count="_totalCountCameraTypes"
+                                    TextProperty="@nameof(CameraTypeVm.Name)"
+                                    ValueProperty="@nameof(CameraTypeVm.Id)"
+                                    AllowVirtualization="true"
+                                    AllowClear="true"
+                                    AllowFiltering="true"
+                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                    FilterOperator="StringFilterOperator.Contains" />
+                </RadzenFormField>
+                <ValidationMessage For="@(() => Value.CameraTypeId)" />
+            </RadzenColumn>
+        </RadzenRow>
+        <FormButtons Class="pt-2" CancelClick="OnCancelClicked" />
+    </RadzenTemplateForm>
+}
+
+@code {
+    [Inject] protected ICameraService CameraService { get; set; } = default!;
+    [Inject] protected ICameraTypeService CameraTypeService { get; set; } = default!;
+
+    [Parameter] public CameraVm? Value { get; set; }
+    [Parameter] public EventCallback<CameraVm> ValueChanged { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> CancelEdit { get; set; }
+    [Parameter] public string? SerialNumber { get; set; }
+    [Parameter] public string CustomerId { get; set; } = string.Empty;
+    private bool IsEdit => !string.IsNullOrEmpty(SerialNumber);
+
+    private IEnumerable<CameraTypeVm>? _cameraTypes;
+    private int _totalCountCameraTypes;
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if (IsEdit)
+        {
+            var response = await CameraService.GetByIdAsync(SerialNumber!);
+            if (response.Success)
+            {
+                Value = response.Data;
+            }
+        }
+        Value ??= new CameraVm { CustomerId = CustomerId };
+    }
+
+    private async Task OnCameraTypeLoadData(LoadDataArgs args)
+    {
+        var result = await CameraTypeService.GetAllAsync(args);
+        if (result.Success)
+        {
+            _cameraTypes = result.Data?.Items;
+            _totalCountCameraTypes = result.Data?.TotalCount ?? 0;
+        }
+    }
+
+    private async Task OnCancelClicked(MouseEventArgs args)
+    {
+        await CancelEdit.InvokeAsync(args);
+    }
+
+    private async Task OnSubmit(CameraVm camera)
+    {
+        ServiceResponse<CameraVm> response;
+        if (IsEdit)
+            response = await CameraService.UpdateAsync(camera.SerialNumber, camera);
+        else
+            response = await CameraService.CreateAsync(camera);
+
+        if (response.Success)
+        {
+            await ValueChanged.InvokeAsync(response.Data);
+        }
+    }
+}

@@ -14,8 +14,16 @@ builder.Services.AddRadzenComponents();
 builder.Services.AddPersistence();
 builder.Services.AddSingleton<IMapper, Mapper>();
 builder.Services.AddScoped<IRepairOrderStatusService, RepairOrderStatusService>();
+builder.Services.AddScoped<ICameraTypeService, CameraTypeService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<ICameraService, CameraService>();
 
 var app = builder.Build();
+
+AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+{
+    Console.WriteLine(e.ExceptionObject.ToString());
+    };
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

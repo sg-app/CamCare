@@ -6,7 +6,7 @@
         public string? Message { get; set; }
         public TData? Data { get; set; }
         public Exception? Exception { get; set; }
-        
+
 
         public ServiceResponse(TData data)
         {
@@ -31,7 +31,7 @@
     }
     public static class ServiceResponse
     {
-        public static ServiceResponse<TData> Success<TData>(TData data) 
+        public static ServiceResponse<TData> Success<TData>(TData data)
             => new(data);
         public static ServiceResponse<Paginated<T>> Success<T>(Paginated<T> paginatedData)
             => new(paginatedData);

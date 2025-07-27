@@ -1,0 +1,79 @@
+﻿@page "/CustomerPage"
+
+
+<InsertButton InsertClick="OnInsertClicked" />
+<RadzenDataGrid @ref="_grid"
+                TItem="CustomerVm"
+                Data="_data"
+                LoadData="OnLoadData"
+                IsLoading="_isLoading"
+                Count="_totalCount"
+                AllowPaging="true"
+                PageSize="20"
+                Density="Density.Compact" 
+                AllowColumnResize="true">
+    <EmptyTemplate>
+        <CamCareEmptyTemplate />
+    </EmptyTemplate>
+    <Columns>
+        <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.Id)" Title="Kundennummer" MinWidth="200px" />
+        <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.CompanyName)" Title="Name" MinWidth="200px">
+            <Template Context="item">
+                @if (!string.IsNullOrEmpty(item.CompanyName))
+                {
+                    @item.CompanyName
+                }
+                else
+                {
+                    <span>@item.FirstName @item.LastName</span>
+                }
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.Email)" Title="Eamil" MinWidth="200px" />
+        <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.PhoneNumber)" Title="Telefon" MinWidth="200px" />
+        <RadzenDataGridInlineEditColumn TItem="CustomerVm" DeleteRow="OnDeleteRowClicked" CanEdit="(item)=>false" />
+    </Columns>
+    <Template Context="item">
+        <AddressInfo Address="@item.Addresses?.FirstOrDefault(x=>x.AddressType == AddressType.Billing)" />
+        <AddressInfo Address="@item.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Shipping)" />
+    </Template>
+</RadzenDataGrid>
+
+@code {
+    [Inject] protected ICustomerService CustomerService { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+    [Inject] protected IJSRuntime JSRuntime { get; set; } = default!;
+
+    private RadzenDataGrid<CustomerVm> _grid = default!;
+    private IList<CustomerVm>? _data;
+    private int _totalCount;
+    private bool _isLoading;
+
+    private async Task OnLoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        var response = await CustomerService.GetAllAsync(args, [nameof(CustomerVm.Addresses)]);
+        if (response.Success)
+        {
+            _data = response.Data?.Items.ToList();
+            _totalCount = response.Data?.TotalCount ?? 0;
+        }
+        _isLoading = false;
+    }
+
+    private async Task OnInsertClicked(MouseEventArgs args)
+    {
+        if (!_grid.IsValid) return;
+        var item = new CustomerVm();
+        await _grid.InsertRow(item);
+    }
+
+    private async Task OnDeleteRowClicked(CustomerVm item)
+    {
+        var dialogResult = await DialogService.Confirm("Soll der Datensatz wirklich gelöscht werden?", "Datensatz löschen", new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
+        if (dialogResult != true) return;
+
+        await CustomerService.DeleteAsync(item.Id);
+        await _grid.Reload();
+    }
+}

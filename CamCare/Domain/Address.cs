@@ -6,8 +6,8 @@ namespace CamCare.Domain
     {
         [Key]
         public int Id { get; set; }
-        public int CustomerId { get; set; }
-        public int AddressTypeId { get; set; }
+        public string CustomerId { get; set; } = string.Empty;
+        public AddressType AddressType { get; set; }
         [MaxLength(250)]
         public string Street { get; set; } = string.Empty;
         [MaxLength(10)]
@@ -20,12 +20,9 @@ namespace CamCare.Domain
         public string? State { get; set; }
         [MaxLength(100)]
         public string? Country { get; set; }
-
-        public Customer Customer { get; set; } = null!;
-        public AddressType AddressType { get; set; } = null!;
-
-
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        public virtual Customer Customer { get; set; } = null!;
     }
 }

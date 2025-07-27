@@ -1,6 +1,7 @@
 using CamCare.Domain;
 using CamCare.Interfaces.Services;
 using CamCare.Models;
+using System.Linq;
 
 namespace CamCare.Services
 {
@@ -21,7 +22,7 @@ namespace CamCare.Services
                 case Address a when destination is AddressVm vm:
                     vm.Id = a.Id;
                     vm.CustomerId = a.CustomerId;
-                    vm.AddressTypeId = a.AddressTypeId;
+                    vm.AddressType = a.AddressType;
                     vm.Street = a.Street;
                     vm.HouseNumber = a.HouseNumber;
                     vm.PostalCode = a.PostalCode;
@@ -34,7 +35,7 @@ namespace CamCare.Services
                 case AddressVm vm when destination is Address a:
                     a.Id = vm.Id;
                     a.CustomerId = vm.CustomerId;
-                    a.AddressTypeId = vm.AddressTypeId;
+                    a.AddressType = vm.AddressType;
                     a.Street = vm.Street;
                     a.HouseNumber = vm.HouseNumber;
                     a.PostalCode = vm.PostalCode;
@@ -44,69 +45,97 @@ namespace CamCare.Services
                     a.CreatedAt = vm.CreatedAt;
                     a.UpdatedAt = vm.UpdatedAt;
                     break;
-                case AddressType at when destination is AddressTypeVm atvm:
-                    atvm.Id = at.Id;
-                    atvm.Name = at.Name;
-                    atvm.CreatedAt = at.CreatedAt;
-                    atvm.UpdatedAt = at.UpdatedAt;
-                    break;
-                case AddressTypeVm atvm when destination is AddressType at:
-                    at.Id = atvm.Id;
-                    at.Name = atvm.Name;
-                    at.CreatedAt = atvm.CreatedAt;
-                    at.UpdatedAt = atvm.UpdatedAt;
-                    break;
                 case Customer c when destination is CustomerVm cvm:
                     cvm.Id = c.Id;
+                    cvm.CompanyName = c.CompanyName;
                     cvm.FirstName = c.FirstName;
                     cvm.LastName = c.LastName;
                     cvm.Email = c.Email;
-                    cvm.Phone = c.Phone;
+                    cvm.PhoneNumber = c.PhoneNumber;
                     cvm.CreatedAt = c.CreatedAt;
                     cvm.UpdatedAt = c.UpdatedAt;
+                    if (c.Addresses != null)
+                        cvm.Addresses = c.Addresses.Select(Map<Address, AddressVm>).ToList();
+                    if (c.Cameras != null)
+                        cvm.Cameras = c.Cameras.Select(Map<Camera, CameraVm>).ToList();
                     break;
                 case CustomerVm cvm when destination is Customer c:
                     c.Id = cvm.Id;
+                    c.CompanyName = cvm.CompanyName;
                     c.FirstName = cvm.FirstName;
                     c.LastName = cvm.LastName;
                     c.Email = cvm.Email;
-                    c.Phone = cvm.Phone;
+                    c.PhoneNumber = cvm.PhoneNumber;
                     c.CreatedAt = cvm.CreatedAt;
                     c.UpdatedAt = cvm.UpdatedAt;
+                    if (cvm.Addresses != null)
+                        c.Addresses = cvm.Addresses.Select(Map<AddressVm, Address>).ToList();
+                    if (cvm.Cameras != null)
+                        c.Cameras = cvm.Cameras.Select(Map<CameraVm, Camera>).ToList();
                     break;
-                case Parameter p when destination is ParameterVm pvm:
-                    pvm.Key = p.Key;
-                    pvm.Value = p.Value;
-                    pvm.CreatedAt = p.CreatedAt;
-                    pvm.UpdatedAt = p.UpdatedAt;
+                case Camera cam when destination is CameraVm camVm:
+                    camVm.SerialNumber = cam.SerialNumber;
+                    camVm.CustomerId = cam.CustomerId;
+                    camVm.CameraTypeId = cam.CameraTypeId;
+                    camVm.CreatedAt = cam.CreatedAt;
+                    camVm.UpdatedAt = cam.UpdatedAt;
+                    if (cam.Customer != null)
+                        camVm.Customer = Map<Customer, CustomerVm>(cam.Customer);
+                    if (cam.CameraType != null)
+                        camVm.CameraType = Map<CameraType, CameraTypeVm>(cam.CameraType);
+                    if (cam.RepairOrders != null)
+                        camVm.RepairOrders = cam.RepairOrders.Select(Map<RepairOrder, RepairOrderVm>).ToList();
                     break;
-                case ParameterVm pvm when destination is Parameter p:
-                    p.Key = pvm.Key;
-                    p.Value = pvm.Value;
-                    p.CreatedAt = pvm.CreatedAt;
-                    p.UpdatedAt = pvm.UpdatedAt;
+                case CameraVm camVm when destination is Camera cam:
+                    cam.SerialNumber = camVm.SerialNumber;
+                    cam.CustomerId = camVm.CustomerId;
+                    cam.CameraTypeId = camVm.CameraTypeId;
+                    cam.CreatedAt = camVm.CreatedAt;
+                    cam.UpdatedAt = camVm.UpdatedAt;
+                    if (camVm.Customer != null)
+                        cam.Customer = Map<CustomerVm, Customer>(camVm.Customer);
+                    if (camVm.RepairOrders != null)
+                        cam.RepairOrders = camVm.RepairOrders.Select(Map<RepairOrderVm, RepairOrder>).ToList();
                     break;
                 case RepairOrder ro when destination is RepairOrderVm rovm:
                     rovm.Id = ro.Id;
-                    rovm.CustomerId = ro.CustomerId;
+                    rovm.CameraId = ro.CameraId;
+                    rovm.ArrivedAt = ro.ArrivedAt;
                     rovm.CreatedAt = ro.CreatedAt;
                     rovm.UpdatedAt = ro.UpdatedAt;
+                    if (ro.Camera != null)
+                        rovm.Camera = Map<Camera, CameraVm>(ro.Camera);
+                    if (ro.RepairOrderRepairPositions != null)
+                        rovm.RepairOrderRepairPositions = ro.RepairOrderRepairPositions.Select(Map<RepairOrderRepairPosition, RepairOrderRepairPositionVm>).ToList();
                     break;
                 case RepairOrderVm rovm when destination is RepairOrder ro:
                     ro.Id = rovm.Id;
-                    ro.CustomerId = rovm.CustomerId;
+                    ro.CameraId = rovm.CameraId;
+                    ro.ArrivedAt = rovm.ArrivedAt;
                     ro.CreatedAt = rovm.CreatedAt;
                     ro.UpdatedAt = rovm.UpdatedAt;
+                    if (rovm.Camera != null)
+                        ro.Camera = Map<CameraVm, Camera>(rovm.Camera);
+                    if (rovm.RepairOrderRepairPositions != null)
+                        ro.RepairOrderRepairPositions = rovm.RepairOrderRepairPositions.Select(Map<RepairOrderRepairPositionVm, RepairOrderRepairPosition>).ToList();
                     break;
                 case RepairOrderRepairPosition rorp when destination is RepairOrderRepairPositionVm rorpvm:
                     rorpvm.RepairOrderId = rorp.RepairOrderId;
                     rorpvm.RepairPositionId = rorp.RepairPositionId;
                     rorpvm.DisplayOrder = rorp.DisplayOrder;
+                    if (rorp.RepairOrder != null)
+                        rorpvm.RepairOrder = Map<RepairOrder, RepairOrderVm>(rorp.RepairOrder);
+                    if (rorp.RepairPosition != null)
+                        rorpvm.RepairPosition = Map<RepairPosition, RepairPositionVm>(rorp.RepairPosition);
                     break;
                 case RepairOrderRepairPositionVm rorpvm when destination is RepairOrderRepairPosition rorp:
                     rorp.RepairOrderId = rorpvm.RepairOrderId;
                     rorp.RepairPositionId = rorpvm.RepairPositionId;
                     rorp.DisplayOrder = rorpvm.DisplayOrder;
+                    if (rorpvm.RepairOrder != null)
+                        rorp.RepairOrder = Map<RepairOrderVm, RepairOrder>(rorpvm.RepairOrder);
+                    if (rorpvm.RepairPosition != null)
+                        rorp.RepairPosition = Map<RepairPositionVm, RepairPosition>(rorpvm.RepairPosition);
                     break;
                 case RepairOrderStatus ros when destination is RepairOrderStatusVm rosvm:
                     rosvm.Id = ros.Id;
@@ -133,12 +162,28 @@ namespace CamCare.Services
                     rpvm.Description = rp.Description;
                     rpvm.CreatedAt = rp.CreatedAt;
                     rpvm.UpdatedAt = rp.UpdatedAt;
+                    if (rp.RepairOrders != null)
+                        rpvm.RepairOrders = rp.RepairOrders.Select(Map<RepairOrder, RepairOrderVm>).ToList();
+                    if (rp.RepairOrderRepairPositions != null)
+                        rpvm.RepairOrderRepairPositions = rp.RepairOrderRepairPositions.Select(Map<RepairOrderRepairPosition, RepairOrderRepairPositionVm>).ToList();
                     break;
                 case RepairPositionVm rpvm when destination is RepairPosition rp:
                     rp.Id = rpvm.Id;
                     rp.Description = rpvm.Description;
                     rp.CreatedAt = rpvm.CreatedAt;
                     rp.UpdatedAt = rpvm.UpdatedAt;
+                    if (rpvm.RepairOrders != null)
+                        rp.RepairOrders = rpvm.RepairOrders.Select(Map<RepairOrderVm, RepairOrder>).ToList();
+                    if (rpvm.RepairOrderRepairPositions != null)
+                        rp.RepairOrderRepairPositions = rpvm.RepairOrderRepairPositions.Select(Map<RepairOrderRepairPositionVm, RepairOrderRepairPosition>).ToList();
+                    break;
+                case CameraType ct when destination is CameraTypeVm ctv:
+                    ctv.Id = ct.Id;
+                    ctv.Name = ct.Name;
+                    break;
+                case CameraTypeVm ctv when destination is CameraType ct:
+                    ct.Id = ctv.Id;
+                    ct.Name = ctv.Name;
                     break;
                 default:
                     throw new NotSupportedException($"Mapping from {typeof(TSource)} to {typeof(TDestination)} is not supported.");

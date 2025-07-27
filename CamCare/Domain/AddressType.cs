@@ -1,16 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace CamCare.Domain
+namespace CamCare
 {
-    public class AddressType : IAuditableEntity
+    public enum AddressType
     {
-        [Key]
-        public int Id { get; set; }
-        [Required]
-        [MaxLength(30)]
-        public string Name { get; set; } = string.Empty;
-
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
+        [Display(Description = "Rechnungsadresse")]
+        Billing = 1,
+        [Display(Description = "Lieferadresse")]
+        Shipping = 2,
     }
 }

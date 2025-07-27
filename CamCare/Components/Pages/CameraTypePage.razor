@@ -1,0 +1,95 @@
+﻿@page "/CameraTypePage"
+
+
+<InsertButton InsertClick="OnInsertClicked" />
+<RadzenDataGrid @ref="_grid"
+                TItem="CameraTypeVm"
+                Data="_data"
+                LoadData="OnLoadData"
+                IsLoading="_isLoading"
+                Count="_totalCount"
+                AllowPaging="true"
+                PageSize="20"
+                RowUpdate="OnRowUpdate"
+                RowCreate="OnRowCreate"
+                Density="Density.Compact" 
+                AllowColumnResize="true">
+    <EmptyTemplate>
+       <CamCareEmptyTemplate />
+    </EmptyTemplate>
+    <Columns>
+        <RadzenDataGridColumn TItem="CameraTypeVm" Property="@nameof(CameraTypeVm.Name)" Title="Name" MinWidth="200px">
+            <EditTemplate Context="item">
+                <RadzenTextBox @bind-Value="item.Name" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridInlineEditColumn TItem="CameraTypeVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    [Inject] protected ICameraTypeService CameraTypeService { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+    [Inject] protected IJSRuntime JSRuntime { get; set; } = default!;
+
+    private RadzenDataGrid<CameraTypeVm> _grid = default!;
+    private IList<CameraTypeVm>? _data;
+    private int _totalCount;
+    private bool _isLoading;
+    private async Task OnLoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        var response = await CameraTypeService.GetAllAsync(args);
+        if (response.Success)
+        {
+            _data = response.Data?.Items.ToList();
+            _totalCount = response.Data?.TotalCount ?? 0;
+        }
+        _isLoading = false;
+    }
+
+    private async Task OnInsertClicked(MouseEventArgs args)
+    {
+        if (!_grid.IsValid) return;
+        var item = new CameraTypeVm();
+        await _grid.InsertRow(item);
+    }
+
+    private async Task OnRowUpdate(CameraTypeVm item)
+    {
+        await CameraTypeService.UpdateAsync(item.Id, item);
+        await _grid.Reload();
+    }
+
+    private async Task OnRowCreate(CameraTypeVm item)
+    {
+        await CameraTypeService.CreateAsync(item);
+        await _grid.Reload();
+    }
+
+    private async Task OnEditRowClicked(CameraTypeVm item)
+    {
+        if (!_grid.IsValid) return;
+        await _grid.EditRow(item);
+    }
+
+    private async Task OnDeleteRowClicked(CameraTypeVm item)
+    {
+        var dialogResult = await DialogService.Confirm("Soll der Datensatz wirklich gelöscht werden?", "Datensatz löschen", new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
+        if (dialogResult != true) return;
+
+        await CameraTypeService.DeleteAsync(item.Id);
+        await _grid.Reload();
+    }
+
+    private async Task OnCancelEditRowClicked(CameraTypeVm item)
+    {
+        _grid.CancelEditRow(item);
+        await _grid.Reload();
+    }
+
+    private async Task OnSaveRowClicked(CameraTypeVm item)
+    {
+        await _grid.UpdateRow(item);
+    }
+}

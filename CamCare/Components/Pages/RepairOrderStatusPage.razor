@@ -91,12 +91,8 @@
             if (draggedItem is null) return;
             var draggedIndex = _data.IndexOf(draggedItem);
             var droppedIndex = _data.IndexOf(args.Data);
-            var draggedOrder = draggedItem.Order;
-            var droppedOrder = args.Data.Order;
             _data.Remove(draggedItem);
             _data.Insert(draggedIndex <= droppedIndex ? droppedIndex++ : droppedIndex, draggedItem);
-            draggedItem.Order = droppedOrder;
-            args.Data.Order = draggedOrder;
             await RepairOrderStatusService.UpdateOrderAsync(_data);
             await JSRuntime.InvokeVoidAsync("eval", $"document.querySelector('.rz-grid-draggable').classList.remove('rz-grid-draggable')");
             await _grid.Reload();

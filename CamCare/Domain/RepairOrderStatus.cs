@@ -23,5 +23,7 @@ namespace CamCare.Domain
 
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        public override string ToString() => $"[{Id}] {Name}";
     }
 }

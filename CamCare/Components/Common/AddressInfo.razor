@@ -1,0 +1,20 @@
+﻿@if (Address is not null)
+{
+    <RadzenRow>
+        <RadzenColumn>
+            <RadzenText> @Address.AddressType.GetDisplayDescription()</RadzenText>
+        </RadzenColumn>
+        <RadzenColumn>
+            <div>
+                <RadzenText>@Address.Street @Address.HouseNumber</RadzenText>
+            </div>
+            <div>
+                <RadzenText>@Address.PostalCode @Address.City</RadzenText>
+            </div>
+            <RadzenText>@Address.Country</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+}
+@code {
+    [Parameter] public AddressVm? Address { get; set; }
+}

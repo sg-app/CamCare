@@ -1,11 +1,7 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Linq;
 using CamCare.Domain;
-using CamCare.Models;
-using CamCare.Interfaces.Services;
 using CamCare.Interfaces.Persistence;
-using Microsoft.Extensions.Logging;
+using CamCare.Interfaces.Services;
+using CamCare.Models;
 using Radzen;
 
 namespace CamCare.Services
@@ -21,6 +17,12 @@ namespace CamCare.Services
         {
             try
             {
+                var minOrder = vms.Min(x => x.Order);
+                for (int i = 0; i < vms.Count; i++)
+                {
+                    vms[i].Order = minOrder + i;
+                }
+
                 using var context = _contextFactory.CreateDbContext();
                 var ids = vms.Select(x => x.Id).ToList();
                 var entities = context.RepairOrderStatuses.Where(x => ids.Contains(x.Id)).ToList();

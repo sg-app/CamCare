@@ -1,0 +1,142 @@
+﻿@page "/CreateCamCareEntryPage"
+<RadzenFieldset Text="Kunde">
+    <RadzenRow>
+        <RadzenColumn>
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                <RadzenFormField Text="Kunde wählen">
+                    <RadzenDropDown TValue="CustomerVm"
+                                    @bind-Value="_selectedCustomer"
+                                    Data="_customers"
+                                    LoadData="OnCustomerLoadData"
+                                    Count="_totalCountCustomers"
+                                    TextProperty="@nameof(CustomerVm.DisplayName)"
+                                    AllowVirtualization="true"
+                                    AllowClear="true"
+                                    AllowFiltering="true"
+                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                    FilterOperator="StringFilterOperator.Contains"
+                                    Style="width:500px" />
+                </RadzenFormField>
+                <InsertIconButton Class="mt-2" Size="ButtonSize.Medium" />
+            </RadzenStack>
+        </RadzenColumn>
+        <RadzenColumn>
+            @if (_selectedCustomer is not null)
+            {
+                <AddressInfo Address="@BillingAddress" />
+                <AddressInfo Address="@ShippingAddress" />
+                <RadzenRow>
+                    <RadzenColumn>
+                        <RadzenText>Email</RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn>
+                        <RadzenText>@_selectedCustomer.Email</RadzenText>
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow>
+                    <RadzenColumn>
+                        <RadzenText>Telefonnummer</RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn>
+                        <RadzenText>@_selectedCustomer.PhoneNumber</RadzenText>
+                    </RadzenColumn>
+                </RadzenRow>
+            }
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenFieldset>
+
+@if (_selectedCustomer is not null)
+{
+    <RadzenFieldset Text="Kamera">
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+            <RadzenFormField Text="Kamera wählen">
+                <RadzenDropDown TValue="CameraVm"
+                                @bind-Value="_selectedCamera"
+                                Data="_cameras"
+                                LoadData="OnCameraLoadData"
+                                Count="_totalCountCameras"
+                                TextProperty="@nameof(CameraVm.DisplayName)"
+                                AllowVirtualization="true"
+                                AllowClear="true"
+                                AllowFiltering="true"
+                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                FilterOperator="StringFilterOperator.Contains"
+                                Style="width:500px" />
+            </RadzenFormField>
+            <InsertIconButton Class="mt-2" Size="ButtonSize.Medium" Click="@(()=> _createCamera = true)" />
+        </RadzenStack>
+        @if (_createCamera)
+        {
+            <CameraEdit CustomerId="@_selectedCustomer.Id" ValueChanged="OnCameraCreated" CancelEdit="OnCancelCameraEdit" />
+        }
+    </RadzenFieldset>
+}
+
+@if (_selectedCamera is not null)
+{
+    <RadzenFieldset Text="Beschreibung">
+
+    </RadzenFieldset>
+}
+
+
+@code {
+    [Inject] public ICustomerService CustomerService { get; set; } = default!;
+    [Inject] public ICameraService CameraService { get; set; } = default!;
+
+    private IEnumerable<CustomerVm>? _customers;
+    private int _totalCountCustomers;
+    private CustomerVm? _selectedCustomer;
+    private IEnumerable<CameraVm>? _cameras;
+    private int _totalCountCameras;
+    private CameraVm? _selectedCamera;
+    private AddressVm? ShippingAddress => _selectedCustomer?.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Shipping);
+    private AddressVm? BillingAddress => _selectedCustomer?.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Billing);
+
+    private bool _createCamera;
+
+    private async Task OnCustomerLoadData(LoadDataArgs args)
+    {
+        ServiceResponse<Paginated<CustomerVm>> response;
+
+        if (string.IsNullOrEmpty(args.Filter))
+            response = await CustomerService.GetAllAsync(args);
+        else
+            response = await CustomerService.GetAllAsync(args, x => x.Id.Contains(args.Filter) || x.CompanyName!.Contains(args.Filter) || x.FirstName!.Contains(args.Filter) || x.LastName!.Contains(args.Filter));
+
+        if (response.Success)
+        {
+            _customers = response.Data?.Items;
+            _totalCountCustomers = response.Data?.TotalCount ?? 0;
+        }
+    }
+
+    private async Task OnCameraLoadData(LoadDataArgs args)
+    {
+        ServiceResponse<Paginated<CameraVm>> response;
+
+        if (string.IsNullOrEmpty(args.Filter))
+            response = await CameraService.GetAllAsync(args, cam => cam.CustomerId == _selectedCustomer!.Id);
+        else
+            response = await CameraService.GetAllAsync(args, cam => cam.SerialNumber.Contains(args.Filter) || cam.CameraType.Name.Contains(args.Filter));
+
+        if (response.Success)
+        {
+            _cameras = response.Data?.Items;
+            _totalCountCameras = response.Data?.TotalCount ?? 0;
+        }
+    }
+
+    private async Task OnCameraCreated(CameraVm args)
+    {
+        await OnCameraLoadData(new LoadDataArgs{Filter = args.SerialNumber });
+        _selectedCamera = _cameras?.FirstOrDefault(x=>x.SerialNumber == args.SerialNumber);
+        _createCamera = false;
+    }
+    private void OnCancelCameraEdit(MouseEventArgs args)
+    {
+        _selectedCamera = null;
+        _createCamera = false;
+    }
+}

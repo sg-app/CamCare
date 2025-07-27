@@ -1,4 +1,5 @@
 ﻿using CamCare.Domain;
+using CamCare.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace CamCare.Interfaces.Persistence
@@ -8,8 +9,10 @@ namespace CamCare.Interfaces.Persistence
         DbSet<TEntity> Set<TEntity>() where TEntity : class;
 
         DbSet<Customer> Customers { get; set; }
+        DbSet<Camera> Cameras { get; set; }
+        DbSet<CameraType> CameraTypes { get; set; }
         DbSet<Address> Addresses { get; set; }
-        DbSet<AddressType> AddressTypes { get; set; }
+        DbSet<Defective> Defectives { get; set; }
         DbSet<RepairOrderStatus> RepairOrderStatuses { get; set; }
         DbSet<RepairOrder> RepairOrders { get; set; }
         DbSet<RepairPosition> RepairPositions { get; set; }

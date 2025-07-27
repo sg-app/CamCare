@@ -1,13 +1,15 @@
-using CamCare.Models;
-using CamCare.Interfaces.Services;
+using CamCare.Extensions;
 using CamCare.Interfaces.Persistence;
+using CamCare.Interfaces.Services;
+using CamCare.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Radzen;
+using System.Linq.Dynamic.Core;
+using System.Linq.Expressions;
 
 namespace CamCare.Services
 {
-    public abstract class DbService<TEntity, TVm>
+    public abstract class DbService<TEntity, TVm> : IDbService<TEntity, TVm>
         where TEntity : class, new()
         where TVm : class, new()
     {
@@ -76,18 +78,55 @@ namespace CamCare.Services
             }
         }
 
-        public virtual async Task<ServiceResponse<Paginated<TVm>>> GetAllAsync(LoadDataArgs args)
+        public virtual async Task<ServiceResponse<Paginated<TVm>>> GetAllAsync(LoadDataArgs args, Expression<Func<TEntity, bool>>? predicate = null)
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+                var (totalCount, query) = context
+                    .Set<TEntity>()
+                    .AsNoTracking()
+                    .AsQueryable()
+                    .LoadByLoadDataArgs(args, predicate);
+
+                var items = await query.ToListAsync();
+                var vms = items.Select(e => _mapper.Map<TEntity, TVm>(e)).ToList();
+
+                var paginated = new Paginated<TVm>
+                {
+                    Items = vms,
+                    TotalCount = totalCount
+                };
+                return ServiceResponse.Success(paginated);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler in GetAllAsync(LoadDataArgs)");
+                NotifyError("Fehler beim Abrufen der Daten");
+                return ServiceResponse.Failure<Paginated<TVm>>("Fehler beim Abrufen der Daten", ex);
+            }
+        }
+
+        public virtual async Task<ServiceResponse<Paginated<TVm>>> GetAllAsync(LoadDataArgs args, params string[] includes)
         {
             try
             {
                 using var context = _contextFactory.CreateDbContext();
                 var query = context.Set<TEntity>().AsQueryable();
 
+                // Navigationen laden
+                if (includes != null)
+                {
+                    foreach (var include in includes)
+                    {
+                        query = query.Include(include);
+                    }
+                }
+
                 // Filtering
                 if (!string.IsNullOrEmpty(args.Filter))
                 {
                     // Hinweis: Für produktiven Einsatz sollte ein dynamischer Filterbuilder verwendet werden
-                    // oder ein externes Paket wie Z.EntityFramework.Plus.DynamicQuery
                 }
 
                 // Sorting
@@ -116,7 +155,7 @@ namespace CamCare.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Fehler in GetAllAsync(LoadDataArgs)");
+                _logger.LogError(ex, "Fehler in GetAllAsync(LoadDataArgs, includes)");
                 NotifyError("Fehler beim Abrufen der Daten");
                 return ServiceResponse.Failure<Paginated<TVm>>("Fehler beim Abrufen der Daten", ex);
             }

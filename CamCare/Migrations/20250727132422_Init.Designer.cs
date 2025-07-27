@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CamCare.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250723191033_Init")]
+    [Migration("20250727132422_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -26,7 +26,7 @@ namespace CamCare.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("AddressTypeId")
+                    b.Property<int>("AddressType")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("City")
@@ -41,8 +41,9 @@ namespace CamCare.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("CustomerId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("CustomerId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("HouseNumber")
                         .IsRequired()
@@ -68,54 +69,99 @@ namespace CamCare.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AddressTypeId");
-
                     b.HasIndex("CustomerId");
 
                     b.ToTable("Addresses");
-                });
-
-            modelBuilder.Entity("CamCare.Domain.AddressType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("AddressTypes");
 
                     b.HasData(
                         new
                         {
                             Id = 1,
+                            AddressType = 1,
+                            City = "München",
+                            Country = "Deutschland",
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "Rechnungsadresse"
+                            CustomerId = "1",
+                            HouseNumber = "",
+                            PostalCode = "80331",
+                            Street = "Musterstraße 1"
+                        });
+                });
+
+            modelBuilder.Entity("CamCare.Domain.Camera", b =>
+                {
+                    b.Property<string>("SerialNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CameraTypeId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CustomerId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("SerialNumber");
+
+                    b.HasIndex("CameraTypeId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.ToTable("Cameras");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.CameraType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CameraTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Mini 3000"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "Lieferadresse"
+                            Name = "Mini 3110"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "4540"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Name = "5030"
                         });
                 });
 
             modelBuilder.Entity("CamCare.Domain.Customer", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
@@ -125,16 +171,14 @@ namespace CamCare.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("FirstName")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastName")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Phone")
+                    b.Property<string>("PhoneNumber")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -144,6 +188,55 @@ namespace CamCare.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Customers");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "1",
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "max@mustermann.de",
+                            FirstName = "Max",
+                            LastName = "Mustermann",
+                            PhoneNumber = "089190815"
+                        });
+                });
+
+            modelBuilder.Entity("CamCare.Domain.Defective", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Defectives");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "Display defekt"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "Objektiv defekt"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Description = "Akku defekt"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Description = "Gehäuse defekt"
+                        });
                 });
 
             modelBuilder.Entity("CamCare.Domain.RepairOrder", b =>
@@ -152,18 +245,25 @@ namespace CamCare.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("ArrivedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("CustomerId")
+                    b.Property<int>("CameraId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("CameraSerialNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CustomerId");
+                    b.HasIndex("CameraSerialNumber");
 
                     b.ToTable("RepairOrders");
                 });
@@ -193,6 +293,7 @@ namespace CamCare.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("BackgroundColor")
+                        .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
@@ -200,13 +301,16 @@ namespace CamCare.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
+                        .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("FontColor")
+                        .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Order")
@@ -319,36 +423,73 @@ namespace CamCare.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("RepairPositions");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Display tauschen"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Objektiv tauschen"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Akku tauschen"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Gehäuse tauschen"
+                        });
                 });
 
             modelBuilder.Entity("CamCare.Domain.Address", b =>
                 {
-                    b.HasOne("CamCare.Domain.AddressType", "AddressType")
-                        .WithMany()
-                        .HasForeignKey("AddressTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("CamCare.Domain.Customer", "Customer")
-                        .WithMany()
+                        .WithMany("Addresses")
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("AddressType");
+                    b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.Camera", b =>
+                {
+                    b.HasOne("CamCare.Domain.CameraType", "CameraType")
+                        .WithMany("Cameras")
+                        .HasForeignKey("CameraTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CamCare.Domain.Customer", "Customer")
+                        .WithMany("Cameras")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CameraType");
 
                     b.Navigation("Customer");
                 });
 
             modelBuilder.Entity("CamCare.Domain.RepairOrder", b =>
                 {
-                    b.HasOne("CamCare.Domain.Customer", "Customer")
-                        .WithMany()
-                        .HasForeignKey("CustomerId")
+                    b.HasOne("CamCare.Domain.Camera", "Camera")
+                        .WithMany("RepairOrders")
+                        .HasForeignKey("CameraSerialNumber")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Customer");
+                    b.Navigation("Camera");
                 });
 
             modelBuilder.Entity("CamCare.Domain.RepairOrderRepairPosition", b =>
@@ -368,6 +509,23 @@ namespace CamCare.Migrations
                     b.Navigation("RepairOrder");
 
                     b.Navigation("RepairPosition");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.Camera", b =>
+                {
+                    b.Navigation("RepairOrders");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.CameraType", b =>
+                {
+                    b.Navigation("Cameras");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.Customer", b =>
+                {
+                    b.Navigation("Addresses");
+
+                    b.Navigation("Cameras");
                 });
 
             modelBuilder.Entity("CamCare.Domain.RepairOrder", b =>

@@ -6,15 +6,13 @@ namespace CamCare.Domain
     {
         [Key]
         public int Id { get; set; }
-        public int CustomerId { get; set; }
-        public ICollection<RepairPosition>? RepairPositions { get; set; }
-        public ICollection<RepairOrderRepairPosition> RepairOrderRepairPositions { get; set; } = [];
-
-        public Customer Customer { get; set; } = null!;
-
-
-
+        public int CameraId { get; set; }
+        public virtual ICollection<RepairPosition>? RepairPositions { get; set; }
+        public virtual ICollection<RepairOrderRepairPosition> RepairOrderRepairPositions { get; set; } = [];
+        public DateTime ArrivedAt { get; set; } = DateTime.UtcNow;
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        public virtual Camera Camera { get; set; } = null!;
     }
 }
