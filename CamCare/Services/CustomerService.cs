@@ -25,10 +25,12 @@ namespace CamCare.Services
                 var (totalCount, query) = context.Customers
                     .AsNoTracking()
                     .Include(x => x.Addresses)
+                    .Include(x => x.Cameras)
+                        .ThenInclude(c => c.CameraType)
                     .AsQueryable()
                     .LoadByLoadDataArgs(args, predicate);
 
-              
+
                 var items = await query.ToListAsync();
                 var vms = items.Select(e => _mapper.Map<Customer, CustomerVm>(e)).ToList();
 

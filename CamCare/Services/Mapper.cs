@@ -79,8 +79,6 @@ namespace CamCare.Services
                     camVm.CameraTypeId = cam.CameraTypeId;
                     camVm.CreatedAt = cam.CreatedAt;
                     camVm.UpdatedAt = cam.UpdatedAt;
-                    if (cam.Customer != null)
-                        camVm.Customer = Map<Customer, CustomerVm>(cam.Customer);
                     if (cam.CameraType != null)
                         camVm.CameraType = Map<CameraType, CameraTypeVm>(cam.CameraType);
                     if (cam.RepairOrders != null)
@@ -92,8 +90,6 @@ namespace CamCare.Services
                     cam.CameraTypeId = camVm.CameraTypeId;
                     cam.CreatedAt = camVm.CreatedAt;
                     cam.UpdatedAt = camVm.UpdatedAt;
-                    if (camVm.Customer != null)
-                        cam.Customer = Map<CustomerVm, Customer>(camVm.Customer);
                     if (camVm.RepairOrders != null)
                         cam.RepairOrders = camVm.RepairOrders.Select(Map<RepairOrderVm, RepairOrder>).ToList();
                     break;

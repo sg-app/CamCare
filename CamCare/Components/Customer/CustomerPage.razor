@@ -10,7 +10,7 @@
                 Count="_totalCount"
                 AllowPaging="true"
                 PageSize="20"
-                Density="Density.Compact" 
+                Density="Density.Compact"
                 AllowColumnResize="true">
     <EmptyTemplate>
         <CamCareEmptyTemplate />
@@ -31,11 +31,18 @@
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.Email)" Title="Eamil" MinWidth="200px" />
         <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.PhoneNumber)" Title="Telefon" MinWidth="200px" />
-        <RadzenDataGridInlineEditColumn TItem="CustomerVm" DeleteRow="OnDeleteRowClicked" CanEdit="(item)=>false" />
+        <RadzenDataGridInlineEditColumn TItem="CustomerVm" DeleteRow="OnDeleteRowClicked" CanEdit="(item) => false" />
     </Columns>
     <Template Context="item">
-        <AddressInfo Address="@item.Addresses?.FirstOrDefault(x=>x.AddressType == AddressType.Billing)" />
+        <AddressInfo Address="@item.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Billing)" />
         <AddressInfo Address="@item.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Shipping)" />
+        @if (item.Cameras?.Any() == true)
+        {
+            @foreach (var camera in item.Cameras)
+            {
+                <RadzenText>@camera.SerialNumber @camera.CameraType?.Name</RadzenText>
+            }
+        }
     </Template>
 </RadzenDataGrid>
 
@@ -52,7 +59,7 @@
     private async Task OnLoadData(LoadDataArgs args)
     {
         _isLoading = true;
-        var response = await CustomerService.GetAllAsync(args, [nameof(CustomerVm.Addresses)]);
+        var response = await CustomerService.GetAllAsync(args);
         if (response.Success)
         {
             _data = response.Data?.Items.ToList();
