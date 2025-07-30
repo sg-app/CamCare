@@ -1,15 +1,14 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace CamCare.Domain
+namespace CamCare.Models
 {
-    public class RepairPosition : IAuditableEntity
+    public class DefectiveVm : IAuditableEntity
     {
         [Key]
         public int Id { get; set; }
         public string Description { get; set; } = string.Empty;
-        public int SortOrder { get; set; }
 
-        public virtual ICollection<RepairOrder> RepairOrders { get; set; } = [];
+        public virtual ICollection<RepairOrderVm> RepairOrders { get; set; } = [];
 
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

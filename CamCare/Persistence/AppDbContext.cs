@@ -14,16 +14,10 @@ namespace CamCare.Persistence
         public DbSet<RepairOrderStatus> RepairOrderStatuses { get; set; }
         public DbSet<RepairOrder> RepairOrders { get; set; }
         public DbSet<RepairPosition> RepairPositions { get; set; }
-        public DbSet<RepairOrderRepairPosition> RepairOrderRepairPositions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            // Configure the many-to-many relationship between RepairOrder and RepairPosition
-            modelBuilder.Entity<RepairOrder>()
-                .HasMany(e => e.RepairPositions)
-                .WithMany(e => e.RepairOrders)
-                .UsingEntity<RepairOrderRepairPosition>();
 
             modelBuilder.Entity<RepairOrderStatus>()
                 .HasData(

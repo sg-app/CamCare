@@ -95,83 +95,51 @@ namespace CamCare.Services
                     break;
                 case RepairOrder ro when destination is RepairOrderVm rovm:
                     rovm.Id = ro.Id;
-                    rovm.CameraId = ro.CameraId;
+                    rovm.CameraSerialNumber = ro.CameraSerialNumber;
+                    rovm.RepairOrderStatusId = ro.RepairOrderStatusId;
                     rovm.ArrivedAt = ro.ArrivedAt;
                     rovm.CreatedAt = ro.CreatedAt;
                     rovm.UpdatedAt = ro.UpdatedAt;
                     if (ro.Camera != null)
                         rovm.Camera = Map<Camera, CameraVm>(ro.Camera);
-                    if (ro.RepairOrderRepairPositions != null)
-                        rovm.RepairOrderRepairPositions = ro.RepairOrderRepairPositions.Select(Map<RepairOrderRepairPosition, RepairOrderRepairPositionVm>).ToList();
+                    if (ro.RepairOrderStatus != null)
+                        rovm.RepairOrderStatus = Map<RepairOrderStatus, RepairOrderStatusVm>(ro.RepairOrderStatus);
+                    if (ro.RepairPositions != null)
+                        rovm.RepairPositions = ro.RepairPositions.Select(Map<RepairPosition, RepairPositionVm>).ToList();
+                    if (ro.Defectives != null)
+                        rovm.Defectives = ro.Defectives.Select(Map<Defective, DefectiveVm>).ToList();
                     break;
                 case RepairOrderVm rovm when destination is RepairOrder ro:
                     ro.Id = rovm.Id;
-                    ro.CameraId = rovm.CameraId;
+                    ro.CameraSerialNumber = rovm.CameraSerialNumber;
+                    ro.RepairOrderStatusId = rovm.RepairOrderStatusId;
                     ro.ArrivedAt = rovm.ArrivedAt;
                     ro.CreatedAt = rovm.CreatedAt;
                     ro.UpdatedAt = rovm.UpdatedAt;
                     if (rovm.Camera != null)
                         ro.Camera = Map<CameraVm, Camera>(rovm.Camera);
-                    if (rovm.RepairOrderRepairPositions != null)
-                        ro.RepairOrderRepairPositions = rovm.RepairOrderRepairPositions.Select(Map<RepairOrderRepairPositionVm, RepairOrderRepairPosition>).ToList();
-                    break;
-                case RepairOrderRepairPosition rorp when destination is RepairOrderRepairPositionVm rorpvm:
-                    rorpvm.RepairOrderId = rorp.RepairOrderId;
-                    rorpvm.RepairPositionId = rorp.RepairPositionId;
-                    rorpvm.DisplayOrder = rorp.DisplayOrder;
-                    if (rorp.RepairOrder != null)
-                        rorpvm.RepairOrder = Map<RepairOrder, RepairOrderVm>(rorp.RepairOrder);
-                    if (rorp.RepairPosition != null)
-                        rorpvm.RepairPosition = Map<RepairPosition, RepairPositionVm>(rorp.RepairPosition);
-                    break;
-                case RepairOrderRepairPositionVm rorpvm when destination is RepairOrderRepairPosition rorp:
-                    rorp.RepairOrderId = rorpvm.RepairOrderId;
-                    rorp.RepairPositionId = rorpvm.RepairPositionId;
-                    rorp.DisplayOrder = rorpvm.DisplayOrder;
-                    if (rorpvm.RepairOrder != null)
-                        rorp.RepairOrder = Map<RepairOrderVm, RepairOrder>(rorpvm.RepairOrder);
-                    if (rorpvm.RepairPosition != null)
-                        rorp.RepairPosition = Map<RepairPositionVm, RepairPosition>(rorpvm.RepairPosition);
-                    break;
-                case RepairOrderStatus ros when destination is RepairOrderStatusVm rosvm:
-                    rosvm.Id = ros.Id;
-                    rosvm.Name = ros.Name;
-                    rosvm.Description = ros.Description;
-                    rosvm.Order = ros.Order;
-                    rosvm.BackgroundColor = ros.BackgroundColor;
-                    rosvm.FontColor = ros.FontColor;
-                    rosvm.CreatedAt = ros.CreatedAt;
-                    rosvm.UpdatedAt = ros.UpdatedAt;
-                    break;
-                case RepairOrderStatusVm rosvm when destination is RepairOrderStatus ros:
-                    ros.Id = rosvm.Id;
-                    ros.Name = rosvm.Name;
-                    ros.Description = rosvm.Description;
-                    ros.Order = rosvm.Order;
-                    ros.BackgroundColor = rosvm.BackgroundColor;
-                    ros.FontColor = rosvm.FontColor;
-                    ros.CreatedAt = rosvm.CreatedAt;
-                    ros.UpdatedAt = rosvm.UpdatedAt;
+                    if (rovm.RepairPositions != null)
+                        ro.RepairPositions = rovm.RepairPositions.Select(Map<RepairPositionVm, RepairPosition>).ToList();
+                    if (rovm.Defectives != null)
+                        ro.Defectives = rovm.Defectives.Select(Map<DefectiveVm, Defective>).ToList();
                     break;
                 case RepairPosition rp when destination is RepairPositionVm rpvm:
                     rpvm.Id = rp.Id;
                     rpvm.Description = rp.Description;
+                    rpvm.SortOrder = rp.SortOrder;
                     rpvm.CreatedAt = rp.CreatedAt;
                     rpvm.UpdatedAt = rp.UpdatedAt;
                     if (rp.RepairOrders != null)
                         rpvm.RepairOrders = rp.RepairOrders.Select(Map<RepairOrder, RepairOrderVm>).ToList();
-                    if (rp.RepairOrderRepairPositions != null)
-                        rpvm.RepairOrderRepairPositions = rp.RepairOrderRepairPositions.Select(Map<RepairOrderRepairPosition, RepairOrderRepairPositionVm>).ToList();
                     break;
                 case RepairPositionVm rpvm when destination is RepairPosition rp:
                     rp.Id = rpvm.Id;
                     rp.Description = rpvm.Description;
+                    rp.SortOrder = rpvm.SortOrder;
                     rp.CreatedAt = rpvm.CreatedAt;
                     rp.UpdatedAt = rpvm.UpdatedAt;
                     if (rpvm.RepairOrders != null)
                         rp.RepairOrders = rpvm.RepairOrders.Select(Map<RepairOrderVm, RepairOrder>).ToList();
-                    if (rpvm.RepairOrderRepairPositions != null)
-                        rp.RepairOrderRepairPositions = rpvm.RepairOrderRepairPositions.Select(Map<RepairOrderRepairPositionVm, RepairOrderRepairPosition>).ToList();
                     break;
                 case CameraType ct when destination is CameraTypeVm ctv:
                     ctv.Id = ct.Id;

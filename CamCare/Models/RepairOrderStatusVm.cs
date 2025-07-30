@@ -15,7 +15,9 @@ namespace CamCare.Models
         [MinLength(3, ErrorMessage = "Mindestens {1} Zeichen erforderlich.")]
         public string Description { get; set; } = string.Empty;
         public int Order { get; set; }
+        [MaxLength(30)]
         public string? BackgroundColor { get; set; }
+        [MaxLength(30)]
         public string? FontColor { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

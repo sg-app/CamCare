@@ -7,11 +7,11 @@ namespace CamCare.Models
     {
         public int Id { get; set; }
         public string Description { get; set; } = string.Empty;
+        public int SortOrder { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
         public ICollection<RepairOrderVm>? RepairOrders { get; set; }
-        public ICollection<RepairOrderRepairPositionVm>? RepairOrderRepairPositions { get; set; }
 
         public override string ToString() => $"[{Id}] {Description}";
     }

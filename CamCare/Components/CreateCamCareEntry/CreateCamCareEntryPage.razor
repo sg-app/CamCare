@@ -1,15 +1,64 @@
 ﻿@page "/CreateCamCareEntryPage"
-<RadzenFieldset Text="Kunde">
-    <RadzenRow>
-        <RadzenColumn>
+<RadzenTemplateForm Data="_repairOrder" TItem="RepairOrderVm" Submit="OnSubmit">
+    <RadzenFieldset Text="Kunde">
+        <RadzenRow>
+            <RadzenColumn>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                    <RadzenFormField Text="Kunde wählen">
+                        <RadzenDropDown TValue="CustomerVm"
+                                        @bind-Value="_selectedCustomer"
+                                        Data="_customers"
+                                        LoadData="OnCustomerLoadData"
+                                        Count="_totalCountCustomers"
+                                        TextProperty="@nameof(CustomerVm.DisplayName)"
+                                        AllowVirtualization="true"
+                                        AllowClear="true"
+                                        AllowFiltering="true"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        FilterOperator="StringFilterOperator.Contains"
+                                        Style="width:500px" />
+                    </RadzenFormField>
+                    <InsertIconButton Class="mt-2" Size="ButtonSize.Medium" />
+                </RadzenStack>
+            </RadzenColumn>
+            <RadzenColumn>
+                @if (_selectedCustomer is not null)
+                {
+                    <AddressInfo Address="@BillingAddress" />
+                    <AddressInfo Address="@ShippingAddress" />
+                    <RadzenRow>
+                        <RadzenColumn>
+                            <RadzenText>Email</RadzenText>
+                        </RadzenColumn>
+                        <RadzenColumn>
+                            <RadzenText>@_selectedCustomer.Email</RadzenText>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn>
+                            <RadzenText>Telefonnummer</RadzenText>
+                        </RadzenColumn>
+                        <RadzenColumn>
+                            <RadzenText>@_selectedCustomer.PhoneNumber</RadzenText>
+                        </RadzenColumn>
+                    </RadzenRow>
+                }
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenFieldset>
+
+    @if (_selectedCustomer is not null)
+    {
+        <RadzenFieldset Text="Kamera">
             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
-                <RadzenFormField Text="Kunde wählen">
-                    <RadzenDropDown TValue="CustomerVm"
-                                    @bind-Value="_selectedCustomer"
-                                    Data="_customers"
-                                    LoadData="OnCustomerLoadData"
-                                    Count="_totalCountCustomers"
-                                    TextProperty="@nameof(CustomerVm.DisplayName)"
+                <RadzenFormField Text="Kamera wählen">
+                    <RadzenDropDown TValue="string"
+                                    @bind-Value="_repairOrder.CameraSerialNumber"
+                                    Data="_cameras"
+                                    LoadData="OnCameraLoadData"
+                                    Count="_totalCountCameras"
+                                    TextProperty="@nameof(CameraVm.DisplayName)"
+                                    ValueProperty="@nameof(CameraVm.SerialNumber)"
                                     AllowVirtualization="true"
                                     AllowClear="true"
                                     AllowFiltering="true"
@@ -17,84 +66,73 @@
                                     FilterOperator="StringFilterOperator.Contains"
                                     Style="width:500px" />
                 </RadzenFormField>
-                <InsertIconButton Class="mt-2" Size="ButtonSize.Medium" />
+                <InsertIconButton Class="mt-2" Size="ButtonSize.Medium" Click="@(() => _createCamera = true)" />
             </RadzenStack>
-        </RadzenColumn>
-        <RadzenColumn>
-            @if (_selectedCustomer is not null)
+            @if (_createCamera)
             {
-                <AddressInfo Address="@BillingAddress" />
-                <AddressInfo Address="@ShippingAddress" />
-                <RadzenRow>
-                    <RadzenColumn>
-                        <RadzenText>Email</RadzenText>
-                    </RadzenColumn>
-                    <RadzenColumn>
-                        <RadzenText>@_selectedCustomer.Email</RadzenText>
-                    </RadzenColumn>
-                </RadzenRow>
-                <RadzenRow>
-                    <RadzenColumn>
-                        <RadzenText>Telefonnummer</RadzenText>
-                    </RadzenColumn>
-                    <RadzenColumn>
-                        <RadzenText>@_selectedCustomer.PhoneNumber</RadzenText>
-                    </RadzenColumn>
-                </RadzenRow>
+                <CameraEdit CustomerId="@_selectedCustomer.Id" ValueChanged="OnCameraCreated" CancelEdit="OnCancelCameraEdit" />
             }
-        </RadzenColumn>
-    </RadzenRow>
-</RadzenFieldset>
+        </RadzenFieldset>
+    }
 
-@if (_selectedCustomer is not null)
-{
-    <RadzenFieldset Text="Kamera">
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
-            <RadzenFormField Text="Kamera wählen">
-                <RadzenDropDown TValue="CameraVm"
-                                @bind-Value="_selectedCamera"
-                                Data="_cameras"
-                                LoadData="OnCameraLoadData"
-                                Count="_totalCountCameras"
-                                TextProperty="@nameof(CameraVm.DisplayName)"
-                                AllowVirtualization="true"
-                                AllowClear="true"
+    @if (!string.IsNullOrEmpty(_repairOrder.CameraSerialNumber))
+    {
+        <RadzenFieldset Text="Beschreibung">
+            <RadzenFormField Text="Status">
+                <RadzenDropDown @bind-Value="_repairOrder.RepairOrderStatusId"
+                                Data="_repairOrderStatusData"
+                                LoadData="OnLoadRepairOrderStatus"
+                                Count="_totalCountRepairOrderStatus"
                                 AllowFiltering="true"
-                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                FilterOperator="StringFilterOperator.Contains"
+                                AllowVirtualization="true"
+                                TextProperty="@nameof(RepairOrderStatusVm.Name)"
+                                ValueProperty="@nameof(RepairOrderStatusVm.Id)"
+                                AllowClear="true"
                                 Style="width:500px" />
             </RadzenFormField>
-            <InsertIconButton Class="mt-2" Size="ButtonSize.Medium" Click="@(()=> _createCamera = true)" />
-        </RadzenStack>
-        @if (_createCamera)
-        {
-            <CameraEdit CustomerId="@_selectedCustomer.Id" ValueChanged="OnCameraCreated" CancelEdit="OnCancelCameraEdit" />
-        }
-    </RadzenFieldset>
-}
+            <div>
+                <RadzenLabel Text="@_repairOrderStatusData?.FirstOrDefault(f => f.Id == _repairOrder.RepairOrderStatusId)?.Description" />
+            </div>
+            <RadzenRadioButtonList class="py-2" @bind-Value="_repairOrder.ShippingMethod">
+                <Items>
+                    <RadzenRadioButtonListItem Text="@ShippingMethod.PickedUp.GetDisplayDescription()" Value="ShippingMethod.PickedUp" />
+                    <RadzenRadioButtonListItem Text="@ShippingMethod.SentByCustomer.GetDisplayDescription()" Value="ShippingMethod.SentByCustomer" />
+                </Items>
+            </RadzenRadioButtonList>
+            <RadzenFormField Text="Versandbemerkung">
+                <RadzenTextArea @bind-Value="_repairOrder.ShippingMethodDescription" Rows="2" Cols="100" />
+            </RadzenFormField>
 
-@if (_selectedCamera is not null)
-{
-    <RadzenFieldset Text="Beschreibung">
+            @* <RadzenAutoComplete @bind-Value="_repairOrder.RepairOrderRepairPositions"
+                                Data=@customers
+                                LoadData="OnLoadRepairPositions"
+                                TextProperty="@nameof(RepairPositionVm.Description)"
+                                Value="@nameof(RepairPositionVm.Description)"
+                                Style="width: 13rem"
+                                InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Company Name" } })" /> *@
 
-    </RadzenFieldset>
-}
-
+        </RadzenFieldset>
+    }
+</RadzenTemplateForm>
 
 @code {
     [Inject] public ICustomerService CustomerService { get; set; } = default!;
     [Inject] public ICameraService CameraService { get; set; } = default!;
+    [Inject] public IRepairOrderStatusService RepairOrderStatusService { get; set; } = default!;
 
     private IEnumerable<CustomerVm>? _customers;
     private int _totalCountCustomers;
     private CustomerVm? _selectedCustomer;
     private IEnumerable<CameraVm>? _cameras;
     private int _totalCountCameras;
-    private CameraVm? _selectedCamera;
     private AddressVm? ShippingAddress => _selectedCustomer?.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Shipping);
     private AddressVm? BillingAddress => _selectedCustomer?.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Billing);
 
     private bool _createCamera;
+    private RepairOrderVm _repairOrder = new() { ShippingMethod = ShippingMethod.SentByCustomer };
+
+    private IEnumerable<RepairOrderStatusVm>? _repairOrderStatusData;
+    private int _totalCountRepairOrderStatus;
 
     private async Task OnCustomerLoadData(LoadDataArgs args)
     {
@@ -128,15 +166,33 @@
         }
     }
 
+    private async Task OnLoadRepairOrderStatus(LoadDataArgs args)
+    {
+        ServiceResponse<Paginated<RepairOrderStatusVm>> response;
+        if (string.IsNullOrEmpty(args.Filter))
+            response = await RepairOrderStatusService.GetAllAsync(args);
+        else
+            response = await RepairOrderStatusService.GetAllAsync(args, x => x.Name.Contains(args.Filter));
+        if (response.Success)
+        {
+            _repairOrderStatusData = response.Data?.Items ?? [];
+            _totalCountRepairOrderStatus = response.Data?.TotalCount ?? 0;
+        }
+    }
+
     private async Task OnCameraCreated(CameraVm args)
     {
-        await OnCameraLoadData(new LoadDataArgs{Filter = args.SerialNumber });
-        _selectedCamera = _cameras?.FirstOrDefault(x=>x.SerialNumber == args.SerialNumber);
+        await OnCameraLoadData(new LoadDataArgs { Filter = args.SerialNumber });
+        _repairOrder.CameraSerialNumber = _cameras?.FirstOrDefault(x => x.SerialNumber == args.SerialNumber)?.SerialNumber ?? string.Empty;
         _createCamera = false;
     }
     private void OnCancelCameraEdit(MouseEventArgs args)
     {
-        _selectedCamera = null;
         _createCamera = false;
+    }
+
+    private void OnSubmit(RepairOrderVm item)
+    {
+
     }
 }

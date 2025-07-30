@@ -12,7 +12,7 @@ namespace CamCare.Domain
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
-        public virtual ICollection<RepairOrder> RepairOrders { get; set; } = [];
+        public virtual ICollection<RepairOrder>? RepairOrders { get; set; }
         public virtual Customer Customer { get; set; } = null!;
         public virtual CameraType CameraType { get; set; } = null!;
     }

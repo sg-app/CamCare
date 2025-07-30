@@ -1,15 +1,21 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace CamCare.Models
 {
     public class CustomerVm
     {
         public string Id { get; set; } = string.Empty;
+        [MaxLength(200)]
         public string? CompanyName { get; set; }
+        [MaxLength(100)]
         public string? FirstName { get; set; }
+        [MaxLength(100)]
         public string? LastName { get; set; }
+        [MaxLength(250)]
         public string? Email { get; set; }
+        [MaxLength(100)]
         public string? PhoneNumber { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

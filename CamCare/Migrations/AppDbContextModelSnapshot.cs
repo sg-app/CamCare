@@ -204,9 +204,14 @@ namespace CamCare.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -217,21 +222,25 @@ namespace CamCare.Migrations
                         new
                         {
                             Id = 1,
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Display defekt"
                         },
                         new
                         {
                             Id = 2,
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Objektiv defekt"
                         },
                         new
                         {
                             Id = 3,
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Akku defekt"
                         },
                         new
                         {
                             Id = 4,
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Gehäuse defekt"
                         });
                 });
@@ -245,15 +254,19 @@ namespace CamCare.Migrations
                     b.Property<DateTime>("ArrivedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("CameraId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("CameraSerialNumber")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
+
+                    b.Property<string>("CustomerId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RepairOrderStatusId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
@@ -262,25 +275,11 @@ namespace CamCare.Migrations
 
                     b.HasIndex("CameraSerialNumber");
 
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("RepairOrderStatusId");
+
                     b.ToTable("RepairOrders");
-                });
-
-            modelBuilder.Entity("CamCare.Domain.RepairOrderRepairPosition", b =>
-                {
-                    b.Property<int>("RepairOrderId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("RepairPositionId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("RepairOrderId", "RepairPositionId");
-
-                    b.HasIndex("RepairPositionId");
-
-                    b.ToTable("RepairOrderRepairPositions");
                 });
 
             modelBuilder.Entity("CamCare.Domain.RepairOrderStatus", b =>
@@ -414,6 +413,9 @@ namespace CamCare.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
 
@@ -426,26 +428,60 @@ namespace CamCare.Migrations
                         {
                             Id = 1,
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Description = "Display tauschen"
+                            Description = "Display tauschen",
+                            SortOrder = 0
                         },
                         new
                         {
                             Id = 2,
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Description = "Objektiv tauschen"
+                            Description = "Objektiv tauschen",
+                            SortOrder = 0
                         },
                         new
                         {
                             Id = 3,
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Description = "Akku tauschen"
+                            Description = "Akku tauschen",
+                            SortOrder = 0
                         },
                         new
                         {
                             Id = 4,
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Description = "Gehäuse tauschen"
+                            Description = "Gehäuse tauschen",
+                            SortOrder = 0
                         });
+                });
+
+            modelBuilder.Entity("DefectiveRepairOrder", b =>
+                {
+                    b.Property<int>("DefectivesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RepairOrdersId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("DefectivesId", "RepairOrdersId");
+
+                    b.HasIndex("RepairOrdersId");
+
+                    b.ToTable("DefectiveRepairOrder");
+                });
+
+            modelBuilder.Entity("RepairOrderRepairPosition", b =>
+                {
+                    b.Property<int>("RepairOrdersId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RepairPositionsId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("RepairOrdersId", "RepairPositionsId");
+
+                    b.HasIndex("RepairPositionsId");
+
+                    b.ToTable("RepairOrderRepairPosition");
                 });
 
             modelBuilder.Entity("CamCare.Domain.Address", b =>
@@ -486,26 +522,53 @@ namespace CamCare.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("CamCare.Domain.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CamCare.Domain.RepairOrderStatus", "RepairOrderStatus")
+                        .WithMany()
+                        .HasForeignKey("RepairOrderStatusId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Camera");
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("RepairOrderStatus");
                 });
 
-            modelBuilder.Entity("CamCare.Domain.RepairOrderRepairPosition", b =>
+            modelBuilder.Entity("DefectiveRepairOrder", b =>
                 {
-                    b.HasOne("CamCare.Domain.RepairOrder", "RepairOrder")
-                        .WithMany("RepairOrderRepairPositions")
-                        .HasForeignKey("RepairOrderId")
+                    b.HasOne("CamCare.Domain.Defective", null)
+                        .WithMany()
+                        .HasForeignKey("DefectivesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("CamCare.Domain.RepairPosition", "RepairPosition")
-                        .WithMany("RepairOrderRepairPositions")
-                        .HasForeignKey("RepairPositionId")
+                    b.HasOne("CamCare.Domain.RepairOrder", null)
+                        .WithMany()
+                        .HasForeignKey("RepairOrdersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("RepairOrderRepairPosition", b =>
+                {
+                    b.HasOne("CamCare.Domain.RepairOrder", null)
+                        .WithMany()
+                        .HasForeignKey("RepairOrdersId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("RepairOrder");
-
-                    b.Navigation("RepairPosition");
+                    b.HasOne("CamCare.Domain.RepairPosition", null)
+                        .WithMany()
+                        .HasForeignKey("RepairPositionsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("CamCare.Domain.Camera", b =>
@@ -523,16 +586,6 @@ namespace CamCare.Migrations
                     b.Navigation("Addresses");
 
                     b.Navigation("Cameras");
-                });
-
-            modelBuilder.Entity("CamCare.Domain.RepairOrder", b =>
-                {
-                    b.Navigation("RepairOrderRepairPositions");
-                });
-
-            modelBuilder.Entity("CamCare.Domain.RepairPosition", b =>
-                {
-                    b.Navigation("RepairOrderRepairPositions");
                 });
 #pragma warning restore 612, 618
         }

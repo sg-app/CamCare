@@ -20,7 +20,7 @@ namespace CamCare.Domain
         public DateTime? UpdatedAt { get; set; }
 
 
-        public virtual ICollection<Address> Addresses { get; set; } = [];
-        public virtual ICollection<Camera> Cameras { get; set; } = [];
+        public virtual ICollection<Address>? Addresses { get; set; }
+        public virtual ICollection<Camera>? Cameras { get; set; }
     }
 }
