@@ -10,6 +10,7 @@ namespace CamCare.Models
         public string CameraSerialNumber { get; set; } = string.Empty;
         public int RepairOrderStatusId { get; set; }
         public ShippingMethod ShippingMethod { get; set; }
+        public int? LogisticProviderId { get; set; }
         public string? ShippingMethodDescription { get; set; }
         public DateTime ArrivedAt { get; set; }
         public DateTime CreatedAt { get; set; }

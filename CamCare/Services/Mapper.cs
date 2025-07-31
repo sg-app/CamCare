@@ -141,6 +141,16 @@ namespace CamCare.Services
                     if (rpvm.RepairOrders != null)
                         rp.RepairOrders = rpvm.RepairOrders.Select(Map<RepairOrderVm, RepairOrder>).ToList();
                     break;
+                case Defective def when destination is DefectiveVm defvm:
+                    defvm.Id = def.Id;
+                    defvm.Description = def.Description;
+                    defvm.CreatedAt = def.CreatedAt;
+                    defvm.UpdatedAt = def.UpdatedAt;
+                    break;
+                case DefectiveVm defvm when destination is Defective def:
+                    def.Id = defvm.Id;
+                    def.Description = defvm.Description;
+                    break;
                 case CameraType ct when destination is CameraTypeVm ctv:
                     ctv.Id = ct.Id;
                     ctv.Name = ct.Name;
@@ -149,6 +159,45 @@ namespace CamCare.Services
                     ct.Id = ctv.Id;
                     ct.Name = ctv.Name;
                     break;
+                case RepairOrderStatus ros when destination is RepairOrderStatusVm rosvm:
+                    rosvm.Id = ros.Id;
+                    rosvm.Name = ros.Name;
+                    rosvm.Description = ros.Description;
+                    rosvm.Order = ros.Order;
+                    rosvm.BackgroundColor = ros.BackgroundColor;
+                    rosvm.FontColor = ros.FontColor;
+                    rosvm.IsActive = ros.IsActive;
+                    rosvm.IsDefault = ros.IsDefault;
+                    rosvm.CreatedAt = ros.CreatedAt;
+                    rosvm.UpdatedAt = ros.UpdatedAt;
+                    break;
+                case RepairOrderStatusVm rosvm when destination is RepairOrderStatus ros:
+                    ros.Id = rosvm.Id;
+                    ros.Name = rosvm.Name;
+                    ros.Description = rosvm.Description;
+                    ros.Order = rosvm.Order;
+                    ros.BackgroundColor = rosvm.BackgroundColor;
+                    ros.FontColor = rosvm.FontColor;
+                    ros.IsActive = rosvm.IsActive;
+                    ros.IsDefault = rosvm.IsDefault;
+                    ros.CreatedAt = rosvm.CreatedAt;
+                    ros.UpdatedAt = rosvm.UpdatedAt;
+                    break;
+                case LogisticProvider lp when destination is LogisticProviderVm lpvm:
+                    lpvm.Id = lp.Id;
+                    lpvm.Name = lp.Name;
+                    lpvm.IsDefault = lp.IsDefault;
+                    lpvm.IsActive = lp.IsActive;
+                    lpvm.CreatedAt = lp.CreatedAt;
+                    lpvm.UpdatedAt = lp.UpdatedAt;
+                    break;
+                case LogisticProviderVm lpvm when destination is LogisticProvider lp:
+                    lp.Id = lpvm.Id;
+                    lp.Name = lpvm.Name;
+                    lp.IsDefault = lpvm.IsDefault;
+                    lp.IsActive = lpvm.IsActive;
+                    break;
+
                 default:
                     throw new NotSupportedException($"Mapping from {typeof(TSource)} to {typeof(TDestination)} is not supported.");
             }

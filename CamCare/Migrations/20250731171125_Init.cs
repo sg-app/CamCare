@@ -60,6 +60,23 @@ namespace CamCare.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "LogisticProviders",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    IsDefault = table.Column<bool>(type: "INTEGER", nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LogisticProviders", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "RepairOrderStatuses",
                 columns: table => new
                 {
@@ -70,6 +87,8 @@ namespace CamCare.Migrations
                     Order = table.Column<int>(type: "INTEGER", nullable: false),
                     BackgroundColor = table.Column<string>(type: "TEXT", maxLength: 30, nullable: true),
                     FontColor = table.Column<string>(type: "TEXT", maxLength: 30, nullable: true),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
+                    IsDefault = table.Column<bool>(type: "INTEGER", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
                 },
@@ -84,6 +103,7 @@ namespace CamCare.Migrations
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
+                    Artikelnummer = table.Column<string>(type: "TEXT", nullable: true),
                     Description = table.Column<string>(type: "TEXT", nullable: false),
                     SortOrder = table.Column<int>(type: "INTEGER", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
@@ -158,6 +178,7 @@ namespace CamCare.Migrations
                     CustomerId = table.Column<string>(type: "TEXT", nullable: false),
                     CameraSerialNumber = table.Column<string>(type: "TEXT", nullable: false),
                     RepairOrderStatusId = table.Column<int>(type: "INTEGER", nullable: false),
+                    LogisticProviderId = table.Column<int>(type: "INTEGER", nullable: true),
                     ArrivedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
@@ -177,6 +198,11 @@ namespace CamCare.Migrations
                         principalTable: "Customers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_RepairOrders_LogisticProviders_LogisticProviderId",
+                        column: x => x.LogisticProviderId,
+                        principalTable: "LogisticProviders",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_RepairOrders_RepairOrderStatuses_RepairOrderStatusId",
                         column: x => x.RepairOrderStatusId,
@@ -213,15 +239,17 @@ namespace CamCare.Migrations
                 name: "RepairOrderRepairPosition",
                 columns: table => new
                 {
-                    RepairOrdersId = table.Column<int>(type: "INTEGER", nullable: false),
-                    RepairPositionsId = table.Column<int>(type: "INTEGER", nullable: false)
+                    RepairOrderId = table.Column<int>(type: "INTEGER", nullable: false),
+                    RepairPositionsId = table.Column<int>(type: "INTEGER", nullable: false),
+                    RepairPostionId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Quantity = table.Column<decimal>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RepairOrderRepairPosition", x => new { x.RepairOrdersId, x.RepairPositionsId });
+                    table.PrimaryKey("PK_RepairOrderRepairPosition", x => new { x.RepairOrderId, x.RepairPositionsId });
                     table.ForeignKey(
-                        name: "FK_RepairOrderRepairPosition_RepairOrders_RepairOrdersId",
-                        column: x => x.RepairOrdersId,
+                        name: "FK_RepairOrderRepairPosition_RepairOrders_RepairOrderId",
+                        column: x => x.RepairOrderId,
                         principalTable: "RepairOrders",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -261,36 +289,51 @@ namespace CamCare.Migrations
                 });
 
             migrationBuilder.InsertData(
-                table: "RepairOrderStatuses",
-                columns: new[] { "Id", "BackgroundColor", "CreatedAt", "Description", "FontColor", "Name", "Order", "UpdatedAt" },
+                table: "LogisticProviders",
+                columns: new[] { "Id", "CreatedAt", "IsActive", "IsDefault", "Name", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { 1, "rgb(206, 206, 206)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur wurde von Kunden angemeldet.", "rgb(0, 0, 0)", "In Anlieferung", 1, null },
-                    { 2, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur ist im Lager eingetroffen.", null, "Eingetroffen", 2, null },
-                    { 3, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur wird von Mitarbeiter begutachtet.", null, "Begutachtung", 3, null },
-                    { 4, "rgb(76, 170, 232)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Begutachtung wurde vom Mitarbeiter abgeschlosen.", "rgb(0, 0, 0)", "Begutachtung abgeschlossen", 4, null },
-                    { 5, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Angebot wurde erstellt.", null, "Angebot erstellt", 5, null },
-                    { 6, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera befindet sich in der Reparatur.", null, "Reparatur", 6, null },
-                    { 7, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur kann nicht fortgesetzt werden da Ersatzteile bestellt wurden.", null, "Warte auf Ersatzteile", 7, null },
-                    { 8, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera ist fertig repariert.", null, "Reparatur fertig", 8, null },
-                    { 9, "rgb(125, 218, 88)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera wurde versendet.", "rgb(0, 0, 0)", "Versendet", 9, null }
+                    { 1, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), true, true, "DHL", null },
+                    { 2, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), true, false, "Dachser", null },
+                    { 3, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), true, false, "DPD", null }
+                });
+
+            migrationBuilder.InsertData(
+                table: "RepairOrderStatuses",
+                columns: new[] { "Id", "BackgroundColor", "CreatedAt", "Description", "FontColor", "IsActive", "IsDefault", "Name", "Order", "UpdatedAt" },
+                values: new object[,]
+                {
+                    { 1, "rgb(206, 206, 206)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur wurde von Kunden angemeldet.", "rgb(0, 0, 0)", true, false, "In Anlieferung", 1, null },
+                    { 2, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur ist im Lager eingetroffen.", null, true, false, "Eingetroffen", 2, null },
+                    { 3, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur wird von Mitarbeiter begutachtet.", null, true, false, "Begutachtung", 3, null },
+                    { 4, "rgb(76, 170, 232)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Begutachtung wurde vom Mitarbeiter abgeschlosen.", "rgb(0, 0, 0)", true, false, "Begutachtung abgeschlossen", 4, null },
+                    { 5, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Angebot wurde erstellt.", null, true, false, "Angebot erstellt", 5, null },
+                    { 6, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera befindet sich in der Reparatur.", null, true, false, "Reparatur", 6, null },
+                    { 7, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur kann nicht fortgesetzt werden da Ersatzteile bestellt wurden.", null, true, false, "Warte auf Ersatzteile", 7, null },
+                    { 8, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera ist fertig repariert.", null, true, false, "Reparatur fertig", 8, null },
+                    { 9, "rgb(125, 218, 88)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera wurde versendet.", "rgb(0, 0, 0)", true, false, "Versendet", 9, null }
                 });
 
             migrationBuilder.InsertData(
                 table: "RepairPositions",
-                columns: new[] { "Id", "CreatedAt", "Description", "SortOrder", "UpdatedAt" },
+                columns: new[] { "Id", "Artikelnummer", "CreatedAt", "Description", "SortOrder", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { 1, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Display tauschen", 0, null },
-                    { 2, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Objektiv tauschen", 0, null },
-                    { 3, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Akku tauschen", 0, null },
-                    { 4, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Gehäuse tauschen", 0, null }
+                    { 1, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Display tauschen", 0, null },
+                    { 2, "01532", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Objektiv tauschen", 0, null },
+                    { 3, "0153215", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Akku tauschen", 0, null },
+                    { 4, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Gehäuse tauschen", 0, null }
                 });
 
             migrationBuilder.InsertData(
                 table: "Addresses",
                 columns: new[] { "Id", "AddressType", "City", "Country", "CreatedAt", "CustomerId", "HouseNumber", "PostalCode", "State", "Street", "UpdatedAt" },
                 values: new object[] { 1, 1, "München", "Deutschland", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "1", "", "80331", null, "Musterstraße 1", null });
+
+            migrationBuilder.InsertData(
+                table: "Cameras",
+                columns: new[] { "SerialNumber", "CameraTypeId", "CreatedAt", "CustomerId", "UpdatedAt" },
+                values: new object[] { "1234567890", 1, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "1", null });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Addresses_CustomerId",
@@ -328,6 +371,11 @@ namespace CamCare.Migrations
                 column: "CustomerId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_RepairOrders_LogisticProviderId",
+                table: "RepairOrders",
+                column: "LogisticProviderId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_RepairOrders_RepairOrderStatusId",
                 table: "RepairOrders",
                 column: "RepairOrderStatusId");
@@ -356,6 +404,9 @@ namespace CamCare.Migrations
 
             migrationBuilder.DropTable(
                 name: "Cameras");
+
+            migrationBuilder.DropTable(
+                name: "LogisticProviders");
 
             migrationBuilder.DropTable(
                 name: "RepairOrderStatuses");

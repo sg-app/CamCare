@@ -50,6 +50,22 @@
                 <RadzenBadge Text="Text" IsPill="true" Style="@item.BadageStyle" />
             </Template>
         </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.IsDefault)" Title="Standard" Width="80px">
+            <Template Context="item">
+                <RadzenIcon Icon="@(item.IsDefault ? "check_circle" : "circle")" />
+            </Template>
+            <EditTemplate Context="item">
+                <RadzenCheckBox @bind-Value="item.IsDefault" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.IsActive)" Title="Aktiv" Width="80px">
+            <Template Context="item">
+                <RadzenIcon Icon="@(item.IsActive ? "check_circle" : "circle")" />
+            </Template>
+            <EditTemplate Context="item">
+                <RadzenCheckBox @bind-Value="item.IsActive" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
         <RadzenDataGridInlineEditColumn TItem="RepairOrderStatusVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
     </Columns>
 </RadzenDataGrid>

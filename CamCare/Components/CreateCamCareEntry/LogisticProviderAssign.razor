@@ -1,0 +1,31 @@
+﻿<div>
+    @if (_logisticProviders is not null && _logisticProviders.Any())
+    {
+        <RadzenRadioButtonList @bind-Value="RepairOrder.LogisticProviderId"
+                               Data="_logisticProviders"
+                               TextProperty="@nameof(LogisticProviderVm.Name)"
+                               ValueProperty="@nameof(LogisticProviderVm.Id)" />
+    }
+</div>
+
+@code {
+    [Inject] protected ILogisticProviderService LogisticProviderService { get; set; } = default!;
+
+    [Parameter] public RepairOrderVm RepairOrder { get; set; } = default!;
+
+    private IEnumerable<LogisticProviderVm>? _logisticProviders { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        if (RepairOrder is null)
+            throw new ArgumentNullException(nameof(RepairOrder), "RepairOrder cannot be null");
+
+        var response = await LogisticProviderService.GetAllAsync();
+        if (response.Success)
+        {
+            _logisticProviders = response.Data ?? [];
+            var defaultProvider = _logisticProviders.FirstOrDefault(lp => lp.IsDefault);
+            if (RepairOrder.LogisticProviderId == null && defaultProvider != null)
+                RepairOrder.LogisticProviderId = defaultProvider.Id;
+        }
+    }
+}

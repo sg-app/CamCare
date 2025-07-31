@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CamCare.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250730125929_Init")]
+    [Migration("20250731171125_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -114,6 +114,15 @@ namespace CamCare.Migrations
                     b.HasIndex("CustomerId");
 
                     b.ToTable("Cameras");
+
+                    b.HasData(
+                        new
+                        {
+                            SerialNumber = "1234567890",
+                            CameraTypeId = 1,
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CustomerId = "1"
+                        });
                 });
 
             modelBuilder.Entity("CamCare.Domain.CameraType", b =>
@@ -248,6 +257,59 @@ namespace CamCare.Migrations
                         });
                 });
 
+            modelBuilder.Entity("CamCare.Domain.LogisticProvider", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LogisticProviders");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IsActive = true,
+                            IsDefault = true,
+                            Name = "DHL"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IsActive = true,
+                            IsDefault = false,
+                            Name = "Dachser"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IsActive = true,
+                            IsDefault = false,
+                            Name = "DPD"
+                        });
+                });
+
             modelBuilder.Entity("CamCare.Domain.RepairOrder", b =>
                 {
                     b.Property<int>("Id")
@@ -268,6 +330,9 @@ namespace CamCare.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("LogisticProviderId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("RepairOrderStatusId")
                         .HasColumnType("INTEGER");
 
@@ -280,9 +345,32 @@ namespace CamCare.Migrations
 
                     b.HasIndex("CustomerId");
 
+                    b.HasIndex("LogisticProviderId");
+
                     b.HasIndex("RepairOrderStatusId");
 
                     b.ToTable("RepairOrders");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.RepairOrderRepairPosition", b =>
+                {
+                    b.Property<int>("RepairOrderId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RepairPositionsId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RepairPostionId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("RepairOrderId", "RepairPositionsId");
+
+                    b.HasIndex("RepairPositionsId");
+
+                    b.ToTable("RepairOrderRepairPosition");
                 });
 
             modelBuilder.Entity("CamCare.Domain.RepairOrderStatus", b =>
@@ -307,6 +395,12 @@ namespace CamCare.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -330,6 +424,8 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Reparatur wurde von Kunden angemeldet.",
                             FontColor = "rgb(0, 0, 0)",
+                            IsActive = true,
+                            IsDefault = false,
                             Name = "In Anlieferung",
                             Order = 1
                         },
@@ -338,6 +434,8 @@ namespace CamCare.Migrations
                             Id = 2,
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Reparatur ist im Lager eingetroffen.",
+                            IsActive = true,
+                            IsDefault = false,
                             Name = "Eingetroffen",
                             Order = 2
                         },
@@ -346,6 +444,8 @@ namespace CamCare.Migrations
                             Id = 3,
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Reparatur wird von Mitarbeiter begutachtet.",
+                            IsActive = true,
+                            IsDefault = false,
                             Name = "Begutachtung",
                             Order = 3
                         },
@@ -356,6 +456,8 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Begutachtung wurde vom Mitarbeiter abgeschlosen.",
                             FontColor = "rgb(0, 0, 0)",
+                            IsActive = true,
+                            IsDefault = false,
                             Name = "Begutachtung abgeschlossen",
                             Order = 4
                         },
@@ -364,6 +466,8 @@ namespace CamCare.Migrations
                             Id = 5,
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Angebot wurde erstellt.",
+                            IsActive = true,
+                            IsDefault = false,
                             Name = "Angebot erstellt",
                             Order = 5
                         },
@@ -372,6 +476,8 @@ namespace CamCare.Migrations
                             Id = 6,
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Kamera befindet sich in der Reparatur.",
+                            IsActive = true,
+                            IsDefault = false,
                             Name = "Reparatur",
                             Order = 6
                         },
@@ -380,6 +486,8 @@ namespace CamCare.Migrations
                             Id = 7,
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Reparatur kann nicht fortgesetzt werden da Ersatzteile bestellt wurden.",
+                            IsActive = true,
+                            IsDefault = false,
                             Name = "Warte auf Ersatzteile",
                             Order = 7
                         },
@@ -388,6 +496,8 @@ namespace CamCare.Migrations
                             Id = 8,
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Kamera ist fertig repariert.",
+                            IsActive = true,
+                            IsDefault = false,
                             Name = "Reparatur fertig",
                             Order = 8
                         },
@@ -398,6 +508,8 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Kamera wurde versendet.",
                             FontColor = "rgb(0, 0, 0)",
+                            IsActive = true,
+                            IsDefault = false,
                             Name = "Versendet",
                             Order = 9
                         });
@@ -408,6 +520,9 @@ namespace CamCare.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Artikelnummer")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
@@ -437,6 +552,7 @@ namespace CamCare.Migrations
                         new
                         {
                             Id = 2,
+                            Artikelnummer = "01532",
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Objektiv tauschen",
                             SortOrder = 0
@@ -444,6 +560,7 @@ namespace CamCare.Migrations
                         new
                         {
                             Id = 3,
+                            Artikelnummer = "0153215",
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Akku tauschen",
                             SortOrder = 0
@@ -470,21 +587,6 @@ namespace CamCare.Migrations
                     b.HasIndex("RepairOrdersId");
 
                     b.ToTable("DefectiveRepairOrder");
-                });
-
-            modelBuilder.Entity("RepairOrderRepairPosition", b =>
-                {
-                    b.Property<int>("RepairOrdersId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("RepairPositionsId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("RepairOrdersId", "RepairPositionsId");
-
-                    b.HasIndex("RepairPositionsId");
-
-                    b.ToTable("RepairOrderRepairPosition");
                 });
 
             modelBuilder.Entity("CamCare.Domain.Address", b =>
@@ -531,6 +633,10 @@ namespace CamCare.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("CamCare.Domain.LogisticProvider", "LogisticProvider")
+                        .WithMany("RepairOrders")
+                        .HasForeignKey("LogisticProviderId");
+
                     b.HasOne("CamCare.Domain.RepairOrderStatus", "RepairOrderStatus")
                         .WithMany()
                         .HasForeignKey("RepairOrderStatusId")
@@ -541,7 +647,24 @@ namespace CamCare.Migrations
 
                     b.Navigation("Customer");
 
+                    b.Navigation("LogisticProvider");
+
                     b.Navigation("RepairOrderStatus");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.RepairOrderRepairPosition", b =>
+                {
+                    b.HasOne("CamCare.Domain.RepairOrder", null)
+                        .WithMany("RepairOrderRepairPositions")
+                        .HasForeignKey("RepairOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CamCare.Domain.RepairPosition", null)
+                        .WithMany("RepairOrderRepairPositions")
+                        .HasForeignKey("RepairPositionsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DefectiveRepairOrder", b =>
@@ -555,21 +678,6 @@ namespace CamCare.Migrations
                     b.HasOne("CamCare.Domain.RepairOrder", null)
                         .WithMany()
                         .HasForeignKey("RepairOrdersId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("RepairOrderRepairPosition", b =>
-                {
-                    b.HasOne("CamCare.Domain.RepairOrder", null)
-                        .WithMany()
-                        .HasForeignKey("RepairOrdersId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CamCare.Domain.RepairPosition", null)
-                        .WithMany()
-                        .HasForeignKey("RepairPositionsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -589,6 +697,21 @@ namespace CamCare.Migrations
                     b.Navigation("Addresses");
 
                     b.Navigation("Cameras");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.LogisticProvider", b =>
+                {
+                    b.Navigation("RepairOrders");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.RepairOrder", b =>
+                {
+                    b.Navigation("RepairOrderRepairPositions");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.RepairPosition", b =>
+                {
+                    b.Navigation("RepairOrderRepairPositions");
                 });
 #pragma warning restore 612, 618
         }

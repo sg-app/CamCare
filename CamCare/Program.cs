@@ -17,6 +17,9 @@ builder.Services.AddScoped<IRepairOrderStatusService, RepairOrderStatusService>(
 builder.Services.AddScoped<ICameraTypeService, CameraTypeService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ICameraService, CameraService>();
+builder.Services.AddScoped<ILogisticProviderService, LogisticProviderService>();
+builder.Services.AddScoped<IRepairPositionService, RepairPositionService>();
+builder.Services.AddScoped<IDefectiveService, DefectiveService>();
 
 var app = builder.Build();
 

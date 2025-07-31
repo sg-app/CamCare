@@ -14,10 +14,17 @@ namespace CamCare.Persistence
         public DbSet<RepairOrderStatus> RepairOrderStatuses { get; set; }
         public DbSet<RepairOrder> RepairOrders { get; set; }
         public DbSet<RepairPosition> RepairPositions { get; set; }
+        public DbSet<LogisticProvider> LogisticProviders { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<RepairOrder>()
+                .HasMany(e => e.RepairPositions)
+                .WithMany(e => e.RepairOrders)
+                .UsingEntity<RepairOrderRepairPosition>();
+
 
             modelBuilder.Entity<RepairOrderStatus>()
                 .HasData(
@@ -41,12 +48,12 @@ namespace CamCare.Persistence
                 );
 
             modelBuilder.Entity<RepairPosition>()
-               .HasData(
-                   new RepairPosition { Id = 1, Description = "Display tauschen" },
-                   new RepairPosition { Id = 2, Description = "Objektiv tauschen" },
-                   new RepairPosition { Id = 3, Description = "Akku tauschen" },
-                   new RepairPosition { Id = 4, Description = "Gehäuse tauschen" }
-               );
+                .HasData(
+                    new RepairPosition { Id = 1, Description = "Display tauschen" },
+                    new RepairPosition { Id = 2, Artikelnummer = "01532", Description = "Objektiv tauschen" },
+                    new RepairPosition { Id = 3, Artikelnummer = "0153215", Description = "Akku tauschen" },
+                    new RepairPosition { Id = 4, Description = "Gehäuse tauschen" }
+                );
 
             modelBuilder.Entity<CameraType>()
                 .HasData(
@@ -54,6 +61,11 @@ namespace CamCare.Persistence
                     new CameraType { Id = 2, Name = "Mini 3110" },
                     new CameraType { Id = 3, Name = "4540" },
                     new CameraType { Id = 4, Name = "5030" }
+                );
+            
+            modelBuilder.Entity<Camera>()
+                .HasData(
+                    new Camera { SerialNumber = "1234567890", CameraTypeId = 1, CustomerId = "1" }
                 );
 
             modelBuilder.Entity<Customer>()
@@ -66,6 +78,14 @@ namespace CamCare.Persistence
                     new Address { Id = 1, CustomerId = "1", AddressType=AddressType.Billing, Street = "Musterstraße 1", PostalCode = "80331", City = "München", Country = "Deutschland" }
                 );
 
+            modelBuilder.Entity<LogisticProvider>()
+                .HasData(
+                    new LogisticProvider { Id = 1, Name = "DHL", IsDefault = true, IsActive = true },
+                    new LogisticProvider { Id = 2, Name = "Dachser", IsDefault = false, IsActive = true },
+                    new LogisticProvider { Id = 3, Name = "DPD", IsDefault = false, IsActive = true }
+                );
+
+           
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

@@ -1,0 +1,83 @@
+﻿<RadzenRow>
+    <RadzenColumn>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+            <RadzenFormField Text="Kunde wählen">
+                <RadzenDropDown TValue="string"
+                                Value="@Value"
+                                ValueChanged="OnValueChanged"
+                                Data="_customers"
+                                LoadData="OnCustomerLoadData"
+                                Count="_totalCountCustomers"
+                                TextProperty="@nameof(CustomerVm.DisplayName)"
+                                ValueProperty="@nameof(CustomerVm.Id)"
+                                AllowVirtualization="true"
+                                AllowClear="true"
+                                AllowFiltering="true"
+                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                FilterOperator="StringFilterOperator.Contains"
+                                Style="width:500px" />
+            </RadzenFormField>
+            <InsertIconButton Class="mt-2" Size="ButtonSize.Medium" />
+        </RadzenStack>
+    </RadzenColumn>
+    <RadzenColumn>
+        @if (_selectedCustomer is not null)
+        {
+            <AddressInfo Address="@BillingAddress" />
+            <AddressInfo Address="@ShippingAddress" />
+            <RadzenRow>
+                <RadzenColumn>
+                    <RadzenText>Email</RadzenText>
+                </RadzenColumn>
+                <RadzenColumn>
+                    <RadzenText>@_selectedCustomer.Email</RadzenText>
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn>
+                    <RadzenText>Telefonnummer</RadzenText>
+                </RadzenColumn>
+                <RadzenColumn>
+                    <RadzenText>@_selectedCustomer.PhoneNumber</RadzenText>
+                </RadzenColumn>
+            </RadzenRow>
+        }
+    </RadzenColumn>
+</RadzenRow>
+
+
+@code {
+    [Inject] protected ICustomerService CustomerService { get; set; } = default!;
+    [Inject] protected ILogger<CustomerAssign> Logger { get; set; } = default!;
+
+    [Parameter] public string Value { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    private IEnumerable<CustomerVm>? _customers;
+    private int _totalCountCustomers;
+    private CustomerVm? _selectedCustomer;
+    private AddressVm? ShippingAddress => _selectedCustomer?.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Shipping);
+    private AddressVm? BillingAddress => _selectedCustomer?.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Billing);
+
+    private async Task OnCustomerLoadData(LoadDataArgs args)
+    {
+        ServiceResponse<Paginated<CustomerVm>> response;
+
+        if (string.IsNullOrEmpty(args.Filter))
+            response = await CustomerService.GetAllAsync(args);
+        else
+            response = await CustomerService.GetAllAsync(args, x => x.Id.Contains(args.Filter) || x.CompanyName!.Contains(args.Filter) || x.FirstName!.Contains(args.Filter) || x.LastName!.Contains(args.Filter));
+
+        if (response.Success)
+        {
+            _customers = response.Data?.Items;
+            _totalCountCustomers = response.Data?.TotalCount ?? 0;
+        }
+    }
+    private async Task OnValueChanged(string customerId)
+    {
+        Value = customerId;
+        await ValueChanged.InvokeAsync(customerId);
+        _selectedCustomer = _customers?.FirstOrDefault(c => c.Id == customerId);
+    }
+}

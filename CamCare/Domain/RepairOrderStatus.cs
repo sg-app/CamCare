@@ -18,6 +18,8 @@ namespace CamCare.Domain
         public string? BackgroundColor { get; set; }
         [MaxLength(30)]
         public string? FontColor { get; set; }
+        public bool IsActive { get; set; } = true;
+        public bool IsDefault { get; set; } = false;
 
 
 
