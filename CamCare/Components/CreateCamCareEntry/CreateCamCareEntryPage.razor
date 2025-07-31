@@ -1,13 +1,16 @@
 ﻿@page "/CreateCamCareEntryPage"
 <RadzenTemplateForm Data="_repairOrder" TItem="RepairOrderVm" Submit="OnSubmit">
+    <FluentValidationValidator @ref="_fluentValidationValidator" />
     <RadzenFieldset Text="Kunde">
         <CustomerAssign @bind-Value="_repairOrder.CustomerId" />
+        <ValidationMessage For="@(() => _repairOrder.CustomerId)" />
     </RadzenFieldset>
 
     @if (!string.IsNullOrEmpty(_repairOrder.CustomerId))
     {
         <RadzenFieldset Text="Kamera">
             <CameraAssign CustomerId="@_repairOrder.CustomerId" @bind-Value="_repairOrder.CameraSerialNumber" />
+            <ValidationMessage For="@(() => _repairOrder.CameraSerialNumber)" />
         </RadzenFieldset>
     }
 
@@ -48,6 +51,7 @@
 
         </RadzenFieldset>
     }
+    <FormButtons />
 </RadzenTemplateForm>
 
 @code {
@@ -55,6 +59,7 @@
     [Inject] protected ILogger<CreateCamCareEntryPage> Logger { get; set; } = default!;
 
     private RepairOrderVm _repairOrder = new() { ShippingMethod = ShippingMethod.SentByCustomer };
+    private FluentValidationValidator _fluentValidationValidator = default!;
 
     private IEnumerable<RepairOrderStatusVm>? _repairOrderStatusData;
     private int _totalCountRepairOrderStatus;
@@ -65,8 +70,6 @@
     private RadzenDataGrid<DefectiveVm> _grid = default!;
     private CancellationTokenSource? _defectiveChangedCts;
     private object? _lastDefectiveChangedValue;
-
-
 
     protected override Task OnInitializedAsync()
     {
@@ -91,12 +94,15 @@
         }
     }
 
-    
-
-    private void OnSubmit(RepairOrderVm item)
+    private async Task OnSubmit(RepairOrderVm item)
     {
+        var isValid = await _fluentValidationValidator!.ValidateAsync();
+        if (isValid)
+        {
 
+        }
     }
+
     private async Task OnDeleteDefectiveRow(DefectiveVm item)
     {
         _repairOrder.Defectives!.Remove(item);
