@@ -19,6 +19,7 @@ namespace CamCare.Models
         public CustomerVm? Customer { get; set; }
         public CameraVm? Camera { get; set; }
         public RepairOrderStatusVm? RepairOrderStatus { get; set; }
+        public LogisticProviderVm? LogisticProvider { get; set; }
         public ICollection<DefectiveVm>? Defectives { get; set; }
         public ICollection<RepairPositionVm>? RepairPositions { get; set; }
 

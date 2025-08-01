@@ -178,6 +178,7 @@ namespace CamCare.Migrations
                     CustomerId = table.Column<string>(type: "TEXT", nullable: false),
                     CameraSerialNumber = table.Column<string>(type: "TEXT", nullable: false),
                     RepairOrderStatusId = table.Column<int>(type: "INTEGER", nullable: false),
+                    ShippingMethod = table.Column<int>(type: "INTEGER", nullable: false),
                     LogisticProviderId = table.Column<int>(type: "INTEGER", nullable: true),
                     ArrivedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
@@ -240,13 +241,13 @@ namespace CamCare.Migrations
                 columns: table => new
                 {
                     RepairOrderId = table.Column<int>(type: "INTEGER", nullable: false),
-                    RepairPositionsId = table.Column<int>(type: "INTEGER", nullable: false),
+                    RepairPositionId = table.Column<int>(type: "INTEGER", nullable: false),
                     RepairPostionId = table.Column<int>(type: "INTEGER", nullable: false),
                     Quantity = table.Column<decimal>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RepairOrderRepairPosition", x => new { x.RepairOrderId, x.RepairPositionsId });
+                    table.PrimaryKey("PK_RepairOrderRepairPosition", x => new { x.RepairOrderId, x.RepairPositionId });
                     table.ForeignKey(
                         name: "FK_RepairOrderRepairPosition_RepairOrders_RepairOrderId",
                         column: x => x.RepairOrderId,
@@ -254,8 +255,8 @@ namespace CamCare.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_RepairOrderRepairPosition_RepairPositions_RepairPositionsId",
-                        column: x => x.RepairPositionsId,
+                        name: "FK_RepairOrderRepairPosition_RepairPositions_RepairPositionId",
+                        column: x => x.RepairPositionId,
                         principalTable: "RepairPositions",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -356,9 +357,9 @@ namespace CamCare.Migrations
                 column: "RepairOrdersId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RepairOrderRepairPosition_RepairPositionsId",
+                name: "IX_RepairOrderRepairPosition_RepairPositionId",
                 table: "RepairOrderRepairPosition",
-                column: "RepairPositionsId");
+                column: "RepairPositionId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RepairOrders_CameraSerialNumber",

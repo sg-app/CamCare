@@ -42,8 +42,6 @@ namespace CamCare.Services
                     a.City = vm.City;
                     a.State = vm.State;
                     a.Country = vm.Country;
-                    a.CreatedAt = vm.CreatedAt;
-                    a.UpdatedAt = vm.UpdatedAt;
                     break;
                 case Customer c when destination is CustomerVm cvm:
                     cvm.Id = c.Id;
@@ -66,8 +64,6 @@ namespace CamCare.Services
                     c.LastName = cvm.LastName;
                     c.Email = cvm.Email;
                     c.PhoneNumber = cvm.PhoneNumber;
-                    c.CreatedAt = cvm.CreatedAt;
-                    c.UpdatedAt = cvm.UpdatedAt;
                     if (cvm.Addresses != null)
                         c.Addresses = cvm.Addresses.Select(Map<AddressVm, Address>).ToList();
                     if (cvm.Cameras != null)
@@ -81,8 +77,6 @@ namespace CamCare.Services
                     camVm.UpdatedAt = cam.UpdatedAt;
                     if (cam.CameraType != null)
                         camVm.CameraType = Map<CameraType, CameraTypeVm>(cam.CameraType);
-                    if (cam.RepairOrders != null)
-                        camVm.RepairOrders = cam.RepairOrders.Select(Map<RepairOrder, RepairOrderVm>).ToList();
                     break;
                 case CameraVm camVm when destination is Camera cam:
                     cam.SerialNumber = camVm.SerialNumber;
@@ -96,32 +90,60 @@ namespace CamCare.Services
                 case RepairOrder ro when destination is RepairOrderVm rovm:
                     rovm.Id = ro.Id;
                     rovm.CameraSerialNumber = ro.CameraSerialNumber;
+                    rovm.CustomerId = ro.CustomerId;
+                    rovm.LogisticProviderId = ro.LogisticProviderId;
                     rovm.RepairOrderStatusId = ro.RepairOrderStatusId;
+                    rovm.ShippingMethod = ro.ShippingMethod;
                     rovm.ArrivedAt = ro.ArrivedAt;
                     rovm.CreatedAt = ro.CreatedAt;
                     rovm.UpdatedAt = ro.UpdatedAt;
+                    if (ro.Customer != null)
+                        rovm.Customer = Map<Customer, CustomerVm>(ro.Customer);
                     if (ro.Camera != null)
                         rovm.Camera = Map<Camera, CameraVm>(ro.Camera);
                     if (ro.RepairOrderStatus != null)
                         rovm.RepairOrderStatus = Map<RepairOrderStatus, RepairOrderStatusVm>(ro.RepairOrderStatus);
-                    if (ro.RepairPositions != null)
-                        rovm.RepairPositions = ro.RepairPositions.Select(Map<RepairPosition, RepairPositionVm>).ToList();
+                    if (ro.LogisticProvider != null)
+                        rovm.LogisticProvider = Map<LogisticProvider, LogisticProviderVm>(ro.LogisticProvider);
                     if (ro.Defectives != null)
                         rovm.Defectives = ro.Defectives.Select(Map<Defective, DefectiveVm>).ToList();
+                    if (ro.RepairPositions != null)
+                        rovm.RepairPositions = ro.RepairOrderRepairPositions.Select(Map<RepairOrderRepairPosition, RepairPositionVm>).ToList();
                     break;
                 case RepairOrderVm rovm when destination is RepairOrder ro:
                     ro.Id = rovm.Id;
+                    ro.CustomerId = rovm.CustomerId;
                     ro.CameraSerialNumber = rovm.CameraSerialNumber;
                     ro.RepairOrderStatusId = rovm.RepairOrderStatusId;
+                    ro.ShippingMethod = rovm.ShippingMethod;
+                    ro.LogisticProviderId = rovm.LogisticProviderId;
                     ro.ArrivedAt = rovm.ArrivedAt;
                     ro.CreatedAt = rovm.CreatedAt;
                     ro.UpdatedAt = rovm.UpdatedAt;
-                    if (rovm.Camera != null)
-                        ro.Camera = Map<CameraVm, Camera>(rovm.Camera);
-                    if (rovm.RepairPositions != null)
-                        ro.RepairPositions = rovm.RepairPositions.Select(Map<RepairPositionVm, RepairPosition>).ToList();
-                    if (rovm.Defectives != null)
-                        ro.Defectives = rovm.Defectives.Select(Map<DefectiveVm, Defective>).ToList();
+                    //if (rovm.Camera != null)
+                    //    ro.Camera = Map<CameraVm, Camera>(rovm.Camera);
+                    //if (rovm.RepairPositions != null)
+                    //    ro.RepairPositions = rovm.RepairPositions.Select(Map<RepairPositionVm, RepairPosition>).ToList();
+                    //if (rovm.Defectives != null)
+                    //    ro.Defectives = rovm.Defectives.Select(Map<DefectiveVm, Defective>).ToList();
+                    break;
+                case RepairOrderRepairPosition rorp when destination is RepairPositionVm rpvm:
+                    rpvm.Id = rorp.RepairPostionId;
+                    rpvm.Artikelnummer = rorp.RepairPosition.Artikelnummer;
+                    rpvm.Description = rorp.RepairPosition.Description;
+                    rpvm.SortOrder = rorp.RepairPosition.SortOrder;
+                    rpvm.Quantity = rorp.Quantity;
+                    rpvm.CreatedAt = rorp.RepairPosition.CreatedAt;
+                    rpvm.UpdatedAt = rorp.RepairPosition.UpdatedAt;
+                    break;
+                case RepairPositionVm rpvm when destination is RepairPosition rp:
+                    rp.Id = rpvm.Id;
+                    rp.Description = rpvm.Description;
+                    rp.SortOrder = rpvm.SortOrder;
+                    rp.CreatedAt = rpvm.CreatedAt;
+                    rp.UpdatedAt = rpvm.UpdatedAt;
+                    if (rpvm.RepairOrders != null)
+                        rp.RepairOrders = rpvm.RepairOrders.Select(Map<RepairOrderVm, RepairOrder>).ToList();
                     break;
                 case RepairPosition rp when destination is RepairPositionVm rpvm:
                     rpvm.Id = rp.Id;

@@ -1,5 +1,6 @@
-﻿@page "/CreateCamCareEntryPage"
-<RadzenTemplateForm Data="_repairOrder" TItem="RepairOrderVm" Submit="OnSubmit">
+﻿@page "/RepairOrderEditorPage"
+@page "/RepairOrderEditorPage/{RepairOrderId:int}"
+<RadzenTemplateForm Data="_repairOrder" TItem="RepairOrderVm">
     <FluentValidationValidator @ref="_fluentValidationValidator" />
     <RadzenFieldset Text="Kunde">
         <CustomerAssign @bind-Value="_repairOrder.CustomerId" />
@@ -14,7 +15,7 @@
         </RadzenFieldset>
     }
 
-    @if (!string.IsNullOrEmpty(_repairOrder.CameraSerialNumber))
+    @if (!string.IsNullOrEmpty(_repairOrder.CustomerId) && !string.IsNullOrEmpty(_repairOrder.CameraSerialNumber))
     {
         <RadzenFieldset Text="Beschreibung">
             <RadzenFormField Text="Status">
@@ -51,12 +52,16 @@
 
         </RadzenFieldset>
     }
-    <FormButtons />
 </RadzenTemplateForm>
+<FormButtons SaveClick="OnSaveClicked" CancelClick="OnCancelClicked"/>
 
 @code {
+    [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
     [Inject] protected IRepairOrderStatusService RepairOrderStatusService { get; set; } = default!;
-    [Inject] protected ILogger<CreateCamCareEntryPage> Logger { get; set; } = default!;
+    [Inject] protected ILogger<RepairOrderEditorPage> Logger { get; set; } = default!;
+    [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
+
+    [Parameter] public int RepairOrderId { get; set; }
 
     private RepairOrderVm _repairOrder = new() { ShippingMethod = ShippingMethod.SentByCustomer };
     private FluentValidationValidator _fluentValidationValidator = default!;
@@ -76,6 +81,17 @@
         return base.OnInitializedAsync();
     }
 
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        if(RepairOrderId > 0)
+        {
+            var response = await RepairOrderService.GetByIdAsync(RepairOrderId);
+            if (response.Success)
+                _repairOrder = response.Data ?? new() { ShippingMethod = ShippingMethod.SentByCustomer };
+        }
+    }
+
     private async Task OnLoadRepairOrderStatus(LoadDataArgs args)
     {
         ServiceResponse<Paginated<RepairOrderStatusVm>> response;
@@ -93,14 +109,20 @@
             }
         }
     }
-
-    private async Task OnSubmit(RepairOrderVm item)
+    private async Task OnSaveClicked(MouseEventArgs args)
     {
         var isValid = await _fluentValidationValidator!.ValidateAsync();
-        if (isValid)
+        if (isValid && _repairOrder.Id == 0)
         {
-
+            var response = await RepairOrderService.CreateAsync(_repairOrder);
+            if (response.Success)
+                _repairOrder = response.Data!;
         }
+        else if(isValid)
+        {
+            await RepairOrderService.UpdateAsync(_repairOrder.Id, _repairOrder);
+        }
+        NavigationManager.NavigateTo("/RepairOrderPage");
     }
 
     private async Task OnDeleteDefectiveRow(DefectiveVm item)
@@ -109,4 +131,8 @@
         await _grid.Reload();
     }
 
+    private void OnCancelClicked(MouseEventArgs args)
+    {
+        NavigationManager.NavigateTo("/RepairOrderPage");
+    }
 }

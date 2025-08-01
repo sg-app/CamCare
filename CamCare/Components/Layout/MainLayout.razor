@@ -10,13 +10,14 @@
     <RadzenSidebar @bind-Expanded="@sidebar1Expanded">
         <RadzenPanelMenu>
             <RadzenPanelMenuItem Text="Home" Icon="home" Path="/" />
+            <RadzenPanelMenuItem Text="Übersicht" Icon="home" Path="RepairOrderPage" />
             <RadzenPanelMenuItem Text="Stammdaten" Icon="home">
                 <RadzenPanelMenuItem Text="Kunden" Icon="account_box" Path="CustomerPage" />
                 <RadzenPanelMenuItem Text="Status" Icon="account_box" Path="RepairOrderStatusPage" />
                 <RadzenPanelMenuItem Text="Kameratypen" Icon="account_box" Path="CameraTypePage" />
                 <RadzenPanelMenuItem Text="Logistikpartner" Icon="account_box" Path="LogisticProviderPage" />
             </RadzenPanelMenuItem>
-            <RadzenPanelMenuItem Text="Erstellen" Icon="account_box" Path="CreateCamCareEntryPage" />
+            @* <RadzenPanelMenuItem Text="Erstellen" Icon="account_box" Path="CreateCamCareEntryPage" /> *@
         </RadzenPanelMenu>
         <div class="rz-p-4">
             Sidebar
