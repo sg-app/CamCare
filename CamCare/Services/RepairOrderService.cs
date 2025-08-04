@@ -17,7 +17,7 @@ namespace CamCare.Services
         {
         }
 
-        public override async Task<ServiceResponse<Paginated<RepairOrderVm>>> GetAllAsync(LoadDataArgs args, Expression<Func<RepairOrder, bool>>? predicate = null)
+        public async Task<ServiceResponse<Paginated<RepairOrderVm>>> GetAllAsync(LoadDataArgs args, bool viewCurrentOrders, Expression<Func<RepairOrder, bool>>? predicate = null)
         {
             using var context = _contextFactory.CreateDbContext();
             var query = context.RepairOrders
@@ -39,17 +39,19 @@ namespace CamCare.Services
             {
                 query = query.Take(args.Top.Value);
             }
-            var items = await query
+            query = query
                 .Include(i => i.Customer)
                 .Include(i => i.Camera)
                 .Include(i => i.RepairOrderStatus)
                 .Include(i => i.LogisticProvider)
                 .Include(i => i.Defectives)
                 .Include(i => i.RepairOrderRepairPositions)
-                    .ThenInclude(rp => rp.RepairPosition)
-                .ToListAsync();
+                    .ThenInclude(rp => rp.RepairPosition);
 
-            //var items = await query.ToListAsync();
+            if (viewCurrentOrders)
+                query = query.Where(f => !f.RepairOrderStatus.IsOrderClose);
+
+            var items = await query.ToListAsync();
 
             var vms = items.Select(_mapper.Map<RepairOrder, RepairOrderVm>).ToList();
             var paginated = new Paginated<RepairOrderVm>

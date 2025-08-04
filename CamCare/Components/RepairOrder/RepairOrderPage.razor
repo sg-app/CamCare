@@ -1,6 +1,11 @@
 ﻿@page "/RepairOrderPage"
 
+<div class="pe-2">
+    <RadzenCheckBox TValue="bool" Value="_archiveOrders" ValueChanged="@((val)=>{_archiveOrders = val; _grid.Reload();})" Name="_archiveOrders" />
+    <RadzenLabel Text="Archivierte Aufträge" Component="_archiveOrders" class="rz-ms-2" />
+</div>
 <InsertButton InsertClick="OnInsertClicked" />
+
 <RadzenDataGrid @ref="_grid"
                 TItem="RepairOrderVm"
                 Data="_data"
@@ -40,7 +45,7 @@
                 @item.LogisticProvider?.Name
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eingetroffen" Width="150px">
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eingetroffen" Property="@nameof(RepairOrderVm.ArrivedAt)" Width="150px" SortOrder="SortOrder.Descending" >
             <Template Context="item">
                 @item.ArrivedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
             </Template>
@@ -77,10 +82,12 @@
     private IList<RepairOrderVm>? _data;
     private int _totalCount;
     private bool _isLoading;
+    private bool _archiveOrders;
+
     private async Task OnLoadData(LoadDataArgs args)
     {
         _isLoading = true;
-        var response = await RepairOrderService.GetAllAsync(args);
+        var response = await RepairOrderService.GetAllAsync(args, !_archiveOrders);
         if (response.Success)
         {
             _data = response.Data?.Items.ToList();
