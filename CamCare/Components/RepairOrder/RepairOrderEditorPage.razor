@@ -19,6 +19,9 @@
     @if (!string.IsNullOrEmpty(_repairOrder.CustomerId) && !string.IsNullOrEmpty(_repairOrder.CameraSerialNumber))
     {
         <RadzenFieldset Text="Beschreibung">
+            <RadzenFormField class="d-block" Text="Eingetroffen">
+                <RadzenDatePicker @bind-Value="_repairOrder.ArrivedAt" ShowTime="true" />
+            </RadzenFormField>
             <RadzenFormField Text="Status">
                 <RadzenDropDown @bind-Value="_repairOrder.RepairOrderStatusId"
                                 Data="_repairOrderStatusData"
@@ -54,7 +57,7 @@
         </RadzenFieldset>
     }
 </RadzenTemplateForm>
-<FormButtons SaveClick="OnSaveClicked" CancelClick="OnCancelClicked"/>
+<FormButtons SaveClick="OnSaveClicked" CancelClick="OnCancelClicked" />
 
 @code {
     [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
@@ -85,11 +88,11 @@
     protected override async Task OnParametersSetAsync()
     {
         await base.OnParametersSetAsync();
-        if(RepairOrderId > 0)
+        if (RepairOrderId > 0)
         {
             var response = await RepairOrderService.GetByIdAsync(RepairOrderId);
             if (response.Success)
-                _repairOrder = response.Data ?? new() { ShippingMethod = ShippingMethod.SentByCustomer };
+                _repairOrder = response.Data ?? new() { ShippingMethod = ShippingMethod.SentByCustomer, ArrivedAt = DateTime.UtcNow };
         }
     }
 
@@ -119,7 +122,7 @@
             if (response.Success)
                 _repairOrder = response.Data!;
         }
-        else if(isValid)
+        else if (isValid)
         {
             await RepairOrderService.UpdateAsync(_repairOrder.Id, _repairOrder);
         }
