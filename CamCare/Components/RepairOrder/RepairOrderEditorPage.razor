@@ -2,6 +2,7 @@
 @page "/RepairOrderEditorPage/{RepairOrderId:int}"
 <RadzenTemplateForm Data="_repairOrder" TItem="RepairOrderVm">
     <FluentValidationValidator @ref="_fluentValidationValidator" />
+
     <RadzenFieldset Text="Kunde">
         <CustomerAssign @bind-Value="_repairOrder.CustomerId" />
         <ValidationMessage For="@(() => _repairOrder.CustomerId)" />

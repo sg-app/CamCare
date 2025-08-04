@@ -2,6 +2,7 @@ using CamCare.Components;
 using CamCare.Interfaces.Services;
 using CamCare.Persistence;
 using CamCare.Services;
+using FluentValidation;
 using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +12,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddRadzenComponents();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddPersistence();
 builder.Services.AddSingleton<IMapper, Mapper>();
 builder.Services.AddScoped<IRepairOrderStatusService, RepairOrderStatusService>();

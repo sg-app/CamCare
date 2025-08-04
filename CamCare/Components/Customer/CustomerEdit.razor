@@ -1,0 +1,120 @@
+﻿@if (Value is not null)
+{
+    <RadzenTemplateForm TItem="CustomerVm" Data="Value" Submit="OnSubmit">
+        <ChildContent>
+            <FluentValidationValidator />
+            <RadzenStack Orientation="Orientation.Vertical" Gap="0rem">
+                <RadzenFormField Text="Kundennummer" Style="width: 400px">
+                    <RadzenTextBox @bind-Value="Value.Id" />
+                </RadzenFormField>
+                <ValidationMessage For="@(() => Value.Id)" />
+                <RadzenFormField Text="Firma" Style="width: 400px">
+                    <RadzenTextBox @bind-Value="Value.CompanyName" />
+                </RadzenFormField>
+                <ValidationMessage For="@(() => Value.CompanyName)" />
+                <div class="d-flex">
+                    <div class="flex-column">
+                        <RadzenFormField Text="Vorname" Style="width: 400px">
+                            <RadzenTextBox @bind-Value="Value.FirstName" />
+                        </RadzenFormField>
+                        <ValidationMessage For="@(() => Value.FirstName)" />
+                    </div>
+                    <div class="flex-column ps-2">
+                        <RadzenFormField Text="Nachname" Style="width: 400px">
+                            <RadzenTextBox @bind-Value="Value.LastName" />
+                        </RadzenFormField>
+                        <ValidationMessage For="@(() => Value.LastName)" />
+                    </div>
+                </div>
+                <div class="d-flex">
+                    <div class="flex-column">
+                        <RadzenFormField Text="E-Mail" Style="width: 400px">
+                            <RadzenTextBox @bind-Value="Value.Email" />
+                        </RadzenFormField>
+                        <ValidationMessage For="@(() => Value.Email)" />
+                    </div>
+                    <div class="flex-column ps-2">
+                        <RadzenFormField Text="Telefonnummer" Style="width: 400px">
+                            <RadzenTextBox @bind-Value="Value.PhoneNumber" />
+                        </RadzenFormField>
+                        <ValidationMessage For="@(() => Value.PhoneNumber)" />
+                    </div>
+                </div>
+                <RadzenRow>
+                    <RadzenColumn>
+                        @{
+                            var billingAddress = Value.Addresses!.FirstOrDefault(a => a.AddressType == AddressType.Billing);
+                        }
+                        @if (billingAddress is null)
+                        {
+                            <InsertButton Text="Rechnungsadresse einfügen" InsertClick="@(() => Value.Addresses!.Add(new AddressVm { AddressType = AddressType.Billing }))" />
+                        }
+                        else
+                        {
+                            <AddressEdit @bind-Value="billingAddress" />
+                        }
+                    </RadzenColumn>
+                    <RadzenColumn>
+                        @{
+                            var shippingAddress = Value.Addresses!.FirstOrDefault(a => a.AddressType == AddressType.Shipping);
+                        }
+                        @if (shippingAddress is null)
+                        {
+                            <InsertButton Text="Lieferadresse einfügen" InsertClick="@(() => Value.Addresses!.Add(new AddressVm { AddressType = AddressType.Shipping }))" />
+                        }
+                        else
+                        {
+                            <AddressEdit @bind-Value="shippingAddress" />
+                        }
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenStack>
+            <FormButtons Class="pt-2" CancelClick="OnCancelClicked" />
+        </ChildContent>
+    </RadzenTemplateForm>
+}
+
+@code {
+    [Inject] protected ICustomerService CustomerService { get; set; } = default!;
+
+    [Parameter] public CustomerVm? Value { get; set; }
+    [Parameter] public EventCallback<CustomerVm> ValueChanged { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> CancelEdit { get; set; }
+    [Parameter] public string? CustomerId { get; set; }
+    private bool IsEdit => !string.IsNullOrEmpty(CustomerId);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if (IsEdit)
+        {
+            var response = await CustomerService.GetByIdAsync(CustomerId!);
+            if (response.Success)
+            {
+                Value = response.Data;
+            }
+        }
+        Value ??= new CustomerVm { };
+        Value.Addresses ??= [];
+    }
+
+    private async Task OnCancelClicked(MouseEventArgs args)
+    {
+        await CancelEdit.InvokeAsync(args);
+    }
+
+    private async Task OnSubmit(CustomerVm item)
+    {
+        ServiceResponse<CustomerVm> response;
+        if (IsEdit)
+            response = await CustomerService.UpdateAsync(item.Id, item);
+        else
+            response = await CustomerService.CreateAsync(item);
+
+        if (response.Success)
+        {
+            await ValueChanged.InvokeAsync(response.Data);
+        }
+    }
+}

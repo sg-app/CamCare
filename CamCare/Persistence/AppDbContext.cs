@@ -28,7 +28,7 @@ namespace CamCare.Persistence
 
             modelBuilder.Entity<RepairOrderStatus>()
                 .HasData(
-                    new RepairOrderStatus { Id = 1, Order = 1, Name = "In Anlieferung", Description = "Reparatur wurde von Kunden angemeldet.", BackgroundColor = "rgb(206, 206, 206)", FontColor = "rgb(0, 0, 0)" },
+                    new RepairOrderStatus { Id = 1, Order = 1, Name = "In Anlieferung", Description = "Reparatur wurde von Kunden angemeldet.", BackgroundColor = "rgb(206, 206, 206)", FontColor = "rgb(0, 0, 0)", IsDefault = true },
                     new RepairOrderStatus { Id = 2, Order = 2, Name = "Eingetroffen", Description = "Reparatur ist im Lager eingetroffen." },
                     new RepairOrderStatus { Id = 3, Order = 3, Name = "Begutachtung", Description = "Reparatur wird von Mitarbeiter begutachtet." },
                     new RepairOrderStatus { Id = 4, Order = 4, Name = "Begutachtung abgeschlossen", Description = "Begutachtung wurde vom Mitarbeiter abgeschlosen.", BackgroundColor = "rgb(76, 170, 232)", FontColor = "rgb(0, 0, 0)" },

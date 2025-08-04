@@ -44,7 +44,11 @@
         }
     </RadzenColumn>
 </RadzenRow>
-
+<InsertIconButton Class="mt-2" Size="ButtonSize.Medium" Click="@(() => _createCustomer = true)" />
+@if (_createCustomer)
+{
+    <CustomerEdit CustomerId="@_selectedCustomer?.Id" ValueChanged="OnCustomerCreated" CancelEdit="()=>_createCustomer = false" />
+}
 
 @code {
     [Inject] protected ICustomerService CustomerService { get; set; } = default!;
@@ -58,6 +62,8 @@
     private CustomerVm? _selectedCustomer;
     private AddressVm? ShippingAddress => _selectedCustomer?.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Shipping);
     private AddressVm? BillingAddress => _selectedCustomer?.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Billing);
+    private bool _createCustomer;
+
 
     private async Task OnCustomerLoadData(LoadDataArgs args)
     {
@@ -74,10 +80,19 @@
             _totalCountCustomers = response.Data?.TotalCount ?? 0;
         }
     }
+
     private async Task OnValueChanged(string customerId)
     {
         Value = customerId;
         await ValueChanged.InvokeAsync(customerId);
         _selectedCustomer = _customers?.FirstOrDefault(c => c.Id == customerId);
+    }
+
+    private async Task OnCustomerCreated(CustomerVm args)
+    {
+        await OnCustomerLoadData(new LoadDataArgs { Filter = args.Id });
+        var customerId = _customers?.FirstOrDefault(x => x.Id == args.Id)?.Id ?? string.Empty;
+        _createCustomer = false;
+        await OnValueChanged(customerId);
     }
 }

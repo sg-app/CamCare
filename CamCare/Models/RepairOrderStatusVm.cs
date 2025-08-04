@@ -21,6 +21,7 @@ namespace CamCare.Models
         public string? FontColor { get; set; }
         public bool IsActive { get; set; } = true;
         public bool IsDefault { get; set; } = false;
+        public bool IsOrderClose { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 

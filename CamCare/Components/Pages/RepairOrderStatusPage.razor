@@ -66,6 +66,14 @@
                 <RadzenCheckBox @bind-Value="item.IsActive" />
             </EditTemplate>
         </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.IsOrderClose)" Title="Abschluss" Width="80px">
+            <Template Context="item">
+                <RadzenIcon Icon="@(item.IsOrderClose ? "check_circle" : "circle")" />
+            </Template>
+            <EditTemplate Context="item">
+                <RadzenCheckBox @bind-Value="item.IsOrderClose" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
         <RadzenDataGridInlineEditColumn TItem="RepairOrderStatusVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
     </Columns>
 </RadzenDataGrid>

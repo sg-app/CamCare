@@ -10,12 +10,13 @@
     <RadzenSidebar @bind-Expanded="@sidebar1Expanded">
         <RadzenPanelMenu>
             <RadzenPanelMenuItem Text="Home" Icon="home" Path="/" />
-            <RadzenPanelMenuItem Text="Übersicht" Icon="home" Path="RepairOrderPage" />
-            <RadzenPanelMenuItem Text="Stammdaten" Icon="home">
-                <RadzenPanelMenuItem Text="Kunden" Icon="account_box" Path="CustomerPage" />
-                <RadzenPanelMenuItem Text="Status" Icon="account_box" Path="RepairOrderStatusPage" />
-                <RadzenPanelMenuItem Text="Kameratypen" Icon="account_box" Path="CameraTypePage" />
-                <RadzenPanelMenuItem Text="Logistikpartner" Icon="account_box" Path="LogisticProviderPage" />
+            <RadzenPanelMenuItem Text="Aufträge" Icon="order_approve" Path="RepairOrderPage" />
+            <RadzenPanelMenuItem Text="Stammdaten" Icon="database">
+                <RadzenPanelMenuItem Text="Kunden" Icon="group" Path="CustomerPage" />
+                <RadzenPanelMenuItem Text="Kameras" Icon="video_camera_back" Path="CameraPage" />
+                <RadzenPanelMenuItem Text="Status" Icon="sweep" Path="RepairOrderStatusPage" />
+                <RadzenPanelMenuItem Text="Kameratypen" Icon="flip_camera_ios" Path="CameraTypePage" />
+                <RadzenPanelMenuItem Text="Logistikpartner" Icon="delivery_truck_speed" Path="LogisticProviderPage" />
             </RadzenPanelMenuItem>
             @* <RadzenPanelMenuItem Text="Erstellen" Icon="account_box" Path="CreateCamCareEntryPage" /> *@
         </RadzenPanelMenu>

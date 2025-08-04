@@ -1,0 +1,39 @@
+﻿<RadzenText>@Value.AddressType.GetDisplayDescription()</RadzenText>
+<RadzenStack Orientation="Orientation.Vertical" Gap="0rem">
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem">
+        <RadzenFormField Text="Straße" Style="width: 400px">
+            <RadzenTextBox @bind-Value="Value.Street" />
+        </RadzenFormField>
+        <ValidationMessage For="@(() => Value.Street)" />
+        <RadzenFormField Text="Hausnummer" Style="width: 150px">
+            <RadzenTextBox @bind-Value="Value.HouseNumber" />
+        </RadzenFormField>
+        <ValidationMessage For="@(() => Value.HouseNumber)" />
+    </RadzenStack>
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem">
+        <RadzenFormField Text="PLZ" Style="width: 150px">
+            <RadzenTextBox @bind-Value="Value.PostalCode" />
+        </RadzenFormField>
+        <ValidationMessage For="@(() => Value.PostalCode)" />
+        <RadzenFormField Text="Ort" Style="width: 150px">
+            <RadzenTextBox @bind-Value="Value.City" />
+        </RadzenFormField>
+        <ValidationMessage For="@(() => Value.City)" />
+    </RadzenStack>
+    <RadzenFormField Text="Land" Style="width: 400px">
+        <RadzenTextBox @bind-Value="Value.Country" />
+    </RadzenFormField>
+    <ValidationMessage For="@(() => Value.Country)" />
+</RadzenStack>
+
+@code {
+    [Parameter] public AddressVm Value { get; set; }
+    [Parameter] public EventCallback<AddressVm> ValueChanged { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        if (string.IsNullOrEmpty(Value.Country))
+            Value.Country = "Deutschland";
+    }
+}

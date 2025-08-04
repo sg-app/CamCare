@@ -6,6 +6,7 @@ namespace CamCare.Models
 {
     public class CustomerVm
     {
+        [MinLength(2)]
         public string Id { get; set; } = string.Empty;
         [MaxLength(200)]
         public string? CompanyName { get; set; }

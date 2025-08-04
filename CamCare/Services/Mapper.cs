@@ -190,6 +190,7 @@ namespace CamCare.Services
                     rosvm.FontColor = ros.FontColor;
                     rosvm.IsActive = ros.IsActive;
                     rosvm.IsDefault = ros.IsDefault;
+                    rosvm.IsOrderClose = ros.IsOrderClose;
                     rosvm.CreatedAt = ros.CreatedAt;
                     rosvm.UpdatedAt = ros.UpdatedAt;
                     break;
@@ -202,6 +203,7 @@ namespace CamCare.Services
                     ros.FontColor = rosvm.FontColor;
                     ros.IsActive = rosvm.IsActive;
                     ros.IsDefault = rosvm.IsDefault;
+                    ros.IsOrderClose = rosvm.IsOrderClose;
                     ros.CreatedAt = rosvm.CreatedAt;
                     ros.UpdatedAt = rosvm.UpdatedAt;
                     break;

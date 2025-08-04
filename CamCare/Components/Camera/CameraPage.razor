@@ -1,0 +1,65 @@
+﻿@page "/CameraPage"
+
+<InsertButton InsertClick="OnInsertClicked" />
+<RadzenDataGrid @ref="_grid"
+                TItem="CameraVm"
+                Data="_data"
+                LoadData="OnLoadData"
+                IsLoading="_isLoading"
+                Count="_totalCount"
+                AllowPaging="true"
+                PageSize="20"
+                Density="Density.Compact"
+                AllowColumnResize="true">
+    <EmptyTemplate>
+        <CamCareEmptyTemplate />
+    </EmptyTemplate>
+    <Columns>
+        <RadzenDataGridColumn TItem="CameraVm" Property="@nameof(CameraVm.SerialNumber)" Title="Seriennummer" MinWidth="200px" />
+        <RadzenDataGridColumn TItem="CameraVm" Title="Typ" MinWidth="200px">
+            <Template Context="item">
+                @item.CameraType?.Name
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridInlineEditColumn TItem="CameraVm" DeleteRow="OnDeleteRowClicked" CanEdit="(item) => false" />
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    [Inject] protected ICameraService CameraService { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+    [Inject] protected IJSRuntime JSRuntime { get; set; } = default!;
+
+    private RadzenDataGrid<CameraVm> _grid = default!;
+    private IList<CameraVm>? _data;
+    private int _totalCount;
+    private bool _isLoading;
+
+    private async Task OnLoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        var response = await CameraService.GetAllAsync(args);
+        if (response.Success)
+        {
+            _data = response.Data?.Items.ToList();
+            _totalCount = response.Data?.TotalCount ?? 0;
+        }
+        _isLoading = false;
+    }
+
+    private async Task OnInsertClicked(MouseEventArgs args)
+    {
+        if (!_grid.IsValid) return;
+        var item = new CameraVm();
+        await _grid.InsertRow(item);
+    }
+
+    private async Task OnDeleteRowClicked(CameraVm item)
+    {
+        var dialogResult = await DialogService.Confirm("Soll der Datensatz wirklich gelöscht werden?", "Datensatz löschen", new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
+        if (dialogResult != true) return;
+
+        await CameraService.DeleteAsync(item.SerialNumber);
+        await _grid.Reload();
+    }
+}
