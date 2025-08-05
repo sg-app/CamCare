@@ -1,0 +1,26 @@
+# 1.0.0-beta.1 (2025-08-05)
+
+
+### Bug Fixes
+
+* improve formatting and structure in RepairOrderPage ([b4d39c7](https://github.com/sg-app/CamCare/commit/b4d39c72dd4ed735845c6e7ad3d169fb8253db9f))
+
+
+### Features
+
+* add archived orders filter and update data retrieval ([7a59803](https://github.com/sg-app/CamCare/commit/7a598036004b3c7a1680101e46728f34b82ed579))
+* add arrival date field and improve formatting ([1bc9bba](https://github.com/sg-app/CamCare/commit/1bc9bba5861cd447ad6a67faaa0cec33f85b31bd))
+* add customer details display in CameraPage ([045cf18](https://github.com/sg-app/CamCare/commit/045cf1894d6372d740fa1ed1133ef589ce171e60))
+* add InsertButton and refactor BadageStyle handling ([82ae4d5](https://github.com/sg-app/CamCare/commit/82ae4d5c391fe3424c52d155bb7a234cf51953b6))
+* add validation to CreateCamCareEntryPage ([7dde586](https://github.com/sg-app/CamCare/commit/7dde586dbd11da2200b6b8f1d65b6bec65ad15f5))
+* **data-grid:** enhance filtering in CameraPage ([a5efa73](https://github.com/sg-app/CamCare/commit/a5efa730a13a90366d2e6a95d867e6b826a97b62))
+* Enhance camera management and UI components ([aafbab2](https://github.com/sg-app/CamCare/commit/aafbab26f16ccccd77ffdf32289c2a7b266acf46))
+* enhance customer data retrieval and UI display ([0542be8](https://github.com/sg-app/CamCare/commit/0542be85117666689c8cbccda923d64168dd32a7))
+* enhance layout and structure of address components ([30657b3](https://github.com/sg-app/CamCare/commit/30657b32e3acffe19442157f126d5cd51cfa26ad))
+* Enhance repair order management and UI components ([66f6b14](https://github.com/sg-app/CamCare/commit/66f6b14c3aac631a74f883eb74e79493dc9a8800))
+* enhance Repair Order Status functionality ([d4b8472](https://github.com/sg-app/CamCare/commit/d4b84722c353bdf440603c2c38c3208cbbda4299))
+* Enhance validation and customer management features ([ba90e31](https://github.com/sg-app/CamCare/commit/ba90e31ce51b150c99a8d33c68954074d04fe0af))
+* Refactor CreateCamCareEntryPage and add logistic provider ([d59fd2d](https://github.com/sg-app/CamCare/commit/d59fd2d3851301b3beaf1248516dde3b8a4edd13))
+* Refactor CreateCamCareEntryPage and update models ([bd792e4](https://github.com/sg-app/CamCare/commit/bd792e460e0f34873b505f7e2d482de8e56d1da9))
+* Update project for .NET 8.0 and Docker support ([dba458b](https://github.com/sg-app/CamCare/commit/dba458b3d12f5c26139ebd007952e2df9686506d))
+* Update solution and enhance RepairOrderStatusPage ([da0fbf2](https://github.com/sg-app/CamCare/commit/da0fbf22e8e5d1d2e832b72df6365a411c46d3c6))
