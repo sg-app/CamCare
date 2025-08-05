@@ -9,14 +9,17 @@
                 Count="_totalCount"
                 AllowPaging="true"
                 PageSize="20"
+                AllowFiltering="true"
+                FilterMode="FilterMode.Simple"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                 Density="Density.Compact"
                 AllowColumnResize="true">
     <EmptyTemplate>
         <CamCareEmptyTemplate />
     </EmptyTemplate>
     <Columns>
-        <RadzenDataGridColumn TItem="CameraVm" Property="@nameof(CameraVm.SerialNumber)" Title="Seriennummer" MinWidth="200px" />
-        <RadzenDataGridColumn TItem="CameraVm" Title="Typ" MinWidth="200px">
+        <RadzenDataGridColumn TItem="CameraVm" Property="@nameof(CameraVm.SerialNumber)" Title="Seriennummer" MinWidth="200px" SortOrder="SortOrder.Ascending" />
+        <RadzenDataGridColumn TItem="CameraVm" Property="@nameof(CameraVm.CameraType)" FilterProperty="CameraType.Name" Type="typeof(CameraTypeVm)" FilterOperator="FilterOperator.Contains" Title="Typ" MinWidth="200px">
             <Template Context="item">
                 @item.CameraType?.Name
             </Template>
