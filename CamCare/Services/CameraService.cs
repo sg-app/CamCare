@@ -25,17 +25,25 @@ namespace CamCare.Services
                 var (totalCount, query) = context.Cameras
                     .AsNoTracking()
                     .Include(x => x.CameraType)
+                    .Include(x => x.Customer)
                     .AsQueryable()
                     .LoadByLoadDataArgs(args, predicate);
 
                 var items = await query.ToListAsync();
                 var vms = items.Select(e => _mapper.Map<Camera, CameraVm>(e)).ToList();
+                foreach( var vm in vms)
+                {
+                    var customer = items.FirstOrDefault(cu => cu.CustomerId == vm.CustomerId)?.Customer;
+                    if (customer is not null)
+                        vm.Customer = _mapper.Map<Customer, CustomerVm>(customer);
+                }
 
                 var paginated = new Paginated<CameraVm>
                 {
                     Items = vms,
                     TotalCount = totalCount
                 };
+
                 return ServiceResponse.Success(paginated);
             }
             catch (Exception ex)

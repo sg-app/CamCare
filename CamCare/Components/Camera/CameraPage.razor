@@ -26,6 +26,26 @@
         </RadzenDataGridColumn>
         <RadzenDataGridInlineEditColumn TItem="CameraVm" DeleteRow="OnDeleteRowClicked" CanEdit="(item) => false" />
     </Columns>
+    <Template Context="item">
+        <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
+            <RadzenStack Orientation="Orientation.Horizontal">
+                <RadzenText Style="width:150px">Kundennummer:</RadzenText>
+                <RadzenText>@item.Customer?.Id</RadzenText>
+            </RadzenStack>
+            <RadzenStack Orientation="Orientation.Horizontal" Visible="@(!string.IsNullOrEmpty(item.Customer?.CompanyName))">
+                <RadzenText Style="width:150px">Firma:</RadzenText>
+                <RadzenText>@item.Customer?.CompanyName</RadzenText>
+            </RadzenStack>
+            <RadzenStack Orientation="Orientation.Horizontal" Visible="@(!string.IsNullOrEmpty(item.Customer?.FirstName))">
+                <RadzenText Style="width:150px">Vorname:</RadzenText>
+                <RadzenText>@item.Customer?.FirstName</RadzenText>
+            </RadzenStack>
+            <RadzenStack Orientation="Orientation.Horizontal" Visible="@(!string.IsNullOrEmpty(item.Customer?.LastName))">
+                <RadzenText Style="width:150px">Nachname:</RadzenText>
+                <RadzenText>@item.Customer?.LastName</RadzenText>
+            </RadzenStack>
+        </RadzenStack>
+    </Template>
 </RadzenDataGrid>
 
 @code {
