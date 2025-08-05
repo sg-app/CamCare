@@ -1,19 +1,11 @@
 ﻿@if (Address is not null)
 {
-    <RadzenRow>
-        <RadzenColumn>
-            <RadzenText> @Address.AddressType.GetDisplayDescription()</RadzenText>
-        </RadzenColumn>
-        <RadzenColumn>
-            <div>
-                <RadzenText>@Address.Street @Address.HouseNumber</RadzenText>
-            </div>
-            <div>
-                <RadzenText>@Address.PostalCode @Address.City</RadzenText>
-            </div>
-            <RadzenText>@Address.Country</RadzenText>
-        </RadzenColumn>
-    </RadzenRow>
+    <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
+        <RadzenText TextStyle="TextStyle.H5">@Address.AddressType.GetDisplayDescription()</RadzenText>
+        <RadzenText>@Address.Street @Address.HouseNumber</RadzenText>
+        <RadzenText>@Address.PostalCode @Address.City</RadzenText>
+        <RadzenText>@Address.Country</RadzenText>
+    </RadzenStack>
 }
 @code {
     [Parameter] public AddressVm? Address { get; set; }

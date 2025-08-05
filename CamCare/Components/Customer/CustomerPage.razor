@@ -9,6 +9,9 @@
                 IsLoading="_isLoading"
                 Count="_totalCount"
                 AllowPaging="true"
+                AllowFiltering="true"
+                FilterMode="FilterMode.Simple"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                 PageSize="20"
                 Density="Density.Compact"
                 AllowColumnResize="true">
@@ -16,32 +19,48 @@
         <CamCareEmptyTemplate />
     </EmptyTemplate>
     <Columns>
-        <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.Id)" Title="Kundennummer" MinWidth="200px" />
-        <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.CompanyName)" Title="Name" MinWidth="200px">
-            <Template Context="item">
-                @if (!string.IsNullOrEmpty(item.CompanyName))
-                {
-                    @item.CompanyName
-                }
-                else
-                {
-                    <span>@item.FirstName @item.LastName</span>
-                }
-            </Template>
-        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.Id)" Title="Kundennummer" MinWidth="250px" SortOrder="SortOrder.Ascending" />
+        <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.CompanyName)" Title="Firma" MinWidth="200px" />
+        <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.FirstName)" Title="Vorame" MinWidth="200px" />
+        <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.LastName)" Title="Nachname" MinWidth="200px" />
         <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.Email)" Title="Eamil" MinWidth="200px" />
         <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.PhoneNumber)" Title="Telefon" MinWidth="200px" />
         <RadzenDataGridInlineEditColumn TItem="CustomerVm" DeleteRow="OnDeleteRowClicked" CanEdit="(item) => false" />
     </Columns>
     <Template Context="item">
-        <AddressInfo Address="@item.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Billing)" />
-        <AddressInfo Address="@item.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Shipping)" />
-        @if (item.Cameras?.Any() == true)
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="3rem" Wrap="FlexWrap.Wrap">
+            <AddressInfo Address="@item.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Billing)" />
+            <AddressInfo Address="@item.Addresses?.FirstOrDefault(x => x.AddressType == AddressType.Shipping)" />
+        </RadzenStack>
+        @if (item.Cameras?.Any() == true && item.Cameras.Count >= 1)
         {
-            @foreach (var camera in item.Cameras)
-            {
-                <RadzenText>@camera.SerialNumber @camera.CameraType?.Name</RadzenText>
-            }
+            <RadzenFieldset Text="Kameras" Style="width:500px">
+                <RadzenTable AllowAlternatingRows="true">
+                    <RadzenTableHeader>
+                        <RadzenTableHeaderRow>
+                            <RadzenTableHeaderCell>
+                                Seriennummer
+                            </RadzenTableHeaderCell>
+                            <RadzenTableHeaderCell>
+                                Typ
+                            </RadzenTableHeaderCell>
+                        </RadzenTableHeaderRow>
+                    </RadzenTableHeader>
+                    <RadzenTableBody>
+                        @foreach (var camera in item.Cameras)
+                        {
+                            <RadzenTableRow>
+                                <RadzenTableCell>
+                                    @camera.SerialNumber
+                                </RadzenTableCell>
+                                <RadzenTableCell>
+                                    @camera.CameraType?.Name
+                                </RadzenTableCell>
+                            </RadzenTableRow>
+                        }
+                    </RadzenTableBody>
+                </RadzenTable>
+            </RadzenFieldset>
         }
     </Template>
 </RadzenDataGrid>

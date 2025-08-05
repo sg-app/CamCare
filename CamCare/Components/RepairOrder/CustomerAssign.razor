@@ -23,31 +23,21 @@
     <RadzenColumn>
         @if (_selectedCustomer is not null)
         {
-            <AddressInfo Address="@BillingAddress" />
-            <AddressInfo Address="@ShippingAddress" />
-            <RadzenRow>
-                <RadzenColumn>
-                    <RadzenText>Email</RadzenText>
-                </RadzenColumn>
-                <RadzenColumn>
-                    <RadzenText>@_selectedCustomer.Email</RadzenText>
-                </RadzenColumn>
-            </RadzenRow>
-            <RadzenRow>
-                <RadzenColumn>
-                    <RadzenText>Telefonnummer</RadzenText>
-                </RadzenColumn>
-                <RadzenColumn>
-                    <RadzenText>@_selectedCustomer.PhoneNumber</RadzenText>
-                </RadzenColumn>
-            </RadzenRow>
+            <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="3rem" Wrap="FlexWrap.Wrap">
+                    <AddressInfo Address="@BillingAddress" />
+                    <AddressInfo Address="@ShippingAddress" />
+                </RadzenStack>
+                <RadzenText>Email: @_selectedCustomer.Email</RadzenText>
+                <RadzenText>Telefonnummer: @_selectedCustomer.PhoneNumber</RadzenText>
+            </RadzenStack>
         }
     </RadzenColumn>
 </RadzenRow>
 <InsertIconButton Class="mt-2" Size="ButtonSize.Medium" Click="@(() => _createCustomer = true)" />
 @if (_createCustomer)
 {
-    <CustomerEdit CustomerId="@_selectedCustomer?.Id" ValueChanged="OnCustomerCreated" CancelEdit="()=>_createCustomer = false" />
+    <CustomerEdit CustomerId="@_selectedCustomer?.Id" ValueChanged="OnCustomerCreated" CancelEdit="() => _createCustomer = false" />
 }
 
 @code {
