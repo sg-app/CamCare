@@ -1,7 +1,7 @@
 ﻿@page "/RepairOrderPage"
 
 <div class="pe-2">
-    <RadzenCheckBox TValue="bool" Value="_archiveOrders" ValueChanged="@((val)=>{_archiveOrders = val; _grid.Reload();})" Name="_archiveOrders" />
+    <RadzenCheckBox TValue="bool" Value="_archiveOrders" ValueChanged="@((val) => { _archiveOrders = val; _grid.Reload(); })" Name="_archiveOrders" />
     <RadzenLabel Text="Archivierte Aufträge" Component="_archiveOrders" class="rz-ms-2" />
 </div>
 <InsertButton InsertClick="OnInsertClicked" />
@@ -45,7 +45,7 @@
                 @item.LogisticProvider?.Name
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eingetroffen" Property="@nameof(RepairOrderVm.ArrivedAt)" Width="150px" SortOrder="SortOrder.Descending" >
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eingetroffen" Property="@nameof(RepairOrderVm.ArrivedAt)" Width="150px" SortOrder="SortOrder.Descending">
             <Template Context="item">
                 @item.ArrivedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
             </Template>
@@ -62,15 +62,46 @@
                 @defective.Description
             </RadzenText>
         }
-        <RadzenText TextStyle="TextStyle.H5" class="d-block">
-            Reparaturpositionen
-        </RadzenText>
-        @foreach (var repair in item.RepairPositions ?? [])
-        {
-            <RadzenText class="d-block">
-               @repair.Artikelnummer @repair.Quantity @repair.Description
-            </RadzenText>
-        }
+        <RadzenFieldset Text="Reparaturpositionen">
+            @if (item.RepairPositions?.Any() == true && item.RepairPositions.Count >= 1)
+            {
+                <RadzenTable AllowAlternatingRows="true">
+                    <RadzenTableHeader>
+                        <RadzenTableHeaderRow>
+                            <RadzenTableHeaderCell Style="width:150px">
+                                Artikelnummer
+                            </RadzenTableHeaderCell>
+                            <RadzenTableHeaderCell Style="width:100px">
+                                Anzahl
+                            </RadzenTableHeaderCell>
+                            <RadzenTableHeaderCell>
+                                Beschreibung
+                            </RadzenTableHeaderCell>
+                        </RadzenTableHeaderRow>
+                    </RadzenTableHeader>
+                    <RadzenTableBody>
+                        @foreach (var repair in item.RepairPositions ?? [])
+                        {
+                            <RadzenTableRow>
+                                <RadzenTableCell>
+                                    @repair.Artikelnummer
+                                </RadzenTableCell>
+                                <RadzenTableCell>
+                                    @repair.Quantity
+                                </RadzenTableCell>
+                                <RadzenTableCell>
+                                    @repair.Description
+                                </RadzenTableCell>
+                            </RadzenTableRow>
+                        }
+                    </RadzenTableBody>
+                </RadzenTable>
+            }
+            else
+            {
+                <RadzenText TextStyle="TextStyle.H6">Keine Reparaturen durchgeführt.</RadzenText>
+            }
+        </RadzenFieldset>
     </Template>
 </RadzenDataGrid>
 
