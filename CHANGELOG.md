@@ -1,3 +1,10 @@
+# [1.0.0-beta.3](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2025-08-06)
+
+
+### Features
+
+* update UI text and improve error logging ([238a58b](https://github.com/sg-app/CamCare/commit/238a58b72e5ebbd6d4117d50d403567023f7a90a))
+
 # [1.0.0-beta.2](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2025-08-06)
 
 
