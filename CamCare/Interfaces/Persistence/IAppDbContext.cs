@@ -1,11 +1,12 @@
 ﻿using CamCare.Domain;
-using CamCare.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace CamCare.Interfaces.Persistence
 {
     public interface IAppDbContext : IDisposable
     {
+        DatabaseFacade Database { get; }
         DbSet<TEntity> Set<TEntity>() where TEntity : class;
 
         DbSet<Customer> Customers { get; set; }

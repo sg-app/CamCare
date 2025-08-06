@@ -1,8 +1,10 @@
 using CamCare.Components;
+using CamCare.Interfaces.Persistence;
 using CamCare.Interfaces.Services;
 using CamCare.Persistence;
 using CamCare.Services;
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,6 +39,9 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+    var dbContextFactory = app.Services.GetRequiredService<IAppDbContextFactory>();
+    using var dbContext = dbContextFactory.CreateDbContext();
+    await dbContext.Database.MigrateAsync();
 }
 
 app.UseHttpsRedirection();
