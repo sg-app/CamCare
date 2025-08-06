@@ -1,3 +1,10 @@
+# [1.0.0-beta.2](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2025-08-06)
+
+
+### Features
+
+* update project configuration and database context ([c01d0f3](https://github.com/sg-app/CamCare/commit/c01d0f3ed2fd141ec3b2758780f556c5d52903f1))
+
 # 1.0.0-beta.1 (2025-08-05)
 
 
