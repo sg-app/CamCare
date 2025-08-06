@@ -28,10 +28,11 @@ builder.Services.AddScoped<IRepairOrderService, RepairOrderService>();
 
 var app = builder.Build();
 
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
 AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
 {
-    Console.WriteLine(e.ExceptionObject.ToString());
-    };
+    logger.LogCritical((Exception)e.ExceptionObject, "Unhandled Exception thrown!");
+};
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
