@@ -10,7 +10,7 @@ namespace CamCare.Persistence
             var connectionString = configuration.GetConnectionString("Default") ?? "Data Source=./data/CamCare.db";
             services.AddDbContextFactory<AppDbContext>(options =>
             {
-                options.UseSqlite(configuration.GetConnectionString(connectionString));
+                options.UseSqlite(connectionString);
             });
             services.AddScoped<IAppDbContextFactory, AppDbContextFactory>();
             return services;
