@@ -1,3 +1,10 @@
+# [1.0.0-beta.10](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.9...v1.0.0-beta.10) (2025-08-07)
+
+
+### Bug Fixes
+
+* **persistence:** simplify SQLite connection string retrieval ([b6113bf](https://github.com/sg-app/CamCare/commit/b6113bf92990ad1953ae62446ab3098f64af9f68))
+
 # [1.0.0-beta.9](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.8...v1.0.0-beta.9) (2025-08-07)
 
 
