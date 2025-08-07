@@ -367,3 +367,6 @@ FodyWeavers.xsd
 /CamCare/dataCamCare.db
 /CamCare/dataCamCare.db-shm
 /CamCare/dataCamCare.db-wal
+*.db
+*.db-shm
+*.db-wal
