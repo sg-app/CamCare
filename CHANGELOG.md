@@ -1,3 +1,10 @@
+# [1.0.0-beta.9](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.8...v1.0.0-beta.9) (2025-08-07)
+
+
+### Features
+
+* **docker:** add data volume for persistent storage ([2afb2be](https://github.com/sg-app/CamCare/commit/2afb2be9486ce7bcd87e7e0e16e5be50fe21cc19))
+
 # [1.0.0-beta.8](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.7...v1.0.0-beta.8) (2025-08-07)
 
 
