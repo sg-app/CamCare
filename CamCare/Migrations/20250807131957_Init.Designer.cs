@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CamCare.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250804130956_AddedLatestState")]
-    partial class AddedLatestState
+    [Migration("20250807131957_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

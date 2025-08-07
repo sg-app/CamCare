@@ -89,6 +89,7 @@ namespace CamCare.Migrations
                     FontColor = table.Column<string>(type: "TEXT", maxLength: 30, nullable: true),
                     IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
                     IsDefault = table.Column<bool>(type: "INTEGER", nullable: false),
+                    IsOrderClose = table.Column<bool>(type: "INTEGER", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
                 },
@@ -301,18 +302,18 @@ namespace CamCare.Migrations
 
             migrationBuilder.InsertData(
                 table: "RepairOrderStatuses",
-                columns: new[] { "Id", "BackgroundColor", "CreatedAt", "Description", "FontColor", "IsActive", "IsDefault", "Name", "Order", "UpdatedAt" },
+                columns: new[] { "Id", "BackgroundColor", "CreatedAt", "Description", "FontColor", "IsActive", "IsDefault", "IsOrderClose", "Name", "Order", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { 1, "rgb(206, 206, 206)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur wurde von Kunden angemeldet.", "rgb(0, 0, 0)", true, false, "In Anlieferung", 1, null },
-                    { 2, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur ist im Lager eingetroffen.", null, true, false, "Eingetroffen", 2, null },
-                    { 3, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur wird von Mitarbeiter begutachtet.", null, true, false, "Begutachtung", 3, null },
-                    { 4, "rgb(76, 170, 232)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Begutachtung wurde vom Mitarbeiter abgeschlosen.", "rgb(0, 0, 0)", true, false, "Begutachtung abgeschlossen", 4, null },
-                    { 5, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Angebot wurde erstellt.", null, true, false, "Angebot erstellt", 5, null },
-                    { 6, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera befindet sich in der Reparatur.", null, true, false, "Reparatur", 6, null },
-                    { 7, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur kann nicht fortgesetzt werden da Ersatzteile bestellt wurden.", null, true, false, "Warte auf Ersatzteile", 7, null },
-                    { 8, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera ist fertig repariert.", null, true, false, "Reparatur fertig", 8, null },
-                    { 9, "rgb(125, 218, 88)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera wurde versendet.", "rgb(0, 0, 0)", true, false, "Versendet", 9, null }
+                    { 1, "rgb(206, 206, 206)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur wurde von Kunden angemeldet.", "rgb(0, 0, 0)", true, true, false, "In Anlieferung", 1, null },
+                    { 2, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur ist im Lager eingetroffen.", null, true, false, false, "Eingetroffen", 2, null },
+                    { 3, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur wird von Mitarbeiter begutachtet.", null, true, false, false, "Begutachtung", 3, null },
+                    { 4, "rgb(76, 170, 232)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Begutachtung wurde vom Mitarbeiter abgeschlosen.", "rgb(0, 0, 0)", true, false, false, "Begutachtung abgeschlossen", 4, null },
+                    { 5, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Angebot wurde erstellt.", null, true, false, false, "Angebot erstellt", 5, null },
+                    { 6, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera befindet sich in der Reparatur.", null, true, false, false, "Reparatur", 6, null },
+                    { 7, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Reparatur kann nicht fortgesetzt werden da Ersatzteile bestellt wurden.", null, true, false, false, "Warte auf Ersatzteile", 7, null },
+                    { 8, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera ist fertig repariert.", null, true, false, false, "Reparatur fertig", 8, null },
+                    { 9, "rgb(125, 218, 88)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera wurde versendet.", "rgb(0, 0, 0)", true, false, false, "Versendet", 9, null }
                 });
 
             migrationBuilder.InsertData(
