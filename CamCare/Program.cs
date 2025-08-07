@@ -15,7 +15,7 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddRadzenComponents();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-builder.Services.AddPersistence();
+builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddSingleton<IMapper, Mapper>();
 builder.Services.AddScoped<IRepairOrderStatusService, RepairOrderStatusService>();
 builder.Services.AddScoped<ICameraTypeService, CameraTypeService>();
