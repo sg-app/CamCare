@@ -1,3 +1,10 @@
+# [1.0.0-beta.8](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.7...v1.0.0-beta.8) (2025-08-07)
+
+
+### Features
+
+* update Dockerfile for CamCare project publishing ([283eac2](https://github.com/sg-app/CamCare/commit/283eac20b63f5ab6dde72d3cf1bc97063fb5976a))
+
 # [1.0.0-beta.7](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.6...v1.0.0-beta.7) (2025-08-07)
 
 
