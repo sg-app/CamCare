@@ -1,3 +1,11 @@
+# [1.0.0-beta.7](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.6...v1.0.0-beta.7) (2025-08-07)
+
+
+### Bug Fixes
+
+* **persistence:** improve connection string handling ([870b48d](https://github.com/sg-app/CamCare/commit/870b48daa3edb2a0e1b89d162bf680642b1d5064))
+* **persistence:** update SQLite database connection path ([5f68c28](https://github.com/sg-app/CamCare/commit/5f68c28bb0e2a669d0382fe1c46c17e0a1e6af24))
+
 # [1.0.0-beta.6](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.5...v1.0.0-beta.6) (2025-08-07)
 
 
