@@ -1,3 +1,10 @@
+# [1.0.0-beta.11](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.10...v1.0.0-beta.11) (2025-08-07)
+
+
+### Bug Fixes
+
+* comment out automatic database migration ([3e7c4e2](https://github.com/sg-app/CamCare/commit/3e7c4e233bad9e51d50424fa0a1c19240aef1e8e))
+
 # [1.0.0-beta.10](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.9...v1.0.0-beta.10) (2025-08-07)
 
 
