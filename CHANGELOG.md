@@ -1,3 +1,10 @@
+# [1.0.0-beta.6](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.5...v1.0.0-beta.6) (2025-08-07)
+
+
+### Bug Fixes
+
+* update .gitignore for MigrationBackup and CamCare ([86be1b5](https://github.com/sg-app/CamCare/commit/86be1b534419b3b62ddccae02f2971f7c6a84c1b))
+
 # [1.0.0-beta.5](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.4...v1.0.0-beta.5) (2025-08-07)
 
 
