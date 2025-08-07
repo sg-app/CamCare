@@ -1,3 +1,10 @@
+# [1.0.0-beta.12](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.11...v1.0.0-beta.12) (2025-08-07)
+
+
+### Bug Fixes
+
+* **database:** replace EnsureCreatedAsync with MigrateAsync ([6fd360a](https://github.com/sg-app/CamCare/commit/6fd360a61881cda5dcee0ff401738e2e26fb46f7))
+
 # [1.0.0-beta.11](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.10...v1.0.0-beta.11) (2025-08-07)
 
 
