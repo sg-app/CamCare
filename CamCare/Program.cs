@@ -37,8 +37,8 @@ AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
 using var scope = app.Services.CreateScope();
 var dbContextFactory = scope.ServiceProvider.GetRequiredService<IAppDbContextFactory>();
 using var dbContext = dbContextFactory.CreateDbContext();
+await dbContext.Database.MigrateAsync();
 
-await dbContext.Database.EnsureCreatedAsync();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -47,7 +47,6 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
     
 }
-    //await dbContext.Database.MigrateAsync();
 
 app.UseHttpsRedirection();
 
