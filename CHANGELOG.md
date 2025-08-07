@@ -1,3 +1,10 @@
+# [1.0.0-beta.4](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2025-08-07)
+
+
+### Bug Fixes
+
+* update AddPersistence method to use configuration ([9992a30](https://github.com/sg-app/CamCare/commit/9992a3053290d5b4e6ad28016af7583aef4bc17d))
+
 # [1.0.0-beta.3](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2025-08-06)
 
 
