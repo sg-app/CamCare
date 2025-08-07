@@ -34,14 +34,18 @@ AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
     logger.LogCritical((Exception)e.ExceptionObject, "Unhandled Exception thrown!");
 };
 
+using var scope = app.Services.CreateScope();
+var dbContextFactory = scope.ServiceProvider.GetRequiredService<IAppDbContextFactory>();
+using var dbContext = dbContextFactory.CreateDbContext();
+
+await dbContext.Database.EnsureCreatedAsync();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
-    var dbContextFactory = app.Services.GetRequiredService<IAppDbContextFactory>();
-    using var dbContext = dbContextFactory.CreateDbContext();
+    
     await dbContext.Database.MigrateAsync();
 }
 

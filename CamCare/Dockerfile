@@ -27,4 +27,5 @@ RUN dotnet publish "./CamCare.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+VOLUME /app/data
 ENTRYPOINT ["dotnet", "CamCare.dll"]
