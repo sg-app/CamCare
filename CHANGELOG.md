@@ -1,3 +1,15 @@
+# [1.0.0-beta.5](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.4...v1.0.0-beta.5) (2025-08-07)
+
+
+### Bug Fixes
+
+* dbcreation and update .gitignore for database files ([4eeac0e](https://github.com/sg-app/CamCare/commit/4eeac0e56c115a7f3adee14a279ad8f3f1ae1ec3))
+
+
+### Features
+
+* update Dockerfile and improve database handling ([9ee7d8a](https://github.com/sg-app/CamCare/commit/9ee7d8aa29252f3fbc074d4ceb9939c14d8f18be))
+
 # [1.0.0-beta.4](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2025-08-07)
 
 
