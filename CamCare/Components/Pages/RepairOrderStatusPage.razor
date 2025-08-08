@@ -13,10 +13,9 @@
                 RowUpdate="OnRowUpdate"
                 RowCreate="OnRowCreate"
                 RowRender="OnRowRender"
-                Density="Density.Compact" AllowColumnResize="true">
-    <EmptyTemplate>
-       <CamCareEmptyTemplate />
-    </EmptyTemplate>
+                Density="Density.Compact" 
+                AllowColumnResize="true"
+                ShowEmptyMessage="false">
     <Columns>
         <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Name)" Title="Name" MinWidth="200px">
             <EditTemplate Context="item">

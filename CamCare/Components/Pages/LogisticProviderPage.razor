@@ -13,10 +13,8 @@
                 RowUpdate="OnRowUpdate"
                 RowCreate="OnRowCreate"
                 Density="Density.Compact" 
-                AllowColumnResize="true">
-    <EmptyTemplate>
-       <CamCareEmptyTemplate />
-    </EmptyTemplate>
+                AllowColumnResize="true"
+                ShowEmptyMessage="false">
     <Columns>
         <RadzenDataGridColumn TItem="LogisticProviderVm" Property="@nameof(LogisticProviderVm.Name)" Title="Name" MinWidth="200px">
             <EditTemplate Context="item">

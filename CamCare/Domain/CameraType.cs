@@ -2,7 +2,7 @@
 
 namespace CamCare.Domain
 {
-    public class CameraType
+    public class CameraType : AuditableEntity
     {
         [Key]
         public int Id { get; set; }

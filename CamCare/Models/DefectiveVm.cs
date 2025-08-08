@@ -2,7 +2,7 @@
 
 namespace CamCare.Models
 {
-    public class DefectiveVm : IAuditableEntity
+    public class DefectiveVm
     {
         [Key]
         public int Id { get; set; }

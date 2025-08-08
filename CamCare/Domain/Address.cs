@@ -2,7 +2,7 @@
 
 namespace CamCare.Domain
 {
-    public class Address : IAuditableEntity
+    public class Address : AuditableEntity
     {
         [Key]
         public int Id { get; set; }
@@ -20,8 +20,6 @@ namespace CamCare.Domain
         public string? State { get; set; }
         [MaxLength(100)]
         public string? Country { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
 
         public virtual Customer Customer { get; set; } = null!;
     }

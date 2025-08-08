@@ -14,10 +14,8 @@
                 FilterMode="FilterMode.Simple"
                 FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                 Density="Density.Compact"
-                AllowColumnResize="true">
-    <EmptyTemplate>
-        <CamCareEmptyTemplate />
-    </EmptyTemplate>
+                AllowColumnResize="true"
+                ShowEmptyMessage="false">
     <Columns>
         <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.Id)" Title="Kundennummer" MinWidth="250px" SortOrder="SortOrder.Ascending" />
         <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.CompanyName)" Title="Firma" MinWidth="200px" />

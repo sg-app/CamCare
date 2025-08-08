@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CamCare.Domain
 {
-    public class RepairOrderStatus : IAuditableEntity
+    public class RepairOrderStatus : AuditableEntity
     {
         [Key]
         public int Id { get; set; }
@@ -22,10 +22,6 @@ namespace CamCare.Domain
         public bool IsDefault { get; set; } = false;
         public bool IsOrderClose { get; set; } = false;
 
-
-
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
 
         public override string ToString() => $"[{Id}] {Name}";
     }

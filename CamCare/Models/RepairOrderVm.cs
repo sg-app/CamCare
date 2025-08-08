@@ -7,11 +7,15 @@ namespace CamCare.Models
     {
         public int Id { get; set; }
         public string CustomerId { get; set; } = string.Empty;
-        public string CameraSerialNumber { get; set; } = string.Empty;
+        public string? CameraSerialNumber { get; set; }
+        public string? PiceOfEquipment { get; set; }
         public int RepairOrderStatusId { get; set; }
         public ShippingMethod ShippingMethod { get; set; }
         public int? LogisticProviderId { get; set; }
         public string? ShippingMethodDescription { get; set; }
+        public string? OrderNumber { get; set; }
+        public string? QuoteNumber { get; set; }
+        public string? DeliveryNoteNumber { get; set; }
         public DateTime ArrivedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

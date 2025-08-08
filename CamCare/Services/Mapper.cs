@@ -89,11 +89,15 @@ namespace CamCare.Services
                     break;
                 case RepairOrder ro when destination is RepairOrderVm rovm:
                     rovm.Id = ro.Id;
-                    rovm.CameraSerialNumber = ro.CameraSerialNumber;
                     rovm.CustomerId = ro.CustomerId;
-                    rovm.LogisticProviderId = ro.LogisticProviderId;
+                    rovm.CameraSerialNumber = ro.CameraSerialNumber;
+                    rovm.PiceOfEquipment = ro.PiceOfEquipment;
                     rovm.RepairOrderStatusId = ro.RepairOrderStatusId;
                     rovm.ShippingMethod = ro.ShippingMethod;
+                    rovm.LogisticProviderId = ro.LogisticProviderId;
+                    rovm.OrderNumber = ro.OrderNumber;
+                    rovm.QuoteNumber = ro.QuoteNumber;
+                    rovm.DeliveryNoteNumber = ro.DeliveryNoteNumber;
                     rovm.ArrivedAt = ro.ArrivedAt;
                     rovm.CreatedAt = ro.CreatedAt;
                     rovm.UpdatedAt = ro.UpdatedAt;
@@ -114,9 +118,13 @@ namespace CamCare.Services
                     ro.Id = rovm.Id;
                     ro.CustomerId = rovm.CustomerId;
                     ro.CameraSerialNumber = rovm.CameraSerialNumber;
+                    ro.PiceOfEquipment = rovm.PiceOfEquipment;
                     ro.RepairOrderStatusId = rovm.RepairOrderStatusId;
                     ro.ShippingMethod = rovm.ShippingMethod;
                     ro.LogisticProviderId = rovm.LogisticProviderId;
+                    ro.OrderNumber = rovm.OrderNumber;
+                    ro.QuoteNumber = rovm.QuoteNumber;
+                    ro.DeliveryNoteNumber = rovm.DeliveryNoteNumber;
                     ro.ArrivedAt = rovm.ArrivedAt;
                     ro.CreatedAt = rovm.CreatedAt;
                     ro.UpdatedAt = rovm.UpdatedAt;
@@ -133,8 +141,11 @@ namespace CamCare.Services
                     rpvm.Description = rorp.RepairPosition.Description;
                     rpvm.SortOrder = rorp.RepairPosition.SortOrder;
                     rpvm.Quantity = rorp.Quantity;
+                    rpvm.EmployeeId = rorp.EmployeeId;
                     rpvm.CreatedAt = rorp.RepairPosition.CreatedAt;
                     rpvm.UpdatedAt = rorp.RepairPosition.UpdatedAt;
+                    if(rorp.Employee != null)
+                        rpvm.Employee = Map<Employee, EmployeeVm>(rorp.Employee);
                     break;
                 case RepairPositionVm rpvm when destination is RepairPosition rp:
                     rp.Id = rpvm.Id;
@@ -221,7 +232,16 @@ namespace CamCare.Services
                     lp.IsDefault = lpvm.IsDefault;
                     lp.IsActive = lpvm.IsActive;
                     break;
-
+                case Employee e when destination is EmployeeVm evm:
+                    evm.Id = e.Id;
+                    evm.FirstName = e.FirstName;
+                    evm.LastName = e.LastName;
+                    break;
+                case EmployeeVm evm when destination is Employee e:
+                    e.Id = evm.Id;
+                    e.FirstName = evm.FirstName;
+                    e.LastName = evm.LastName;
+                    break;
                 default:
                     throw new NotSupportedException($"Mapping from {typeof(TSource)} to {typeof(TDestination)} is not supported.");
             }

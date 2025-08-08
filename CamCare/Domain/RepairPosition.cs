@@ -2,7 +2,7 @@
 
 namespace CamCare.Domain
 {
-    public class RepairPosition : IAuditableEntity
+    public class RepairPosition : AuditableEntity
     {
         [Key]
         public int Id { get; set; }
@@ -13,7 +13,5 @@ namespace CamCare.Domain
         public virtual ICollection<RepairOrder> RepairOrders { get; set; } = [];
         public virtual ICollection<RepairOrderRepairPosition> RepairOrderRepairPositions { get; set; } = [];
 
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
     }
 }

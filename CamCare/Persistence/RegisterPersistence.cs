@@ -7,10 +7,14 @@ namespace CamCare.Persistence
     {
         public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
         {
-            var connectionString = configuration.GetConnectionString("Default") ?? "Data Source=./data/CamCare.db";
+            var connectionString = configuration.GetConnectionString("Default");
+            if (string.IsNullOrEmpty(connectionString))
+                throw new InvalidOperationException("Connection string 'Default' is not configured.");
+            
             services.AddDbContextFactory<AppDbContext>(options =>
             {
-                options.UseSqlite(connectionString);
+                options.UseSqlServer(connectionString);
+                //options.UseSqlite(connectionString);
             });
             services.AddScoped<IAppDbContextFactory, AppDbContextFactory>();
             return services;

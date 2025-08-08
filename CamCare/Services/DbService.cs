@@ -112,7 +112,15 @@ namespace CamCare.Services
             try
             {
                 using var context = _contextFactory.CreateDbContext();
-                var query = context.Set<TEntity>().AsQueryable();
+                var query = context
+                    .Set<TEntity>()
+                    .AsQueryable();
+
+                if (typeof(IAuditableEntity).IsAssignableFrom(typeof(TEntity)))
+                {
+                    // Optional: Filter für archivierte Einträge
+                    query = query.Where(e => !((IAuditableEntity)e).ArchivedAt.HasValue);
+                }
 
                 // Navigationen laden
                 if (includes != null)
@@ -210,7 +218,16 @@ namespace CamCare.Services
                 var entity = await context.Set<TEntity>().FindAsync(id);
                 if (entity == null)
                     return ServiceResponse.Failure<bool>("Nicht gefunden");
-                context.Set<TEntity>().Remove(entity);
+
+                if(entity is IAuditableEntity auditableEntity)
+                {
+                    auditableEntity.ArchivedAt = DateTime.UtcNow;
+                    context.Set<TEntity>().Entry(entity).State = EntityState.Modified;
+                }
+                else
+                {
+                    context.Set<TEntity>().Remove(entity);
+                }
                 await context.SaveChangesAsync();
                 return ServiceResponse.Success(true);
             }

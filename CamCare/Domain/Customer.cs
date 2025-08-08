@@ -2,7 +2,7 @@
 
 namespace CamCare.Domain
 {
-    public class Customer : IAuditableEntity
+    public class Customer : AuditableEntity
     {
         [Key]
         public string Id { get; set; } = string.Empty;
@@ -16,8 +16,6 @@ namespace CamCare.Domain
         public string? Email { get; set; }
         [MaxLength(100)]
         public string? PhoneNumber { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
 
 
         public virtual ICollection<Address>? Addresses { get; set; }
