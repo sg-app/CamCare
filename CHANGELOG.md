@@ -1,3 +1,12 @@
+# [1.0.0-beta.13](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.12...v1.0.0-beta.13) (2025-08-09)
+
+
+### Features
+
+* Add employee management and update project structure ([36e7bbf](https://github.com/sg-app/CamCare/commit/36e7bbf31354f85676bd107a574fdda86397c43e))
+* Enhance Razor components and add new features ([a356919](https://github.com/sg-app/CamCare/commit/a356919a46409ffcacd5a0220e53c27a0dcb1650))
+* Update repair order management and add Krd data ([ab993fa](https://github.com/sg-app/CamCare/commit/ab993fa923a7116a58c014798d2a3331f1395309))
+
 # [1.0.0-beta.12](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.11...v1.0.0-beta.12) (2025-08-07)
 
 
