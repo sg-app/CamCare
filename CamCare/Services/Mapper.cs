@@ -98,7 +98,7 @@ namespace CamCare.Services
                     rovm.OrderNumber = ro.OrderNumber;
                     rovm.QuoteNumber = ro.QuoteNumber;
                     rovm.DeliveryNoteNumber = ro.DeliveryNoteNumber;
-                    rovm.ArrivedAt = ro.ArrivedAt;
+                    rovm.ArrivedAt = ro.ArrivedAt.ToLocalTime();
                     rovm.CreatedAt = ro.CreatedAt;
                     rovm.UpdatedAt = ro.UpdatedAt;
                     if (ro.Customer != null)
@@ -113,6 +113,10 @@ namespace CamCare.Services
                         rovm.Defectives = ro.Defectives.Select(Map<Defective, DefectiveVm>).ToList();
                     if (ro.RepairPositions != null)
                         rovm.RepairPositions = ro.RepairOrderRepairPositions.Select(Map<RepairOrderRepairPosition, RepairPositionVm>).ToList();
+                    if(ro.Employees != null)
+                        rovm.Employees = ro.Employees.Select(Map<Employee, EmployeeVm>).ToList();
+                    if (ro.RepairOrderStatusHistory != null)
+                        rovm.RepairOrderStatusHistories = ro.RepairOrderStatusHistory.Select(Map<RepairOrderStatusHistory, RepairOrderStatusHistoryVm>).ToList();
                     break;
                 case RepairOrderVm rovm when destination is RepairOrder ro:
                     ro.Id = rovm.Id;
@@ -125,15 +129,9 @@ namespace CamCare.Services
                     ro.OrderNumber = rovm.OrderNumber;
                     ro.QuoteNumber = rovm.QuoteNumber;
                     ro.DeliveryNoteNumber = rovm.DeliveryNoteNumber;
-                    ro.ArrivedAt = rovm.ArrivedAt;
+                    ro.ArrivedAt = rovm.ArrivedAt.ToUniversalTime();
                     ro.CreatedAt = rovm.CreatedAt;
                     ro.UpdatedAt = rovm.UpdatedAt;
-                    //if (rovm.Camera != null)
-                    //    ro.Camera = Map<CameraVm, Camera>(rovm.Camera);
-                    //if (rovm.RepairPositions != null)
-                    //    ro.RepairPositions = rovm.RepairPositions.Select(Map<RepairPositionVm, RepairPosition>).ToList();
-                    //if (rovm.Defectives != null)
-                    //    ro.Defectives = rovm.Defectives.Select(Map<DefectiveVm, Defective>).ToList();
                     break;
                 case RepairOrderRepairPosition rorp when destination is RepairPositionVm rpvm:
                     rpvm.Id = rorp.RepairPostionId;
@@ -141,11 +139,8 @@ namespace CamCare.Services
                     rpvm.Description = rorp.RepairPosition.Description;
                     rpvm.SortOrder = rorp.RepairPosition.SortOrder;
                     rpvm.Quantity = rorp.Quantity;
-                    rpvm.EmployeeId = rorp.EmployeeId;
                     rpvm.CreatedAt = rorp.RepairPosition.CreatedAt;
                     rpvm.UpdatedAt = rorp.RepairPosition.UpdatedAt;
-                    if(rorp.Employee != null)
-                        rpvm.Employee = Map<Employee, EmployeeVm>(rorp.Employee);
                     break;
                 case RepairPositionVm rpvm when destination is RepairPosition rp:
                     rp.Id = rpvm.Id;
@@ -217,6 +212,20 @@ namespace CamCare.Services
                     ros.IsOrderClose = rosvm.IsOrderClose;
                     ros.CreatedAt = rosvm.CreatedAt;
                     ros.UpdatedAt = rosvm.UpdatedAt;
+                    break;
+                case RepairOrderStatusHistory history when destination is RepairOrderStatusHistoryVm vm:
+                    vm.Id = history.Id;
+                    vm.RepairOrderId = history.RepairOrderId;
+                    vm.RepairOrderStatusId = history.RepairOrderStatusId;
+                    vm.ChangedAt = history.ChangedAt.ToLocalTime();
+                    if(history.RepairOrderStatus != null)
+                        vm.RepairOrderStatus = Map<RepairOrderStatus, RepairOrderStatusVm>(history.RepairOrderStatus);
+                    break;
+                case RepairOrderStatusHistoryVm vm when destination is RepairOrderStatusHistory history:
+                    history.Id = vm.Id;
+                    history.RepairOrderId = vm.RepairOrderId;
+                    history.RepairOrderStatusId = vm.RepairOrderStatusId;
+                    history.ChangedAt = vm.ChangedAt.ToUniversalTime();
                     break;
                 case LogisticProvider lp when destination is LogisticProviderVm lpvm:
                     lpvm.Id = lp.Id;

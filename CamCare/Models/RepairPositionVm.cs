@@ -10,11 +10,10 @@ namespace CamCare.Models
         public string Description { get; set; } = string.Empty;
         public int SortOrder { get; set; }
         public decimal Quantity { get; set; }
-        public int EmployeeId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
-        public virtual EmployeeVm Employee { get; set; } = null!;
+        
         public ICollection<RepairOrderVm>? RepairOrders { get; set; }
 
         public override string ToString() => $"[{Id}] {Quantity} - {Description}";

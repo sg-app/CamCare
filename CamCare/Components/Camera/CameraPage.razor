@@ -14,7 +14,8 @@
                 FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                 Density="Density.Compact"
                 AllowColumnResize="true"
-                ShowEmptyMessage="false">
+                ShowEmptyMessage="false"
+                Style="width:800px">
     <Columns>
         <RadzenDataGridColumn TItem="CameraVm" Property="@nameof(CameraVm.SerialNumber)" Title="Seriennummer" MinWidth="200px" SortOrder="SortOrder.Ascending" />
         <RadzenDataGridColumn TItem="CameraVm" Property="@nameof(CameraVm.CameraType)" FilterProperty="CameraType.Name" Type="typeof(CameraTypeVm)" FilterOperator="FilterOperator.Contains" Title="Typ" MinWidth="200px">

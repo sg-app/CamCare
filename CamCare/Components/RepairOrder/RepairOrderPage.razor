@@ -100,6 +100,26 @@
                 <RadzenText TextStyle="TextStyle.H6">Keine Reparaturen durchgeführt.</RadzenText>
             }
         </RadzenFieldset>
+        <RadzenFieldset Text="Status Historie">
+            @if (item.RepairOrderStatusHistories?.Any() == true)
+            {
+                <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
+                    @foreach (var history in item.RepairOrderStatusHistories)
+                    {
+                        <RadzenStack Orientation="Orientation.Horizontal">
+                            <div style="width:150px">
+                                <RadzenBadge Style="@history.RepairOrderStatus?.BadageStyle">
+                                    @history.RepairOrderStatus?.Name
+                                </RadzenBadge>
+                            </div>
+                            <RadzenText>
+                                @history.ChangedAt.ToString("dd.MM.yyyy HH:mm")
+                            </RadzenText>
+                        </RadzenStack>
+                    }
+                </RadzenStack>
+            }
+        </RadzenFieldset>
     </Template>
 </RadzenDataGrid>
 

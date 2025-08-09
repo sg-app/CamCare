@@ -26,6 +26,8 @@ namespace CamCare.Models
         public LogisticProviderVm? LogisticProvider { get; set; }
         public ICollection<DefectiveVm>? Defectives { get; set; }
         public ICollection<RepairPositionVm>? RepairPositions { get; set; }
+        public ICollection<EmployeeVm>? Employees { get; set; }
+        public ICollection<RepairOrderStatusHistoryVm>? RepairOrderStatusHistories { get; set; }
 
         public override string ToString() => $"[{Id}] CameraId: {CameraSerialNumber}";
     }

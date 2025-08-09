@@ -10,9 +10,22 @@
 
     @if (!string.IsNullOrEmpty(_repairOrder.CustomerId))
     {
-        <RadzenFieldset Text="Kamera">
-            <CameraAssign CustomerId="@_repairOrder.CustomerId" @bind-Value="_repairOrder.CameraSerialNumber" />
-            <ValidationMessage For="@(() => _repairOrder.CameraSerialNumber)" />
+        <RadzenFieldset Text="@(_entryWithoutCamera ? "Einzelteil" : "Kamera")">
+            <div class="p-1">
+                <RadzenCheckBox @bind-Value=@_entryWithoutCamera Name="CheckBox1" />
+                <RadzenLabel Text="Erfassung ohne Kamera" Component="CheckBox1" class="ms-2" />
+            </div>
+            @if (_entryWithoutCamera)
+            {
+                <RadzenFormField class="d-block" Text="Einzelteil Beschreibung">
+                    <RadzenTextBox @bind-Value="_repairOrder.PiceOfEquipment" Style="width:500px" />
+                </RadzenFormField>
+            }
+            else
+            {
+                <CameraAssign CustomerId="@_repairOrder.CustomerId" @bind-Value="_repairOrder.CameraSerialNumber" />
+                <ValidationMessage For="@(() => _repairOrder.CameraSerialNumber)" />
+            }
         </RadzenFieldset>
     }
 
@@ -20,9 +33,9 @@
     {
         <RadzenFieldset Text="Beschreibung">
             <RadzenFormField class="d-block" Text="Eingetroffen">
-                <RadzenDatePicker @bind-Value="_repairOrder.ArrivedAt" ShowTime="true" />
+                <RadzenDatePicker @bind-Value="_repairOrder.ArrivedAt" ShowTime="true" DateFormat="dd.MM.yyyy HH:mm" />
             </RadzenFormField>
-            <RadzenFormField Text="Status">
+            <RadzenFormField class="pt-2" Text="Status">
                 <RadzenDropDown @bind-Value="_repairOrder.RepairOrderStatusId"
                                 Data="_repairOrderStatusData"
                                 LoadData="OnLoadRepairOrderStatus"
@@ -37,7 +50,7 @@
             <div>
                 <RadzenLabel Text="@_repairOrderStatusData?.FirstOrDefault(f => f.Id == _repairOrder.RepairOrderStatusId)?.Description" />
             </div>
-            <RadzenRadioButtonList class="py-2" @bind-Value="_repairOrder.ShippingMethod">
+            <RadzenRadioButtonList class="pt-2" @bind-Value="_repairOrder.ShippingMethod">
                 <Items>
                     <RadzenRadioButtonListItem Text="@ShippingMethod.PickedUp.GetDisplayDescription()" Value="ShippingMethod.PickedUp" />
                     <RadzenRadioButtonListItem Text="@ShippingMethod.SentByCustomer.GetDisplayDescription()" Value="ShippingMethod.SentByCustomer" />
@@ -47,31 +60,51 @@
             {
                 <LogisticProviderAssign RepairOrder="@_repairOrder" />
             }
-            <RadzenFormField class="d-block" Text="Versandbemerkung">
+            <RadzenFormField class="d-block pt-2" Text="Versandbemerkung">
                 <RadzenTextArea @bind-Value="_repairOrder.ShippingMethodDescription" Rows="2" Cols="100" />
             </RadzenFormField>
 
-            <DefectiveAssign RepairOrder="@_repairOrder" />
-            <RepairPositionAssign RepairOrder="@_repairOrder" />
-
+            <RadzenFormField class="pt-2" Text="Mitarbeiter">
+                <RadzenDropDown @bind-Value="_repairOrder.Employees"
+                                Data="_employeesData"
+                                LoadData="OnLoadEmployees"
+                                Count="_totalCountEmployees"
+                                Multiple="true"
+                                Chips="true"
+                                AllowFiltering="true"
+                                AllowVirtualization="true"
+                                TextProperty="@nameof(EmployeeVm.DisplayName)"
+                                AllowClear="true"
+                                Style="width:500px" />
+            </RadzenFormField>
+            <div class="pt-2">
+                <DefectiveAssign RepairOrder="@_repairOrder" />
+            </div>
+            <div class="pt-2">
+                <RepairPositionAssign RepairOrder="@_repairOrder" />
+            </div>
         </RadzenFieldset>
     }
 </RadzenTemplateForm>
-<FormButtons SaveClick="OnSaveClicked" CancelClick="OnCancelClicked" />
+<FormButtons Class="pt-2" SaveClick="OnSaveClicked" CancelClick="OnCancelClicked" />
 
 @code {
     [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
     [Inject] protected IRepairOrderStatusService RepairOrderStatusService { get; set; } = default!;
+    [Inject] protected IEmployeeService EmployeeService { get; set; } = default!;
     [Inject] protected ILogger<RepairOrderEditorPage> Logger { get; set; } = default!;
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
 
     [Parameter] public int RepairOrderId { get; set; }
 
-    private RepairOrderVm _repairOrder = new() { ShippingMethod = ShippingMethod.SentByCustomer };
+    private RepairOrderVm _repairOrder = new() { ShippingMethod = ShippingMethod.SentByCustomer, ArrivedAt = DateTime.Now };
     private FluentValidationValidator _fluentValidationValidator = default!;
 
     private IEnumerable<RepairOrderStatusVm>? _repairOrderStatusData;
     private int _totalCountRepairOrderStatus;
+
+    private IEnumerable<EmployeeVm>? _employeesData;
+    private int _totalCountEmployees;
 
     private IList<DefectiveVm>? _defectives;
     private string? _defectiveDescription;
@@ -79,6 +112,7 @@
     private RadzenDataGrid<DefectiveVm> _grid = default!;
     private CancellationTokenSource? _defectiveChangedCts;
     private object? _lastDefectiveChangedValue;
+    private bool _entryWithoutCamera;
 
     protected override Task OnInitializedAsync()
     {
@@ -92,7 +126,7 @@
         {
             var response = await RepairOrderService.GetByIdAsync(RepairOrderId);
             if (response.Success)
-                _repairOrder = response.Data ?? new() { ShippingMethod = ShippingMethod.SentByCustomer, ArrivedAt = DateTime.UtcNow };
+                _repairOrder = response.Data ?? new() { ShippingMethod = ShippingMethod.SentByCustomer, ArrivedAt = DateTime.Now };
         }
     }
 
@@ -113,6 +147,22 @@
             }
         }
     }
+
+    private async Task OnLoadEmployees(LoadDataArgs args)
+    {
+        ServiceResponse<Paginated<EmployeeVm>> response;
+        if (string.IsNullOrEmpty(args.Filter))
+            response = await EmployeeService.GetAllAsync(args);
+        else
+            response = await EmployeeService.GetAllAsync(args, x => x.FirstName.ToLower().Contains(args.Filter.ToLower()) || x.LastName.ToLower().Contains(args.Filter.ToLower()));
+        if (response.Success)
+        {
+            _employeesData = response.Data?.Items ?? [];
+            _totalCountEmployees = response.Data?.TotalCount ?? 0;
+
+        }
+    }
+
     private async Task OnSaveClicked(MouseEventArgs args)
     {
         var isValid = await _fluentValidationValidator!.ValidateAsync();
@@ -124,7 +174,7 @@
         }
         else if (isValid)
         {
-            await RepairOrderService.UpdateAsync(_repairOrder.Id, _repairOrder);
+            await RepairOrderService.UpdateAsync(_repairOrder!.Id, _repairOrder);
         }
         NavigationManager.NavigateTo("/RepairOrderPage");
     }

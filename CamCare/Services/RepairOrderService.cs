@@ -43,7 +43,10 @@ namespace CamCare.Services
                 .Include(i => i.Customer)
                 .Include(i => i.Camera)
                 .Include(i => i.RepairOrderStatus)
+                .Include(i=>i.RepairOrderStatusHistory)
+                    .ThenInclude(i=>i.RepairOrderStatus)
                 .Include(i => i.LogisticProvider)
+                .Include(i => i.Employees)
                 .Include(i => i.Defectives)
                 .Include(i => i.RepairOrderRepairPositions)
                     .ThenInclude(rp => rp.RepairPosition);
@@ -106,7 +109,20 @@ namespace CamCare.Services
                         await context.SaveChangesAsync();
                     }
                     entity.RepairOrderRepairPositions.Add(new RepairOrderRepairPosition { RepairOrder = entity, RepairPosition = repairPosition, Quantity = posVm.Quantity });
-                    //entity.RepairPositions.Add(repairPosition);
+                }
+            }
+
+            // Employees zuordnen
+            entity.Employees = new List<Employee>();
+            if (vm.Employees != null)
+            {
+                foreach (var empVm in vm.Employees)
+                {
+                    var employee = await context.Set<Employee>().FirstOrDefaultAsync(e => e.Id == empVm.Id);
+                    if (employee != null)
+                    {
+                        entity.Employees.Add(employee);
+                    }
                 }
             }
 
@@ -125,10 +141,22 @@ namespace CamCare.Services
                 .Include(r => r.Defectives)
                 .Include(r => r.RepairOrderRepairPositions)
                     .ThenInclude(rp => rp.RepairPosition)
+                .Include(r => r.Employees)
                 .FirstOrDefaultAsync(r => r.Id == (int)id);
 
             if (entity == null)
                 return ServiceResponse.Failure<RepairOrderVm>("Nicht gefunden");
+
+            // --- Statushistorie aktualisieren ---
+            if (entity.RepairOrderStatusId != vm.RepairOrderStatusId)
+            {
+                context.RepairOrderStatusHistories.Add(new RepairOrderStatusHistory
+                {
+                    RepairOrderId = entity.Id,
+                    RepairOrderStatusId = vm.RepairOrderStatusId,
+                    ChangedAt = DateTime.UtcNow
+                });
+            }
 
             // Update Haupt-Entity
             _mapper.Map(vm, entity);
@@ -198,6 +226,25 @@ namespace CamCare.Services
                     existing.Quantity = posVm.Quantity;
                 }
             }
+
+            // --- Employees synchronisieren ---
+            var newEmployees = new List<Employee>();
+            if (vm.Employees != null)
+            {
+                foreach (var empVm in vm.Employees)
+                {
+                    var employee = await context.Set<Employee>().FirstOrDefaultAsync(e => e.Id == empVm.Id);
+                    if (employee != null)
+                    {
+                        newEmployees.Add(employee);
+                    }
+                }
+            }
+            entity.Employees.Clear();
+            foreach (var e in newEmployees)
+                entity.Employees.Add(e);
+
+            
 
             await context.SaveChangesAsync();
 

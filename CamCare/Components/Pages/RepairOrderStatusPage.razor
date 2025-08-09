@@ -19,12 +19,12 @@
     <Columns>
         <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Name)" Title="Name" MinWidth="200px">
             <EditTemplate Context="item">
-                <RadzenTextBox @bind-Value="item.Name" />
+                <RadzenTextBox @bind-Value="item.Name" Style="width:100%" />
             </EditTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Description)" Title="Description" MinWidth="250px">
             <EditTemplate Context="item">
-                <RadzenTextBox @bind-Value="item.Description" />
+                <RadzenTextBox @bind-Value="item.Description" Style="width:100%" />
             </EditTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Order)" Title="Order" Width="60px" SortOrder="SortOrder.Ascending" TextAlign="TextAlign.Right" />

@@ -10,15 +10,19 @@
                 Count="_totalCount"
                 AllowPaging="true"
                 PageSize="20"
+                AllowFiltering="true"
+                FilterMode="FilterMode.Simple"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                 RowUpdate="OnRowUpdate"
                 RowCreate="OnRowCreate"
                 Density="Density.Compact" 
                 AllowColumnResize="true"
-                ShowEmptyMessage="false">
+                ShowEmptyMessage="false"
+                Style="width:800px">
     <Columns>
         <RadzenDataGridColumn TItem="CameraTypeVm" Property="@nameof(CameraTypeVm.Name)" Title="Name" MinWidth="200px">
             <EditTemplate Context="item">
-                <RadzenTextBox @bind-Value="item.Name" />
+                <RadzenTextBox @bind-Value="item.Name" Style="width:100%" />
             </EditTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridInlineEditColumn TItem="CameraTypeVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />

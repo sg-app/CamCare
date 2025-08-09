@@ -24,5 +24,8 @@ namespace CamCare.Domain
         public virtual ICollection<Defective> Defectives { get; set; } = [];
         public virtual ICollection<RepairPosition> RepairPositions { get; set; } = [];
         public virtual ICollection<RepairOrderRepairPosition> RepairOrderRepairPositions { get; set; } = [];
+        public virtual ICollection<Employee> Employees { get; set; } = [];
+        public virtual ICollection<RepairOrderStatusHistory> RepairOrderStatusHistory { get; set; } = [];
+
     }
 }

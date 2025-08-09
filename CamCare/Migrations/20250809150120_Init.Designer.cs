@@ -4,6 +4,7 @@ using CamCare.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CamCare.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250809150120_Init")]
+    partial class Init
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -621,32 +624,6 @@ namespace CamCare.Migrations
                         });
                 });
 
-            modelBuilder.Entity("CamCare.Domain.RepairOrderStatusHistory", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("ChangedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("RepairOrderId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RepairOrderStatusId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RepairOrderId");
-
-                    b.HasIndex("RepairOrderStatusId");
-
-                    b.ToTable("RepairOrderStatusHistories");
-                });
-
             modelBuilder.Entity("CamCare.Domain.RepairPosition", b =>
                 {
                     b.Property<int>("Id")
@@ -821,23 +798,6 @@ namespace CamCare.Migrations
                     b.Navigation("RepairPosition");
                 });
 
-            modelBuilder.Entity("CamCare.Domain.RepairOrderStatusHistory", b =>
-                {
-                    b.HasOne("CamCare.Domain.RepairOrder", null)
-                        .WithMany("RepairOrderStatusHistory")
-                        .HasForeignKey("RepairOrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CamCare.Domain.RepairOrderStatus", "RepairOrderStatus")
-                        .WithMany()
-                        .HasForeignKey("RepairOrderStatusId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("RepairOrderStatus");
-                });
-
             modelBuilder.Entity("DefectiveRepairOrder", b =>
                 {
                     b.HasOne("CamCare.Domain.Defective", null)
@@ -893,8 +853,6 @@ namespace CamCare.Migrations
             modelBuilder.Entity("CamCare.Domain.RepairOrder", b =>
                 {
                     b.Navigation("RepairOrderRepairPositions");
-
-                    b.Navigation("RepairOrderStatusHistory");
                 });
 
             modelBuilder.Entity("CamCare.Domain.RepairPosition", b =>

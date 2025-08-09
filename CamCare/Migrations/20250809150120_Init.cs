@@ -269,24 +269,41 @@ namespace CamCare.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "EmployeeRepairOrder",
+                columns: table => new
+                {
+                    EmployeesId = table.Column<int>(type: "int", nullable: false),
+                    RepairOrdersId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_EmployeeRepairOrder", x => new { x.EmployeesId, x.RepairOrdersId });
+                    table.ForeignKey(
+                        name: "FK_EmployeeRepairOrder_Employee_EmployeesId",
+                        column: x => x.EmployeesId,
+                        principalTable: "Employee",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_EmployeeRepairOrder_RepairOrders_RepairOrdersId",
+                        column: x => x.RepairOrdersId,
+                        principalTable: "RepairOrders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "RepairOrderRepairPosition",
                 columns: table => new
                 {
                     RepairOrderId = table.Column<int>(type: "int", nullable: false),
                     RepairPositionId = table.Column<int>(type: "int", nullable: false),
                     RepairPostionId = table.Column<int>(type: "int", nullable: false),
-                    EmployeeId = table.Column<int>(type: "int", nullable: false),
                     Quantity = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_RepairOrderRepairPosition", x => new { x.RepairOrderId, x.RepairPositionId });
-                    table.ForeignKey(
-                        name: "FK_RepairOrderRepairPosition_Employee_EmployeeId",
-                        column: x => x.EmployeeId,
-                        principalTable: "Employee",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_RepairOrderRepairPosition_RepairOrders_RepairOrderId",
                         column: x => x.RepairOrderId,
@@ -396,9 +413,9 @@ namespace CamCare.Migrations
                 column: "RepairOrdersId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RepairOrderRepairPosition_EmployeeId",
-                table: "RepairOrderRepairPosition",
-                column: "EmployeeId");
+                name: "IX_EmployeeRepairOrder_RepairOrdersId",
+                table: "EmployeeRepairOrder",
+                column: "RepairOrdersId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RepairOrderRepairPosition_RepairPositionId",
@@ -434,6 +451,9 @@ namespace CamCare.Migrations
 
             migrationBuilder.DropTable(
                 name: "DefectiveRepairOrder");
+
+            migrationBuilder.DropTable(
+                name: "EmployeeRepairOrder");
 
             migrationBuilder.DropTable(
                 name: "RepairOrderRepairPosition");

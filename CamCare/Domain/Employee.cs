@@ -10,5 +10,6 @@ namespace CamCare.Domain
         public string FirstName { get; set; } = string.Empty;
         [MaxLength(100)]
         public string LastName { get; set; } = string.Empty;
+        public virtual ICollection<RepairOrder> RepairOrders { get; set; } = [];
     }
 }
