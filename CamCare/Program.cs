@@ -27,6 +27,8 @@ builder.Services.AddScoped<IRepairPositionService, RepairPositionService>();
 builder.Services.AddScoped<IDefectiveService, DefectiveService>();
 builder.Services.AddScoped<IRepairOrderService, RepairOrderService>();
 
+builder.Services.AddScoped<IKrdDataService, KrdDataService>();
+
 var app = builder.Build();
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();

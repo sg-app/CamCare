@@ -9,6 +9,7 @@ namespace CamCare.Models
         public string CustomerId { get; set; } = string.Empty;
         public string? CameraSerialNumber { get; set; }
         public string? PiceOfEquipment { get; set; }
+        public string? AdditionalComponents { get; set; }
         public int RepairOrderStatusId { get; set; }
         public ShippingMethod ShippingMethod { get; set; }
         public int? LogisticProviderId { get; set; }

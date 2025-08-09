@@ -92,6 +92,7 @@ namespace CamCare.Services
                     rovm.CustomerId = ro.CustomerId;
                     rovm.CameraSerialNumber = ro.CameraSerialNumber;
                     rovm.PiceOfEquipment = ro.PiceOfEquipment;
+                    rovm.AdditionalComponents = ro.AdditionalComponents;
                     rovm.RepairOrderStatusId = ro.RepairOrderStatusId;
                     rovm.ShippingMethod = ro.ShippingMethod;
                     rovm.LogisticProviderId = ro.LogisticProviderId;
@@ -123,6 +124,7 @@ namespace CamCare.Services
                     ro.CustomerId = rovm.CustomerId;
                     ro.CameraSerialNumber = rovm.CameraSerialNumber;
                     ro.PiceOfEquipment = rovm.PiceOfEquipment;
+                    ro.AdditionalComponents = rovm.AdditionalComponents;
                     ro.RepairOrderStatusId = rovm.RepairOrderStatusId;
                     ro.ShippingMethod = rovm.ShippingMethod;
                     ro.LogisticProviderId = rovm.LogisticProviderId;
@@ -250,6 +252,16 @@ namespace CamCare.Services
                     e.Id = evm.Id;
                     e.FirstName = evm.FirstName;
                     e.LastName = evm.LastName;
+                    break;
+                case Krd_Data d when destination is Krd_DataVm vm:
+                    vm.CameraSerial = d.CameraSerial;
+                    vm.Description = d.Description;
+                    vm.CameraType = d.CameraType;
+                    vm.AdditionalComponents = d.AdditionalComponents;
+                    vm.AmicronNumbers = d.AmicronNumbers;
+                    vm.ArrivedAt = d.ArrivedAt;
+                    vm.Kunde = d.Kunde;
+                    vm.Techniker = d.Techniker;
                     break;
                 default:
                     throw new NotSupportedException($"Mapping from {typeof(TSource)} to {typeof(TDestination)} is not supported.");

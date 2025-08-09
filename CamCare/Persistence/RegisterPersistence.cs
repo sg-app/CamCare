@@ -17,6 +17,17 @@ namespace CamCare.Persistence
                 //options.UseSqlite(connectionString);
             });
             services.AddScoped<IAppDbContextFactory, AppDbContextFactory>();
+
+
+            var krdConnectionString = configuration.GetConnectionString("DefaultKrd");
+            if (string.IsNullOrEmpty(krdConnectionString))
+                throw new InvalidOperationException("Connection string 'Default' is not configured.");
+
+            services.AddDbContextFactory<KrdDbContext>(options =>
+            {
+                options.UseSqlServer(krdConnectionString);
+            });
+            services.AddScoped<IKrdDbContextFactory, KrdDbContextFactory>();
             return services;
         }
     }
