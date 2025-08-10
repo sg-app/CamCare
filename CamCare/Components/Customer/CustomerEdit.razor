@@ -1,11 +1,12 @@
-﻿@if (Value is not null)
+﻿@page "/Customer/{CustomerId}"
+@if (Value is not null)
 {
     <RadzenTemplateForm TItem="CustomerVm" Data="Value" Submit="OnSubmit">
         <ChildContent>
             <FluentValidationValidator />
             <RadzenStack Orientation="Orientation.Vertical" Gap="0rem">
                 <RadzenFormField Text="Kundennummer" Style="width: 400px">
-                    <RadzenTextBox @bind-Value="Value.Id" />
+                    <RadzenTextBox @bind-Value="Value.Id" Disabled="IsEdit" ReadOnly="IsEdit" />
                 </RadzenFormField>
                 <ValidationMessage For="@(() => Value.Id)" />
                 <RadzenFormField Text="Firma" Style="width: 400px">
@@ -76,11 +77,13 @@
 
 @code {
     [Inject] protected ICustomerService CustomerService { get; set; } = default!;
+    [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
 
     [Parameter] public CustomerVm? Value { get; set; }
     [Parameter] public EventCallback<CustomerVm> ValueChanged { get; set; }
     [Parameter] public EventCallback<MouseEventArgs> CancelEdit { get; set; }
     [Parameter] public string? CustomerId { get; set; }
+    [SupplyParameterFromQuery] public bool IsEditFromCustomerPage { get; set; }
     private bool IsEdit => !string.IsNullOrEmpty(CustomerId);
 
     protected override async Task OnParametersSetAsync()
@@ -102,6 +105,9 @@
     private async Task OnCancelClicked(MouseEventArgs args)
     {
         await CancelEdit.InvokeAsync(args);
+
+        if (IsEditFromCustomerPage)
+            NavigationManager.NavigateTo("CustomerPage");
     }
 
     private async Task OnSubmit(CustomerVm item)
@@ -115,6 +121,8 @@
         if (response.Success)
         {
             await ValueChanged.InvokeAsync(response.Data);
+            if (IsEditFromCustomerPage)
+                NavigationManager.NavigateTo("CustomerPage");
         }
     }
 }

@@ -23,7 +23,7 @@
         <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.LastName)" Title="Nachname" MinWidth="200px" />
         <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.Email)" Title="Eamil" MinWidth="200px" />
         <RadzenDataGridColumn TItem="CustomerVm" Property="@nameof(CustomerVm.PhoneNumber)" Title="Telefon" MinWidth="200px" />
-        <RadzenDataGridInlineEditColumn TItem="CustomerVm" DeleteRow="OnDeleteRowClicked" CanEdit="(item) => false" />
+        <RadzenDataGridInlineEditColumn TItem="CustomerVm" DeleteRow="OnDeleteRowClicked" EditRow="OnEditRowClicked" />
     </Columns>
     <Template Context="item">
         <RadzenStack Orientation="Orientation.Horizontal" Gap="3rem" Wrap="FlexWrap.Wrap">
@@ -66,7 +66,7 @@
 @code {
     [Inject] protected ICustomerService CustomerService { get; set; } = default!;
     [Inject] protected DialogService DialogService { get; set; } = default!;
-    [Inject] protected IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
 
     private RadzenDataGrid<CustomerVm> _grid = default!;
     private IList<CustomerVm>? _data;
@@ -90,6 +90,10 @@
         if (!_grid.IsValid) return;
         var item = new CustomerVm();
         await _grid.InsertRow(item);
+    }
+    private void OnEditRowClicked(CustomerVm item)
+    {
+        NavigationManager.NavigateTo($"Customer/{item.Id}?IsEditFromCustomerPage=true");
     }
 
     private async Task OnDeleteRowClicked(CustomerVm item)

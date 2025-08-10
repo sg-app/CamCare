@@ -7,11 +7,11 @@ namespace CamCare.Models
         public CustomerVmValidation()
         {
             RuleFor(r => r.Id)
-             .MinimumLength(2)
+             .MinimumLength(1)
              .WithMessage("{PropertyName} muss mindestens {MinLength} Zeichen lang sein.");
 
             RuleFor(r => r.CompanyName)
-              .MinimumLength(2)
+              .MinimumLength(1)
               .When(r => string.IsNullOrEmpty(r.FirstName) && string.IsNullOrEmpty(r.LastName))
               .WithName("Firmenname")
               .WithMessage("{PropertyName} muss mindestens {MinLength} Zeichen lang sein.")
@@ -19,7 +19,7 @@ namespace CamCare.Models
               .WithMessage("{PropertyName} darf maximal {MaxLength} Zeichen lang sein.");
 
             RuleFor(r => r.FirstName)
-              .MinimumLength(4)
+              .MinimumLength(1)
               .When(r => string.IsNullOrEmpty(r.CompanyName))
               .WithName("Vorname")
               .WithMessage("{PropertyName} muss mindestens {MinLength} Zeichen lang sein.")
@@ -27,7 +27,7 @@ namespace CamCare.Models
               .WithMessage("{PropertyName} darf maximal {MaxLength} Zeichen lang sein.");
 
             RuleFor(r => r.LastName)
-              .MinimumLength(4)
+              .MinimumLength(1)
               .When(r => string.IsNullOrEmpty(r.CompanyName))
               .WithName("Nachname")
               .WithMessage("{PropertyName} muss mindestens {MinLength} Zeichen lang sein.")
@@ -44,7 +44,7 @@ namespace CamCare.Models
               .WithMessage("{PropertyName} hat kein gültiges Format.");
 
             RuleFor(r => r.PhoneNumber)
-              .MinimumLength(4)
+              .MinimumLength(1)
               .WithName("Telefonnummer")
               .WithMessage("{PropertyName} muss mindestens {MinLength} Zeichen lang sein.")
               .MaximumLength(100)

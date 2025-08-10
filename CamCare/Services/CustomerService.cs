@@ -16,7 +16,27 @@ namespace CamCare.Services
             : base(contextFactory, mapper, logger, notificationService)
         {
         }
-
+        public override async Task<ServiceResponse<CustomerVm>> GetByIdAsync(object id)
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+                var entity = await context.Customers
+                    .Where(f=>f.Id == id.ToString())
+                    .Include(i=>i.Addresses)
+                    .FirstOrDefaultAsync();
+                if (entity == null)
+                    return ServiceResponse.Failure<CustomerVm>("Nicht gefunden");
+                var vm = _mapper.Map<Customer, CustomerVm>(entity);
+                return ServiceResponse.Success(vm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler in GetByIdAsync");
+                NotifyError("Fehler beim Abrufen des Datensatzes");
+                return ServiceResponse.Failure<CustomerVm>("Fehler beim Abrufen des Datensatzes", ex);
+            }
+        }
         public override async Task<ServiceResponse<Paginated<CustomerVm>>> GetAllAsync(LoadDataArgs args, Expression<Func<Customer, bool>>? predicate = null)
         {
             try
@@ -94,7 +114,7 @@ namespace CamCare.Services
 
                 var entity = await context.Customers
                     .Include(c => c.Addresses)
-                    .FirstOrDefaultAsync(c => c.Id == (string)id);
+                    .FirstOrDefaultAsync(c => c.Id == id.ToString());
 
                 if (entity == null)
                     return ServiceResponse.Failure<CustomerVm>("Nicht gefunden");
