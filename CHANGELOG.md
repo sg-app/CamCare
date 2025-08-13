@@ -1,3 +1,11 @@
+# [1.0.0-beta.15](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.14...v1.0.0-beta.15) (2025-08-13)
+
+
+### Features
+
+* add Radzen tiles for order management ([556da20](https://github.com/sg-app/CamCare/commit/556da20a33d47a9e8d02c50577099986756aa40d))
+* enhance routing and modify customer insertion logic ([7fd53f4](https://github.com/sg-app/CamCare/commit/7fd53f49bba1a925558315266720b7465c1fc175))
+
 # [1.0.0-beta.14](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.13...v1.0.0-beta.14) (2025-08-10)
 
 
