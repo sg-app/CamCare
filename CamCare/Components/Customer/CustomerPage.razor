@@ -85,12 +85,11 @@
         _isLoading = false;
     }
 
-    private async Task OnInsertClicked(MouseEventArgs args)
+    private void OnInsertClicked(MouseEventArgs args)
     {
-        if (!_grid.IsValid) return;
-        var item = new CustomerVm();
-        await _grid.InsertRow(item);
+        NavigationManager.NavigateTo($"Customer/?IsEditFromCustomerPage=true");
     }
+
     private void OnEditRowClicked(CustomerVm item)
     {
         NavigationManager.NavigateTo($"Customer/{item.Id}?IsEditFromCustomerPage=true");
