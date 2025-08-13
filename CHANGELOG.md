@@ -1,3 +1,11 @@
+# [1.0.0-beta.14](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.13...v1.0.0-beta.14) (2025-08-10)
+
+
+### Features
+
+* enhance customer editing and validation features ([486f232](https://github.com/sg-app/CamCare/commit/486f23233aecd4f570a5d0059f248ffcf30b43e0))
+* update column widths in KrdPage data grid ([1fbd9d0](https://github.com/sg-app/CamCare/commit/1fbd9d08c698b6d63828ce6bbf782563d81f0fe7))
+
 # [1.0.0-beta.13](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.12...v1.0.0-beta.13) (2025-08-09)
 
 
