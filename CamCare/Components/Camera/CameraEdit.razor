@@ -40,7 +40,7 @@
     [Parameter] public EventCallback<CameraVm> ValueChanged { get; set; }
     [Parameter] public EventCallback<MouseEventArgs> CancelEdit { get; set; }
     [Parameter] public string? SerialNumber { get; set; }
-    [Parameter] public string CustomerId { get; set; } = string.Empty;
+    [Parameter] public int? CustomerId { get; set; }
     private bool IsEdit => !string.IsNullOrEmpty(SerialNumber);
 
     private IEnumerable<CameraTypeVm>? _cameraTypes;
@@ -59,7 +59,8 @@
                 Value = response.Data;
             }
         }
-        Value ??= new CameraVm { CustomerId = CustomerId };
+        ArgumentNullException.ThrowIfNull(CustomerId, nameof(CustomerId));
+        Value ??= new CameraVm { CustomerId = CustomerId.Value };
     }
 
     private async Task OnCameraTypeLoadData(LoadDataArgs args)

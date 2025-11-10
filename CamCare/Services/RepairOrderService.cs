@@ -40,7 +40,6 @@ namespace CamCare.Services
                 query = query.Take(args.Top.Value);
             }
             query = query
-                .Include(i => i.Customer)
                 .Include(i => i.Camera)
                 .Include(i => i.RepairOrderStatus)
                 .Include(i=>i.RepairOrderStatusHistory)

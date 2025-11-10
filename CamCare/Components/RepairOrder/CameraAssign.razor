@@ -1,9 +1,9 @@
-﻿@if (CustomerId != null)
+﻿@if (CustomerId is not null)
 {
     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
         <RadzenFormField Text="Kamera wählen">
             <RadzenDropDown @ref="@_dropDown"
-                TValue="string"
+                            TValue="string"
                             Value="Value"
                             ValueChanged="OnValueChanged"
                             Data="_cameras"
@@ -29,8 +29,8 @@
     [Inject] protected ICameraService CameraService { get; set; } = default!;
     [Inject] protected ILogger<CameraAssign> Logger { get; set; } = default!;
 
-    [Parameter] public string CustomerId { get; set; }
-    [Parameter] public string Value { get; set; }
+    [Parameter] public int? CustomerId { get; set; }
+    [Parameter] public string Value { get; set; } = string.Empty;
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
 
     private RadzenDropDown<string> _dropDown = default!;
@@ -40,12 +40,17 @@
 
     private async Task OnCameraLoadData(LoadDataArgs args)
     {
+        if(CustomerId is null)
+            return; 
+
         ServiceResponse<Paginated<CameraVm>> response;
 
-        if (string.IsNullOrEmpty(args.Filter))
-            response = await CameraService.GetAllAsync(args, cam => cam.CustomerId == CustomerId);
-        else
-            response = await CameraService.GetAllAsync(args, cam => cam.SerialNumber.Contains(args.Filter) || cam.CameraType.Name.Contains(args.Filter));
+
+        // if (string.IsNullOrEmpty(args.Filter))
+        //     response = await CameraService.GetAllAsync(args, cam => cam.CustomerId == CustomerId);
+        // else
+        //     response = await CameraService.GetAllAsync(args, cam => cam.SerialNumber.Contains(args.Filter) || cam.CameraType.Name.Contains(args.Filter));
+        response = await CameraService.GetForDropdownAsync(args, CustomerId.Value);
 
         if (response.Success)
         {

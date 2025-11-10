@@ -6,10 +6,8 @@ namespace CamCare.Persistence
 {
     public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options), IAppDbContext
     {
-        public DbSet<Customer> Customers { get; set; }
         public DbSet<Camera> Cameras { get; set; }
         public DbSet<CameraType> CameraTypes { get; set; }
-        public DbSet<Address> Addresses { get; set; }
         public DbSet<Defective> Defectives { get; set; }
         public DbSet<RepairOrderStatus> RepairOrderStatuses { get; set; }
         public DbSet<RepairOrder> RepairOrders { get; set; }
@@ -64,21 +62,6 @@ namespace CamCare.Persistence
                     new CameraType { Id = 4, Name = "5030" }
                 );
             
-            modelBuilder.Entity<Camera>()
-                .HasData(
-                    new Camera { SerialNumber = "1234567890", CameraTypeId = 1, CustomerId = "1" }
-                );
-
-            modelBuilder.Entity<Customer>()
-                .HasData(
-                    new Customer { Id = "1", FirstName = "Max", LastName = "Mustermann", Email = "max@mustermann.de", PhoneNumber = "089190815" }
-                    );
-
-            modelBuilder.Entity<Address>()
-                .HasData(
-                    new Address { Id = 1, CustomerId = "1", AddressType=AddressType.Billing, Street = "Musterstraße 1", PostalCode = "80331", City = "München", Country = "Deutschland" }
-                );
-
             modelBuilder.Entity<LogisticProvider>()
                 .HasData(
                     new LogisticProvider { Id = 1, Name = "DHL", IsDefault = true, IsActive = true },

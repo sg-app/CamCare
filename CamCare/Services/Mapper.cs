@@ -19,56 +19,6 @@ namespace CamCare.Services
         {
             switch (source)
             {
-                case Address a when destination is AddressVm vm:
-                    vm.Id = a.Id;
-                    vm.CustomerId = a.CustomerId;
-                    vm.AddressType = a.AddressType;
-                    vm.Street = a.Street;
-                    vm.HouseNumber = a.HouseNumber;
-                    vm.PostalCode = a.PostalCode;
-                    vm.City = a.City;
-                    vm.State = a.State;
-                    vm.Country = a.Country;
-                    vm.CreatedAt = a.CreatedAt;
-                    vm.UpdatedAt = a.UpdatedAt;
-                    break;
-                case AddressVm vm when destination is Address a:
-                    a.Id = vm.Id;
-                    a.CustomerId = vm.CustomerId;
-                    a.AddressType = vm.AddressType;
-                    a.Street = vm.Street;
-                    a.HouseNumber = vm.HouseNumber;
-                    a.PostalCode = vm.PostalCode;
-                    a.City = vm.City;
-                    a.State = vm.State;
-                    a.Country = vm.Country;
-                    break;
-                case Customer c when destination is CustomerVm cvm:
-                    cvm.Id = c.Id;
-                    cvm.CompanyName = c.CompanyName;
-                    cvm.FirstName = c.FirstName;
-                    cvm.LastName = c.LastName;
-                    cvm.Email = c.Email;
-                    cvm.PhoneNumber = c.PhoneNumber;
-                    cvm.CreatedAt = c.CreatedAt;
-                    cvm.UpdatedAt = c.UpdatedAt;
-                    if (c.Addresses != null)
-                        cvm.Addresses = c.Addresses.Select(Map<Address, AddressVm>).ToList();
-                    if (c.Cameras != null)
-                        cvm.Cameras = c.Cameras.Select(Map<Camera, CameraVm>).ToList();
-                    break;
-                case CustomerVm cvm when destination is Customer c:
-                    c.Id = cvm.Id;
-                    c.CompanyName = cvm.CompanyName;
-                    c.FirstName = cvm.FirstName;
-                    c.LastName = cvm.LastName;
-                    c.Email = cvm.Email;
-                    c.PhoneNumber = cvm.PhoneNumber;
-                    if (cvm.Addresses != null)
-                        c.Addresses = cvm.Addresses.Select(Map<AddressVm, Address>).ToList();
-                    if (cvm.Cameras != null)
-                        c.Cameras = cvm.Cameras.Select(Map<CameraVm, Camera>).ToList();
-                    break;
                 case Camera cam when destination is CameraVm camVm:
                     camVm.SerialNumber = cam.SerialNumber;
                     camVm.CustomerId = cam.CustomerId;
@@ -102,8 +52,6 @@ namespace CamCare.Services
                     rovm.ArrivedAt = ro.ArrivedAt.ToLocalTime();
                     rovm.CreatedAt = ro.CreatedAt;
                     rovm.UpdatedAt = ro.UpdatedAt;
-                    if (ro.Customer != null)
-                        rovm.Customer = Map<Customer, CustomerVm>(ro.Customer);
                     if (ro.Camera != null)
                         rovm.Camera = Map<Camera, CameraVm>(ro.Camera);
                     if (ro.RepairOrderStatus != null)
@@ -121,7 +69,7 @@ namespace CamCare.Services
                     break;
                 case RepairOrderVm rovm when destination is RepairOrder ro:
                     ro.Id = rovm.Id;
-                    ro.CustomerId = rovm.CustomerId;
+                    ro.CustomerId = rovm.CustomerId ?? 0;
                     ro.CameraSerialNumber = rovm.CameraSerialNumber;
                     ro.PiceOfEquipment = rovm.PiceOfEquipment;
                     ro.AdditionalComponents = rovm.AdditionalComponents;

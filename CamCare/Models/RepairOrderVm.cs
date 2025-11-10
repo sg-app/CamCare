@@ -1,3 +1,4 @@
+using CamCare.Models.Amicron;
 using System;
 using System.Collections.Generic;
 
@@ -6,7 +7,7 @@ namespace CamCare.Models
     public class RepairOrderVm
     {
         public int Id { get; set; }
-        public string CustomerId { get; set; } = string.Empty;
+        public int? CustomerId { get; set; }
         public string? CameraSerialNumber { get; set; }
         public string? PiceOfEquipment { get; set; }
         public string? AdditionalComponents { get; set; }
@@ -21,7 +22,7 @@ namespace CamCare.Models
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
-        public CustomerVm? Customer { get; set; }
+        public Adressen? Customer { get; set; }
         public CameraVm? Camera { get; set; }
         public RepairOrderStatusVm? RepairOrderStatus { get; set; }
         public LogisticProviderVm? LogisticProvider { get; set; }

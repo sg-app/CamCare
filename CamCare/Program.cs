@@ -20,12 +20,12 @@ builder.Services.AddSingleton<IMapper, Mapper>();
 builder.Services.AddScoped<IRepairOrderStatusService, RepairOrderStatusService>();
 builder.Services.AddScoped<ICameraTypeService, CameraTypeService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
-builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ICameraService, CameraService>();
 builder.Services.AddScoped<ILogisticProviderService, LogisticProviderService>();
 builder.Services.AddScoped<IRepairPositionService, RepairPositionService>();
 builder.Services.AddScoped<IDefectiveService, DefectiveService>();
 builder.Services.AddScoped<IRepairOrderService, RepairOrderService>();
+builder.Services.AddScoped<IAmicronDataService, AmicronDataService>();
 
 builder.Services.AddScoped<IKrdDataService, KrdDataService>();
 

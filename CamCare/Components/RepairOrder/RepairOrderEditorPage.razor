@@ -1,14 +1,14 @@
 ﻿@page "/RepairOrderEditorPage"
 @page "/RepairOrderEditorPage/{RepairOrderId:int}"
+
 <RadzenTemplateForm Data="_repairOrder" TItem="RepairOrderVm">
     <FluentValidationValidator @ref="_fluentValidationValidator" />
 
     <RadzenFieldset Text="Kunde">
-        <CustomerAssign @bind-Value="_repairOrder.CustomerId" />
-        <ValidationMessage For="@(() => _repairOrder.CustomerId)" />
+        <AmicronCustomerAssign Value="_repairOrder.CustomerId" ValueChanged="OnCustomerIdChanged" />
     </RadzenFieldset>
 
-    @if (!string.IsNullOrEmpty(_repairOrder.CustomerId))
+    @if (_repairOrder.CustomerId is not null)
     {
         <RadzenFieldset Text="@(_entryWithoutCamera ? "Einzelteil" : "Kamera")">
             <div class="p-1">
@@ -29,11 +29,11 @@
         </RadzenFieldset>
     }
 
-    @if (!string.IsNullOrEmpty(_repairOrder.CustomerId) && !string.IsNullOrEmpty(_repairOrder.CameraSerialNumber))
+    @if (_repairOrder.CustomerId is not null)
     {
         <RadzenFieldset Text="Beschreibung">
             <RadzenFormField class="d-block" Text="Zusätzlich mitgelieferte Komponenten">
-                <RadzenTextArea @bind-Value="_repairOrder.AdditionalComponents"  Cols="100" Rows="2" />
+                <RadzenTextArea @bind-Value="_repairOrder.AdditionalComponents" Cols="100" Rows="2" />
             </RadzenFormField>
 
             <RadzenFormField class="d-block pt-2" Text="Eingetroffen">
@@ -98,6 +98,7 @@
     [Inject] protected IEmployeeService EmployeeService { get; set; } = default!;
     [Inject] protected ILogger<RepairOrderEditorPage> Logger { get; set; } = default!;
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] protected IConfiguration Configuration { get; set; } = default!;
 
     [Parameter] public int RepairOrderId { get; set; }
 
@@ -192,5 +193,13 @@
     private void OnCancelClicked(MouseEventArgs args)
     {
         NavigationManager.NavigateTo("/RepairOrderPage");
+    }
+
+    private void OnCustomerIdChanged(int? args)
+    {
+        if (args.HasValue)
+            _repairOrder.CustomerId = args;
+        else
+            _repairOrder = new();
     }
 }

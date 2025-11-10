@@ -7,11 +7,10 @@ namespace CamCare.Domain
         [Key]
         [MaxLength(100)]
         public string SerialNumber { get; set; } = string.Empty;
-        public string CustomerId { get; set; } = string.Empty;
+        public int CustomerId { get; set; }
         public int CameraTypeId { get; set; }
 
         public virtual ICollection<RepairOrder>? RepairOrders { get; set; }
-        public virtual Customer Customer { get; set; } = null!;
         public virtual CameraType CameraType { get; set; } = null!;
     }
 }

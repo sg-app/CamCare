@@ -6,7 +6,7 @@ namespace CamCare.Domain
     {
         [Key]
         public int Id { get; set; }
-        public string CustomerId { get; set; } = string.Empty;
+        public int CustomerId { get; set; }
         public string? CameraSerialNumber { get; set; }
         public string? PiceOfEquipment { get; set; }
         public string? AdditionalComponents { get; set; }
@@ -18,7 +18,6 @@ namespace CamCare.Domain
         public string? DeliveryNoteNumber { get; set; }
         public DateTime ArrivedAt { get; set; } = DateTime.UtcNow;
 
-        public virtual Customer Customer { get; set; } = null!;
         public virtual Camera Camera { get; set; } = null!;
         public virtual RepairOrderStatus RepairOrderStatus { get; set; } = null!;
         public virtual LogisticProvider LogisticProvider { get; set; } = null!;
