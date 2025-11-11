@@ -1,4 +1,5 @@
-﻿<RadzenDataGrid class="mt-2"
+﻿@using CamCare.Models.Amicron
+<RadzenDataGrid class="mt-2"
                 @ref="_grid"
                 Data="@RepairOrder.RepairPositions"
                 TItem="RepairPositionVm"
@@ -42,10 +43,31 @@
         <RadzenDataGridInlineEditColumn TItem="RepairPositionVm" DeleteRow="OnDeleteRow" SaveRow="OnSaveRow" CancelEditRow="OnCancelEditRow" EditRow="OnEditRow" />
     </Columns>
 </RadzenDataGrid>
-
+<RadzenDataGrid TItem="Artikel"
+                Data="_data"
+                LoadData="OnLoadData"
+                IsLoading="_isLoading"
+                Count="_totalCount"
+                AllowPaging="true"
+                PageSize="10"
+                AllowFiltering="true"
+                FilterMode="FilterMode.Simple"
+                Density="Density.Compact"
+                AllowColumnResize="true"
+                ShowEmptyMessage="false">
+    <Columns>
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Artikelnummer)" Title="Artikel-Nr" Width="150px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Description)" Title="Bezeichnung" MinWidth="200px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Unit)" Title="Einheit" Width="80px" Filterable="false" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.InStock)" Title="Bestand" Width="100px" Filterable="false" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.MinStock)" Title="Mind. Bestand" Width="80px" Filterable="false" />
+        @* <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Picture)" Title="Bild" Width="80px" Filterable="false" /> *@
+    </Columns>
+</RadzenDataGrid>
 @code {
     [Inject] protected ILogger<RepairPositionAssign> Logger { get; set; } = default!;
     [Inject] protected IRepairPositionService RepairPositionService { get; set; } = default!;
+    [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
 
     [Parameter] public RepairOrderVm RepairOrder { get; set; } = new();
 
@@ -56,7 +78,15 @@
 
     private CancellationTokenSource? _defectiveChangedCts;
     private object? _lastDefectiveChangedValue;
+    private IList<Artikel>? _data;
+    private bool _isLoading;
+    private int _totalCount;
+    private ArtikelFilter? _filter;
 
+    public static string? ToBase64String(byte[]? data)
+    {
+        return data == null ? null : Convert.ToBase64String(data);
+    }
 
     protected override Task OnParametersSetAsync()
     {
@@ -66,6 +96,31 @@
         Logger.LogInformation("RepairOrder set to: {repairOrder}", RepairOrder);
         RepairOrder.RepairPositions ??= [];
         return base.OnParametersSetAsync();
+    }
+
+    private async Task OnLoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        _filter = new();
+        foreach (var filter in args.Filters)
+        {
+            switch (filter.Property)
+            {
+                case nameof(Artikel.Artikelnummer):
+                    _filter.Artikelnummer = filter.FilterValue?.ToString();
+                    break;
+                case nameof(Artikel.Description):
+                    _filter.Description = filter.FilterValue?.ToString();
+                    break;
+            }
+        }
+        var response = await AmicronDataService.GetArticleAsync(args, _filter);
+        if (response.Success)
+        {
+            _data = response.Data?.Items.ToList();
+            _totalCount = response.Data?.TotalCount ?? 0;
+        }
+        _isLoading = false;
     }
 
     private async Task OnLoadRepairPositionCatalog(LoadDataArgs args)

@@ -48,7 +48,7 @@ namespace CamCare.Services
         {
             var top = args.Top ?? 100;
             var skip = args.Skip ?? 0;
-            
+
 
             var result = new List<Adressen>();
 
@@ -56,7 +56,7 @@ namespace CamCare.Services
             await connection.OpenAsync();
             var query = "SELECT FIRST @Top SKIP @Skip LFDNR, NR, ART, VORNAME, NAME, STRASSE, LAND, PLZ, ORT, ZAHLWEISE FROM ADRESSEN WHERE 1=1 ";
             var countQuery = "SELECT COUNT(*) FROM ADRESSEN WHERE 1=1 ";
-            
+
             using var command = new FbCommand();
             using var command2 = new FbCommand();
 
@@ -96,7 +96,7 @@ namespace CamCare.Services
 
             query += $" ORDER BY LFDNR";
 
-            
+
             command.Parameters.AddWithValue("@Top", top);
             command.Parameters.AddWithValue("@Skip", skip);
 
@@ -106,7 +106,7 @@ namespace CamCare.Services
 
             using var reader = await command.ExecuteReaderAsync();
 
-            
+
             while (await reader.ReadAsync())
             {
                 result.Add(new Adressen
@@ -188,6 +188,88 @@ namespace CamCare.Services
             var totalCount = Convert.ToInt32(countReader);
 
             return ServiceResponse.Success(new Paginated<Serials>
+            {
+                Items = result,
+                TotalCount = totalCount
+            });
+        }
+
+        public async Task<ServiceResponse<Paginated<Artikel>>> GetArticleAsync(LoadDataArgs args, ArtikelFilter? filter = null)
+        {
+            var top = args.Top ?? 100;
+            var skip = args.Skip ?? 0;
+
+
+            var result = new List<Artikel>();
+
+            using var connection = new FbConnection(ConnectionString);
+            await connection.OpenAsync();
+            var query = "SELECT FIRST @Top SKIP @Skip LFDNR, ARTIKELNR, BEZEICHNUNG, BESTAND, BESTANDMINDEST, MENGENEINHEIT, BILD FROM ARTIKEL WHERE 1=1 ";
+            var countQuery = "SELECT COUNT(*) FROM ARTIKEL WHERE 1=1 ";
+
+            using var command = new FbCommand();
+            using var command2 = new FbCommand();
+
+            if (filter?.Artikelnummer is not null)
+            {
+                var artikelNummer = $"%{filter.Artikelnummer}%";
+                command.Parameters.AddWithValue("@Artikelnummer", artikelNummer);
+                command2.Parameters.AddWithValue("@Artikelnummer", artikelNummer);
+                query += " AND UPPER(ARTIKELNR) LIKE UPPER(@Artikelnummer)";
+                countQuery += " AND UPPER(ARTIKELNR) LIKE UPPER(@Artikelnummer)";
+            }
+            if (filter?.Description is not null)
+            {
+                var description = $"%{filter.Description}%";
+                command.Parameters.AddWithValue("@Bezeichnung", description);
+                command2.Parameters.AddWithValue("@Bezeichnung", description);
+                query += " AND UPPER(BEZEICHNUNG) LIKE UPPER(@Bezeichnung)";
+                countQuery += " AND UPPER(BEZEICHNUNG) LIKE UPPER(@Bezeichnung)";
+            }
+
+            query += $" ORDER BY LFDNR";
+
+
+            command.Parameters.AddWithValue("@Top", top);
+            command.Parameters.AddWithValue("@Skip", skip);
+
+            logger.LogDebug(query);
+            command.Connection = connection;
+            command.CommandText = query;
+
+            using var reader = await command.ExecuteReaderAsync();
+
+
+            while (await reader.ReadAsync())
+            {
+                var artikel = new Artikel
+                {
+                    LfdNr = reader.GetInt32(0),
+                    Artikelnummer = reader.GetString(1),
+                    Description = reader.GetString(2),
+                    InStock = reader.IsDBNull(3) ? null : reader.GetDecimal(3),
+                    MinStock = reader.IsDBNull(4) ? null : reader.GetDecimal(4),
+                    Unit = reader.GetString(5),
+                };
+
+                //if (!reader.IsDBNull(5))
+                //{
+                //    using var stream = reader.GetStream(6);
+                //    using var ms = new MemoryStream();
+                //    await stream.CopyToAsync(ms);
+                //    var blobBytes = ms.ToArray();
+                //    artikel.Picture = blobBytes;
+                //}
+                result.Add(artikel);
+
+            }
+            logger.LogDebug(countQuery);
+            command2.Connection = connection;
+            command2.CommandText = countQuery;
+            var countReader = await command2.ExecuteScalarAsync();
+            var totalCount = Convert.ToInt32(countReader);
+
+            return ServiceResponse.Success(new Paginated<Artikel>
             {
                 Items = result,
                 TotalCount = totalCount
