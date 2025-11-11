@@ -33,7 +33,7 @@ namespace CamCare.Services
 
                 var items = await query.ToListAsync();
                 var vms = items.Select(e => _mapper.Map<Camera, CameraVm>(e)).ToList();
-                foreach( var vm in vms)
+                foreach (var vm in vms)
                 {
                     var response = await _amicronData.GetAddressByCustomerIdAsync(vm.CustomerId);
                     if (response.Success && response.Data is not null)
@@ -61,31 +61,30 @@ namespace CamCare.Services
             try
             {
                 using var context = _contextFactory.CreateDbContext();
+
+                Expression<Func<Camera, bool>>? predicate;
+
+                if (!string.IsNullOrEmpty(args.Filter))
+                    predicate = c => c.CustomerId == customerId && EF.Functions.Like(c.SerialNumber, $"%{args.Filter}%");
+                else
+                    predicate = c => c.CustomerId == customerId;
+
+                if (string.IsNullOrEmpty(args.OrderBy))
+                    args.OrderBy = "SerialNumber";
+
                 var (totalCount, query) = context.Cameras
-                    .AsNoTracking()
-                    .Include(x => x.CameraType)
-                    .AsQueryable()
-                    .LoadByLoadDataArgs(args);
+                .AsNoTracking()
+                .Include(x => x.CameraType)
+                .AsQueryable()
+                .LoadByLoadDataArgs(args, predicate);
 
                 var items = await query.ToListAsync();
-                var vmsFromCamCareDatabase = items.Select(_mapper.Map<Camera, CameraVm>).ToList();
-                
-
-                var response = await _amicronData.GetSerialsFromCustomerIdAsync(args, customerId);
-                var vmsFromAmicronData = response.Data?.Items.Select(e => new CameraVm
-                {
-                    CustomerId = e.KundenLfdNr ?? 0,
-                    SerialNumber = e.Seriennummer ?? string.Empty,
-                   
-                }).ToList();
-                
-                
-                var combinedVms = vmsFromCamCareDatabase.Concat(vmsFromAmicronData ?? Enumerable.Empty<CameraVm>()).ToList();
+                var vms = items.Select(_mapper.Map<Camera, CameraVm>).ToList();
 
                 var paginated = new Paginated<CameraVm>
                 {
-                    Items = combinedVms,
-                    TotalCount = totalCount + (response.Data?.TotalCount ?? 0)
+                    Items = vms,
+                    TotalCount = totalCount
                 };
 
                 return ServiceResponse.Success(paginated);

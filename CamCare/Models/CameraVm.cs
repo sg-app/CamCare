@@ -11,6 +11,7 @@ namespace CamCare.Models
         public int CustomerId { get; set; }
         [Range(1, int.MaxValue, ErrorMessage = "Kamera-Typ muss ausgewählt sein.")]
         public int CameraTypeId { get; set; }
+        public string? ArtikelName { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
@@ -22,7 +23,7 @@ namespace CamCare.Models
         
         public string DisplayName 
             => CameraType is null
-            ? $"{SerialNumber}"
+            ? $"{SerialNumber} {ArtikelName}"
             : $"[{CameraType.Name}] {SerialNumber}";
     }
 }

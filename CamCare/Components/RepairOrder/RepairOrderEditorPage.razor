@@ -11,21 +11,35 @@
     @if (_repairOrder.CustomerId is not null)
     {
         <RadzenFieldset Text="@(_entryWithoutCamera ? "Einzelteil" : "Kamera")">
-            <div class="p-1">
-                <RadzenCheckBox @bind-Value=@_entryWithoutCamera Name="CheckBox1" />
-                <RadzenLabel Text="Erfassung ohne Kamera" Component="CheckBox1" class="ms-2" />
-            </div>
+            <RadzenRow>
+                <div class="p-1">
+                    <RadzenCheckBox @bind-Value=@_entryWithoutCamera Name="_entryWithoutCamera" />
+                    <RadzenLabel Text="Erfassung ohne Kamera" Component="_entryWithoutCamera" class="ms-2" />
+                </div>
+                <div class="p-1">
+                    <RadzenCheckBox @bind-Value=@_cameraNotFound Name="_cameraNotFound" />
+                    <RadzenLabel Text="Nicht in Amicron Liste" Component="_cameraNotFound" class="ms-2" />
+                </div>
+            </RadzenRow>
+            <div class="pt-1">
+
             @if (_entryWithoutCamera)
             {
                 <RadzenFormField class="d-block" Text="Einzelteil Beschreibung">
                     <RadzenTextBox @bind-Value="_repairOrder.PiceOfEquipment" Style="width:500px" />
                 </RadzenFormField>
             }
-            else
+            else if (_cameraNotFound)
             {
                 <CameraAssign CustomerId="@_repairOrder.CustomerId" @bind-Value="_repairOrder.CameraSerialNumber" />
                 <ValidationMessage For="@(() => _repairOrder.CameraSerialNumber)" />
             }
+            else
+            {
+                <AmicronCameraAssign CustomerId="@_repairOrder.CustomerId" @bind-Value="_repairOrder.CameraSerialNumber" />
+                <ValidationMessage For="@(() => _repairOrder.CameraSerialNumber)" />
+            }
+            </div>
         </RadzenFieldset>
     }
 
@@ -118,6 +132,7 @@
     private CancellationTokenSource? _defectiveChangedCts;
     private object? _lastDefectiveChangedValue;
     private bool _entryWithoutCamera;
+    private bool _cameraNotFound;
 
     protected override Task OnInitializedAsync()
     {
