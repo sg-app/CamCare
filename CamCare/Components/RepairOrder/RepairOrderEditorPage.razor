@@ -13,11 +13,11 @@
         <RadzenFieldset Text="@(_entryWithoutCamera ? "Einzelteil" : "Kamera")">
             <RadzenRow>
                 <div class="p-1">
-                    <RadzenCheckBox @bind-Value=@_entryWithoutCamera Name="_entryWithoutCamera" />
+                    <RadzenCheckBox TValue="bool" Value=@_entryWithoutCamera ValueChanged="OnWithoutCameraSelected" Name="_entryWithoutCamera" />
                     <RadzenLabel Text="Erfassung ohne Kamera" Component="_entryWithoutCamera" class="ms-2" />
                 </div>
                 <div class="p-1">
-                    <RadzenCheckBox @bind-Value=@_cameraNotFound Name="_cameraNotFound" />
+                    <RadzenCheckBox TValue="bool" Value=@_cameraNotFound ValueChanged="OnCameraNotFountSelected" Name="_cameraNotFound" />
                     <RadzenLabel Text="Nicht in Amicron Liste" Component="_cameraNotFound" class="ms-2" />
                 </div>
             </RadzenRow>
@@ -216,5 +216,23 @@
             _repairOrder.CustomerId = args;
         else
             _repairOrder = new();
+    }
+    private void OnWithoutCameraSelected(bool args)
+    {
+        _entryWithoutCamera = args;
+        if(args)
+        {
+            _cameraNotFound = false;
+            _repairOrder.CameraSerialNumber = null;
+        }
+    }
+    private void OnCameraNotFountSelected(bool args)
+    {
+        _cameraNotFound = args;
+        _repairOrder.CameraSerialNumber = null;
+        if(args)
+        {
+            _entryWithoutCamera = false;
+        }
     }
 }
