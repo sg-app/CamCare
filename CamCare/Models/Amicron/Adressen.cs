@@ -1,11 +1,12 @@
-﻿namespace CamCare.Models.Amicron
+﻿using System.Text;
+
+namespace CamCare.Models.Amicron
 {
     public class Adressen
     {
         public int LfdNr { get; set; }
         public string? KdNummer { get; set; }
         public string? Art { get; set; }
-        public string? Suchbegriff { get; set; }
         public string? Vorname { get; set; }
         public string? Name { get; set; }
         public string? Strasse { get; set; }
@@ -14,6 +15,19 @@
         public string? Ort { get; set; }
         public string? Zahlweise { get; set; }
 
-        public string DisplayName => $"[{KdNummer}] - {Name}";
+        public string DisplayName => $"[{KdNummer}] - {Name} - {Plz} {Ort}";
+        public string FullName
+        {
+            get
+            {
+                var sb = new StringBuilder();
+                if(!string.IsNullOrEmpty(Vorname))
+                    sb.Append(Vorname);
+                if (!string.IsNullOrEmpty(Name))
+                    sb.Append(' ');
+                    sb.Append(Name);
+                return sb.ToString();
+            }
+        }
     }
 }

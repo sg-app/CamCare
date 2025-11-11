@@ -3,7 +3,6 @@ using CamCare.Models;
 using CamCare.Models.Amicron;
 using FirebirdSql.Data.FirebirdClient;
 using Radzen;
-using System.Linq.Expressions;
 
 namespace CamCare.Services
 {
@@ -15,7 +14,7 @@ namespace CamCare.Services
         {
             using var connection = new FbConnection(ConnectionString);
             await connection.OpenAsync();
-            var query = "SELECT LFDNR, NR, ART, SUCHBEGRIFF, VORNAME, NAME, STRASSE, LAND, PLZ, ORT, ZAHLWEISE FROM ADRESSEN WHERE LFDNR = @CustomerId";
+            var query = "SELECT LFDNR, NR, ART, VORNAME, NAME, STRASSE, LAND, PLZ, ORT, ZAHLWEISE FROM ADRESSEN WHERE LFDNR = @CustomerId";
 
             using var command = new FbCommand(query, connection);
             command.Parameters.AddWithValue("@CustomerId", customerId);
@@ -30,14 +29,13 @@ namespace CamCare.Services
                     LfdNr = reader.GetInt32(0),
                     KdNummer = reader.GetString(1),
                     Art = reader.GetString(2),
-                    Suchbegriff = reader.GetString(3),
-                    Vorname = reader.GetString(4),
-                    Name = reader.GetString(5),
-                    Strasse = reader.GetString(6),
-                    Land = reader.GetString(7),
-                    Plz = reader.GetString(8),
-                    Ort = reader.GetString(9),
-                    Zahlweise = reader.GetString(10)
+                    Vorname = reader.GetString(3),
+                    Name = reader.GetString(4),
+                    Strasse = reader.GetString(5),
+                    Land = reader.GetString(6),
+                    Plz = reader.GetString(7),
+                    Ort = reader.GetString(8),
+                    Zahlweise = reader.GetString(9)
                 };
             }
 
@@ -46,33 +44,69 @@ namespace CamCare.Services
                 : ServiceResponse.Failure<Adressen>("Kein Datensatz gefunden.");
         }
 
-        public async Task<ServiceResponse<Paginated<Adressen>>> GetAllAddressAsync(LoadDataArgs args, Expression<Func<Adressen, bool>>? predicate = null)
+        public async Task<ServiceResponse<Paginated<Adressen>>> GetAllAddressAsync(LoadDataArgs args, AdressenFilter? filter = null)
         {
             var top = args.Top ?? 100;
             var skip = args.Skip ?? 0;
-            var filter = string.IsNullOrEmpty(args.Filter) ? null : $"%{args.Filter}%";
+            
 
             var result = new List<Adressen>();
 
             using var connection = new FbConnection(ConnectionString);
             await connection.OpenAsync();
-            var query = "SELECT FIRST @Top SKIP @Skip LFDNR, NR, ART, SUCHBEGRIFF, VORNAME, NAME, STRASSE, LAND, PLZ, ORT, ZAHLWEISE FROM ADRESSEN";
-            var countQuery = "SELECT COUNT(*) FROM ADRESSEN";
+            var query = "SELECT FIRST @Top SKIP @Skip LFDNR, NR, ART, VORNAME, NAME, STRASSE, LAND, PLZ, ORT, ZAHLWEISE FROM ADRESSEN WHERE 1=1 ";
+            var countQuery = "SELECT COUNT(*) FROM ADRESSEN WHERE 1=1 ";
+            
+            using var command = new FbCommand();
+            using var command2 = new FbCommand();
 
-            if (filter is not null)
+            if (filter?.KdNummer is not null)
             {
-                query += " WHERE UPPER(SUCHBEGRIFF) LIKE UPPER(@Filter)";
-                countQuery += " WHERE UPPER(SUCHBEGRIFF) LIKE UPPER(@Filter)";
+                var kdNummer = $"%{filter.KdNummer}%";
+                command.Parameters.AddWithValue("@KdNummer", kdNummer);
+                command2.Parameters.AddWithValue("@KdNummer", kdNummer);
+                query += " AND UPPER(KDNUMMER) LIKE UPPER(@KdNummer)";
+                countQuery += " AND WHERE UPPER(KDNUMMER) LIKE UPPER(@KdNummer)";
             }
+            if (filter?.Name is not null)
+            {
+                var name = $"%{filter.Name}%";
+                command.Parameters.AddWithValue("@Name", name);
+                command2.Parameters.AddWithValue("@Name", name);
+                query += " AND UPPER(NAME) LIKE UPPER(@Name)";
+                countQuery += " AND UPPER(NAME) LIKE UPPER(@Name)";
+            }
+            if (filter?.Plz is not null)
+            {
+                var plz = $"{filter.Plz}%";
+                command.Parameters.AddWithValue("@Plz", plz);
+                command2.Parameters.AddWithValue("@Plz", plz);
+                query += " AND PLZ LIKE @Plz";
+                countQuery += " AND PLZ LIKE @Plz";
+            }
+            if (filter?.Ort is not null)
+            {
+                var ort = $"%{filter.Ort}%";
+                command.Parameters.AddWithValue("@Ort", ort);
+                command2.Parameters.AddWithValue("@Ort", ort);
+                query += " AND UPPER(ORT) LIKE UPPER(@Ort)";
+                countQuery += " AND UPPER(ORT) LIKE UPPER(@Ort)";
+            }
+
+
             query += $" ORDER BY LFDNR";
 
-            using var command = new FbCommand(query, connection);
+            
             command.Parameters.AddWithValue("@Top", top);
             command.Parameters.AddWithValue("@Skip", skip);
-            command.Parameters.AddWithValue("@Filter", filter);
+
+            logger.LogDebug(query);
+            command.Connection = connection;
+            command.CommandText = query;
 
             using var reader = await command.ExecuteReaderAsync();
 
+            
             while (await reader.ReadAsync())
             {
                 result.Add(new Adressen
@@ -80,19 +114,18 @@ namespace CamCare.Services
                     LfdNr = reader.GetInt32(0),
                     KdNummer = reader.GetString(1),
                     Art = reader.GetString(2),
-                    Suchbegriff = reader.GetString(3),
-                    Vorname = reader.GetString(4),
-                    Name = reader.GetString(5),
-                    Strasse = reader.GetString(6),
-                    Land = reader.GetString(7),
-                    Plz = reader.GetString(8),
-                    Ort = reader.GetString(9),
-                    Zahlweise = reader.GetString(10)
+                    Vorname = reader.GetString(3),
+                    Name = reader.GetString(4),
+                    Strasse = reader.GetString(5),
+                    Land = reader.GetString(6),
+                    Plz = reader.GetString(7),
+                    Ort = reader.GetString(8),
+                    Zahlweise = reader.GetString(9)
                 });
             }
-            
-            using var command2 = new FbCommand(countQuery, connection);
-            command2.Parameters.AddWithValue("@Filter", filter);
+
+            command2.Connection = connection;
+            command2.CommandText = countQuery;
             var countReader = await command2.ExecuteScalarAsync();
             var totalCount = Convert.ToInt32(countReader);
 

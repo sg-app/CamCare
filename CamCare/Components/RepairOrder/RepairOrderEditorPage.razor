@@ -5,7 +5,7 @@
     <FluentValidationValidator @ref="_fluentValidationValidator" />
 
     <RadzenFieldset Text="Kunde">
-        <AmicronCustomerAssign Value="_repairOrder.CustomerId" ValueChanged="OnCustomerIdChanged" />
+        <CustomerAssign Value="_repairOrder.CustomerId" ValueChanged="OnCustomerIdChanged" />
     </RadzenFieldset>
 
     @if (_repairOrder.CustomerId is not null)

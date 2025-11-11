@@ -17,14 +17,12 @@
                 AllowColumnResize="true"
                 ShowEmptyMessage="false">
     <Columns>
-        <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.LfdNr)" Title="Nummer" Width="80px" SortOrder="SortOrder.Ascending" Filterable="false" />
-        <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.KdNummer)" Title="Kundennummer" Width="100px" Filterable="false" />
-        <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.Suchbegriff)" Title="Suchbegriff" MinWidth="200px" />
+        <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.KdNummer)" Title="KD-Nr" Width="100px" FilterPlaceholder="Filter" />
         <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.Vorname)" Title="Vorname" MinWidth="200px" Filterable="false" />
-        <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.Name)" Title="Nachname" MinWidth="200px" Filterable="false" />
+        <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.Name)" Title="Nachname" MinWidth="200px" FilterPlaceholder="Filter" />
         <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.Strasse)" Title="Straße" MinWidth="200px" Filterable="false" />
-        <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.Plz)" Title="PLZ" Width="80px" Filterable="false" />
-        <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.Ort)" Title="Ort" MinWidth="200px" Filterable="false" />
+        <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.Plz)" Title="PLZ" Width="80px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.Ort)" Title="Ort" MinWidth="200px" FilterPlaceholder="Filter" />
     </Columns>
 </RadzenDataGrid>
 
@@ -37,11 +35,31 @@
     private IList<Adressen>? _data;
     private int _totalCount;
     private bool _isLoading;
+    private AdressenFilter? _filter;
 
     private async Task OnLoadData(LoadDataArgs args)
     {
         _isLoading = true;
-        var response = await AmicronDataService.GetAllAddressAsync(args);
+        _filter = new();
+        foreach (var filter in args.Filters)
+        {
+            switch (filter.Property)
+            {
+                case nameof(Adressen.KdNummer):
+                    _filter.KdNummer = filter.FilterValue?.ToString();
+                    break;
+                case nameof(Adressen.Name):
+                    _filter.Name = filter.FilterValue?.ToString();
+                    break;
+                case nameof(Adressen.Plz):
+                    _filter.Plz = filter.FilterValue?.ToString();
+                    break;
+                case nameof(Adressen.Ort):
+                    _filter.Ort = filter.FilterValue?.ToString();
+                    break;
+            }
+        }
+        var response = await AmicronDataService.GetAllAddressAsync(args, _filter);
         if (response.Success)
         {
             _data = response.Data?.Items.ToList();

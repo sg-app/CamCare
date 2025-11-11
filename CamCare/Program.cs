@@ -5,9 +5,13 @@ using CamCare.Persistence;
 using CamCare.Services;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using NLog.Extensions.Logging;
 using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddNLog();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

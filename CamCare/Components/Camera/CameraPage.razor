@@ -31,9 +31,9 @@
                 <RadzenText Style="width:150px">Kundennummer:</RadzenText>
                 <RadzenText>@item.Customer?.KdNummer</RadzenText>
             </RadzenStack>
-            <RadzenStack Orientation="Orientation.Horizontal" Visible="@(!string.IsNullOrEmpty(item.Customer?.Suchbegriff))">
+            <RadzenStack Orientation="Orientation.Horizontal" Visible="@(!string.IsNullOrEmpty(item.Customer?.Name))">
                 <RadzenText Style="width:150px">Firma:</RadzenText>
-                <RadzenText>@item.Customer?.Suchbegriff</RadzenText>
+                <RadzenText>@item.Customer?.Name</RadzenText>
             </RadzenStack>
         </RadzenStack>
     </Template>
