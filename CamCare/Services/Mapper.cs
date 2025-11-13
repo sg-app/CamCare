@@ -34,13 +34,11 @@ namespace CamCare.Services
                     cam.CameraTypeId = camVm.CameraTypeId;
                     cam.CreatedAt = camVm.CreatedAt;
                     cam.UpdatedAt = camVm.UpdatedAt;
-                    if (camVm.RepairOrders != null)
-                        cam.RepairOrders = camVm.RepairOrders.Select(Map<RepairOrderVm, RepairOrder>).ToList();
                     break;
                 case RepairOrder ro when destination is RepairOrderVm rovm:
                     rovm.Id = ro.Id;
                     rovm.CustomerId = ro.CustomerId;
-                    rovm.CameraSerialNumber = ro.CameraSerialNumber;
+                    rovm.CameraSerialNumber = ro.SerialNumber;
                     rovm.PiceOfEquipment = ro.PiceOfEquipment;
                     rovm.AdditionalComponents = ro.AdditionalComponents;
                     rovm.RepairOrderStatusId = ro.RepairOrderStatusId;
@@ -52,10 +50,10 @@ namespace CamCare.Services
                     rovm.ArrivedAt = ro.ArrivedAt.ToLocalTime();
                     rovm.CreatedAt = ro.CreatedAt;
                     rovm.UpdatedAt = ro.UpdatedAt;
-                    if (ro.Camera != null)
-                        rovm.Camera = Map<Camera, CameraVm>(ro.Camera);
                     if (ro.RepairOrderStatus != null)
                         rovm.RepairOrderStatus = Map<RepairOrderStatus, RepairOrderStatusVm>(ro.RepairOrderStatus);
+                    if (ro.RepairOrderStatusHistory != null)
+                        rovm.RepairOrderStatusHistories = ro.RepairOrderStatusHistory.Select(Map<RepairOrderStatusHistory, RepairOrderStatusHistoryVm>).ToList();
                     if (ro.LogisticProvider != null)
                         rovm.LogisticProvider = Map<LogisticProvider, LogisticProviderVm>(ro.LogisticProvider);
                     if (ro.Defectives != null)
@@ -64,13 +62,11 @@ namespace CamCare.Services
                         rovm.RepairPositions = ro.RepairOrderRepairPositions.Select(Map<RepairOrderRepairPosition, RepairPositionVm>).ToList();
                     if(ro.Employees != null)
                         rovm.Employees = ro.Employees.Select(Map<Employee, EmployeeVm>).ToList();
-                    if (ro.RepairOrderStatusHistory != null)
-                        rovm.RepairOrderStatusHistories = ro.RepairOrderStatusHistory.Select(Map<RepairOrderStatusHistory, RepairOrderStatusHistoryVm>).ToList();
                     break;
                 case RepairOrderVm rovm when destination is RepairOrder ro:
                     ro.Id = rovm.Id;
                     ro.CustomerId = rovm.CustomerId ?? 0;
-                    ro.CameraSerialNumber = rovm.CameraSerialNumber;
+                    ro.SerialNumber = rovm.CameraSerialNumber;
                     ro.PiceOfEquipment = rovm.PiceOfEquipment;
                     ro.AdditionalComponents = rovm.AdditionalComponents;
                     ro.RepairOrderStatusId = rovm.RepairOrderStatusId;
@@ -96,6 +92,7 @@ namespace CamCare.Services
                     rp.Id = rpvm.Id;
                     rp.Description = rpvm.Description;
                     rp.SortOrder = rpvm.SortOrder;
+                    rp.FromAmicron = rpvm.FromAmicron;
                     rp.CreatedAt = rpvm.CreatedAt;
                     rp.UpdatedAt = rpvm.UpdatedAt;
                     if (rpvm.RepairOrders != null)
@@ -105,6 +102,7 @@ namespace CamCare.Services
                     rpvm.Id = rp.Id;
                     rpvm.Description = rp.Description;
                     rpvm.SortOrder = rp.SortOrder;
+                    rpvm.FromAmicron = rp.FromAmicron;
                     rpvm.CreatedAt = rp.CreatedAt;
                     rpvm.UpdatedAt = rp.UpdatedAt;
                     if (rp.RepairOrders != null)

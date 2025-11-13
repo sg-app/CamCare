@@ -9,6 +9,7 @@ namespace CamCare.Domain
         public string? Artikelnummer { get; set; }
         public string Description { get; set; } = string.Empty;
         public int SortOrder { get; set; }
+        public bool? FromAmicron { get; set; }
 
         public virtual ICollection<RepairOrder> RepairOrders { get; set; } = [];
         public virtual ICollection<RepairOrderRepairPosition> RepairOrderRepairPositions { get; set; } = [];

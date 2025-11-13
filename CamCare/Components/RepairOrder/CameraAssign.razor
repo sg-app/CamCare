@@ -16,9 +16,10 @@
                             AllowFiltering="true"
                             FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                             FilterOperator="StringFilterOperator.Contains"
-                            Style="width:500px" />
+                            Style="width:500px"
+                            Disabled="IsEditMode"/>
         </RadzenFormField>
-        <InsertIconButton Class="mt-2" Size="ButtonSize.Medium" Click="@(() => _createCamera = true)" />
+        <InsertIconButton Class="mt-2" Size="ButtonSize.Medium" Click="@(() => _createCamera = true)" Disabled="IsEditMode" />
     </RadzenStack>
     @if (_createCamera)
     {
@@ -32,11 +33,18 @@
     [Parameter] public int? CustomerId { get; set; }
     [Parameter] public string Value { get; set; } = string.Empty;
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public bool IsEditMode { get; set; }
 
     private RadzenDropDown<string> _dropDown = default!;
     private IEnumerable<CameraVm>? _cameras;
     private int _totalCountCameras;
     private bool _createCamera;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        await OnCameraLoadData(new() { Top = 9});
+    }
 
     private async Task OnCameraLoadData(LoadDataArgs args)
     {

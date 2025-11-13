@@ -1,4 +1,5 @@
-﻿@page "/RepairOrderPage"
+﻿@page "/RepairOrders"
+@using CamCare.Store.RepairOrderFeature
 
 <div class="pe-2">
     <RadzenCheckBox TValue="bool" Value="_archiveOrders" ValueChanged="@((val) => { _archiveOrders = val; _grid.Reload(); })" Name="_archiveOrders" />
@@ -30,12 +31,15 @@
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Kamera" Width="180px">
             <Template Context="item">
-                @item.Camera?.DisplayName
+                @item.CameraSerialNumber
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Versand">
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eigenversand" Width="100px">
             <Template Context="item">
-                @item.ShippingMethod.GetDisplayDescription()
+                @{
+                    var icon = item.ShippingMethod == ShippingMethod.SentByCustomer ? "check_box" : "check_box_outline_blank";
+                }
+                <RadzenIcon Icon="@icon" />
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Versandunternehmen" Width="150px">
@@ -107,14 +111,12 @@
                     @foreach (var history in item.RepairOrderStatusHistories)
                     {
                         <RadzenStack Orientation="Orientation.Horizontal">
-                            <div style="width:150px">
-                                <RadzenBadge Style="@history.RepairOrderStatus?.BadageStyle">
-                                    @history.RepairOrderStatus?.Name
-                                </RadzenBadge>
-                            </div>
                             <RadzenText>
-                                @history.ChangedAt.ToString("dd.MM.yyyy HH:mm")
+                                @history.ChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
                             </RadzenText>
+                            <RadzenBadge Style="@history.RepairOrderStatus?.BadageStyle">
+                                @history.RepairOrderStatus?.Name
+                            </RadzenBadge>
                         </RadzenStack>
                     }
                 </RadzenStack>
@@ -126,6 +128,7 @@
 @code {
     [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] protected IDispatcher Dispatcher { get; set; } = default!;
 
     private RadzenDataGrid<RepairOrderVm> _grid = default!;
     private IList<RepairOrderVm>? _data;
@@ -147,11 +150,12 @@
 
     private void OnInsertClicked(MouseEventArgs args)
     {
-        NavigationManager.NavigateTo("/RepairOrderEditorPage");
+        NavigationManager.NavigateTo("/CreateRepairOrder");
     }
 
     private void OnEditRowClicked(RepairOrderVm item)
     {
-        NavigationManager.NavigateTo($"/RepairOrderEditorPage/{item.Id}");
+        Dispatcher.Dispatch(new SetCurrentRepairOrderAction(item));
+        NavigationManager.NavigateTo($"/EditRepairOrder");
     }
 }

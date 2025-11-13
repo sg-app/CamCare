@@ -30,25 +30,6 @@ namespace CamCare.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Customers",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    CompanyName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    FirstName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    LastName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Email = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: true),
-                    PhoneNumber = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ArchivedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Customers", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Defectives",
                 columns: table => new
                 {
@@ -131,6 +112,7 @@ namespace CamCare.Migrations
                     Artikelnummer = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     SortOrder = table.Column<int>(type: "int", nullable: false),
+                    FromAmicron = table.Column<bool>(type: "bit", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ArchivedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
@@ -141,40 +123,11 @@ namespace CamCare.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Addresses",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    CustomerId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    AddressType = table.Column<int>(type: "int", nullable: false),
-                    Street = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
-                    HouseNumber = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
-                    PostalCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    City = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    State = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Country = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ArchivedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Addresses", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Addresses_Customers_CustomerId",
-                        column: x => x.CustomerId,
-                        principalTable: "Customers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Cameras",
                 columns: table => new
                 {
                     SerialNumber = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    CustomerId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    CustomerId = table.Column<int>(type: "int", nullable: false),
                     CameraTypeId = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -189,12 +142,6 @@ namespace CamCare.Migrations
                         principalTable: "CameraTypes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Cameras_Customers_CustomerId",
-                        column: x => x.CustomerId,
-                        principalTable: "Customers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -203,9 +150,10 @@ namespace CamCare.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    CustomerId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    CameraSerialNumber = table.Column<string>(type: "nvarchar(100)", nullable: true),
+                    CustomerId = table.Column<int>(type: "int", nullable: false),
+                    SerialNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     PiceOfEquipment = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    AdditionalComponents = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     RepairOrderStatusId = table.Column<int>(type: "int", nullable: false),
                     ShippingMethod = table.Column<int>(type: "int", nullable: false),
                     LogisticProviderId = table.Column<int>(type: "int", nullable: true),
@@ -220,17 +168,6 @@ namespace CamCare.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_RepairOrders", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_RepairOrders_Cameras_CameraSerialNumber",
-                        column: x => x.CameraSerialNumber,
-                        principalTable: "Cameras",
-                        principalColumn: "SerialNumber");
-                    table.ForeignKey(
-                        name: "FK_RepairOrders_Customers_CustomerId",
-                        column: x => x.CustomerId,
-                        principalTable: "Customers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_RepairOrders_LogisticProviders_LogisticProviderId",
                         column: x => x.LogisticProviderId,
@@ -299,7 +236,7 @@ namespace CamCare.Migrations
                     RepairOrderId = table.Column<int>(type: "int", nullable: false),
                     RepairPositionId = table.Column<int>(type: "int", nullable: false),
                     RepairPostionId = table.Column<int>(type: "int", nullable: false),
-                    Quantity = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    Quantity = table.Column<decimal>(type: "decimal(16,4)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -318,6 +255,33 @@ namespace CamCare.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "RepairOrderStatusHistories",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    RepairOrderId = table.Column<int>(type: "int", nullable: false),
+                    RepairOrderStatusId = table.Column<int>(type: "int", nullable: false),
+                    ChangedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RepairOrderStatusHistories", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RepairOrderStatusHistories_RepairOrderStatuses_RepairOrderStatusId",
+                        column: x => x.RepairOrderStatusId,
+                        principalTable: "RepairOrderStatuses",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.NoAction);
+                    table.ForeignKey(
+                        name: "FK_RepairOrderStatusHistories_RepairOrders_RepairOrderId",
+                        column: x => x.RepairOrderId,
+                        principalTable: "RepairOrders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.NoAction);
+                });
+
             migrationBuilder.InsertData(
                 table: "CameraTypes",
                 columns: new[] { "Id", "ArchivedAt", "CreatedAt", "Name", "UpdatedAt" },
@@ -327,22 +291,6 @@ namespace CamCare.Migrations
                     { 2, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Mini 3110", null },
                     { 3, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "4540", null },
                     { 4, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "5030", null }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Customers",
-                columns: new[] { "Id", "ArchivedAt", "CompanyName", "CreatedAt", "Email", "FirstName", "LastName", "PhoneNumber", "UpdatedAt" },
-                values: new object[] { "1", null, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "max@mustermann.de", "Max", "Mustermann", "089190815", null });
-
-            migrationBuilder.InsertData(
-                table: "Defectives",
-                columns: new[] { "Id", "ArchivedAt", "CreatedAt", "Description", "UpdatedAt" },
-                values: new object[,]
-                {
-                    { 1, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Display defekt", null },
-                    { 2, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Objektiv defekt", null },
-                    { 3, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Akku defekt", null },
-                    { 4, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Gehäuse defekt", null }
                 });
 
             migrationBuilder.InsertData(
@@ -371,41 +319,10 @@ namespace CamCare.Migrations
                     { 9, null, "rgb(125, 218, 88)", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Kamera wurde versendet.", "rgb(0, 0, 0)", true, false, false, "Versendet", 9, null }
                 });
 
-            migrationBuilder.InsertData(
-                table: "RepairPositions",
-                columns: new[] { "Id", "ArchivedAt", "Artikelnummer", "CreatedAt", "Description", "SortOrder", "UpdatedAt" },
-                values: new object[,]
-                {
-                    { 1, null, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Display tauschen", 0, null },
-                    { 2, null, "01532", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Objektiv tauschen", 0, null },
-                    { 3, null, "0153215", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Akku tauschen", 0, null },
-                    { 4, null, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Gehäuse tauschen", 0, null }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Addresses",
-                columns: new[] { "Id", "AddressType", "ArchivedAt", "City", "Country", "CreatedAt", "CustomerId", "HouseNumber", "PostalCode", "State", "Street", "UpdatedAt" },
-                values: new object[] { 1, 1, null, "München", "Deutschland", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "1", "", "80331", null, "Musterstraße 1", null });
-
-            migrationBuilder.InsertData(
-                table: "Cameras",
-                columns: new[] { "SerialNumber", "ArchivedAt", "CameraTypeId", "CreatedAt", "CustomerId", "UpdatedAt" },
-                values: new object[] { "1234567890", null, 1, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "1", null });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Addresses_CustomerId",
-                table: "Addresses",
-                column: "CustomerId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Cameras_CameraTypeId",
                 table: "Cameras",
                 column: "CameraTypeId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Cameras_CustomerId",
-                table: "Cameras",
-                column: "CustomerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DefectiveRepairOrder_RepairOrdersId",
@@ -423,16 +340,6 @@ namespace CamCare.Migrations
                 column: "RepairPositionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RepairOrders_CameraSerialNumber",
-                table: "RepairOrders",
-                column: "CameraSerialNumber");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RepairOrders_CustomerId",
-                table: "RepairOrders",
-                column: "CustomerId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_RepairOrders_LogisticProviderId",
                 table: "RepairOrders",
                 column: "LogisticProviderId");
@@ -441,13 +348,23 @@ namespace CamCare.Migrations
                 name: "IX_RepairOrders_RepairOrderStatusId",
                 table: "RepairOrders",
                 column: "RepairOrderStatusId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RepairOrderStatusHistories_RepairOrderId",
+                table: "RepairOrderStatusHistories",
+                column: "RepairOrderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RepairOrderStatusHistories_RepairOrderStatusId",
+                table: "RepairOrderStatusHistories",
+                column: "RepairOrderStatusId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Addresses");
+                name: "Cameras");
 
             migrationBuilder.DropTable(
                 name: "DefectiveRepairOrder");
@@ -459,31 +376,28 @@ namespace CamCare.Migrations
                 name: "RepairOrderRepairPosition");
 
             migrationBuilder.DropTable(
+                name: "RepairOrderStatusHistories");
+
+            migrationBuilder.DropTable(
+                name: "CameraTypes");
+
+            migrationBuilder.DropTable(
                 name: "Defectives");
 
             migrationBuilder.DropTable(
                 name: "Employee");
 
             migrationBuilder.DropTable(
-                name: "RepairOrders");
-
-            migrationBuilder.DropTable(
                 name: "RepairPositions");
 
             migrationBuilder.DropTable(
-                name: "Cameras");
+                name: "RepairOrders");
 
             migrationBuilder.DropTable(
                 name: "LogisticProviders");
 
             migrationBuilder.DropTable(
                 name: "RepairOrderStatuses");
-
-            migrationBuilder.DropTable(
-                name: "CameraTypes");
-
-            migrationBuilder.DropTable(
-                name: "Customers");
         }
     }
 }

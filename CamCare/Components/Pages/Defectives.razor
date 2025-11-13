@@ -1,9 +1,9 @@
-﻿@page "/EmployeePage"
+﻿@page "/Defectives"
 
 
 <InsertButton InsertClick="OnInsertClicked" />
 <RadzenDataGrid @ref="_grid"
-                TItem="EmployeeVm"
+                TItem="DefectiveVm"
                 Data="_data"
                 LoadData="OnLoadData"
                 IsLoading="_isLoading"
@@ -17,36 +17,29 @@
                 RowCreate="OnRowCreate"
                 Density="Density.Compact"
                 AllowColumnResize="true"
-                ShowEmptyMessage="false"
-                Style="width:800px">
+                ShowEmptyMessage="false">
     <Columns>
-        <RadzenDataGridColumn TItem="EmployeeVm" Property="@nameof(EmployeeVm.FirstName)" Title="Vorname" MinWidth="200px">
+        <RadzenDataGridColumn TItem="DefectiveVm" Property="@nameof(DefectiveVm.Description)" Title="Beschreibung">
             <EditTemplate Context="item">
-                <RadzenTextBox @bind-Value="item.FirstName" Style="width:100%" />
+                <RadzenTextBox @bind-Value="item.Description" Style="width:100%" />
             </EditTemplate>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="EmployeeVm" Property="@nameof(EmployeeVm.LastName)" Title="Nachname" MinWidth="200px">
-            <EditTemplate Context="item">
-                <RadzenTextBox @bind-Value="item.LastName" Style="width:100%" />
-            </EditTemplate>
-        </RadzenDataGridColumn>
-        <RadzenDataGridInlineEditColumn TItem="EmployeeVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
+        <RadzenDataGridInlineEditColumn TItem="DefectiveVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
     </Columns>
 </RadzenDataGrid>
 
 @code {
-    [Inject] protected IEmployeeService EmployeeService { get; set; } = default!;
+    [Inject] protected IDefectiveService DefectiveService { get; set; } = default!;
     [Inject] protected DialogService DialogService { get; set; } = default!;
-    [Inject] protected IJSRuntime JSRuntime { get; set; } = default!;
 
-    private RadzenDataGrid<EmployeeVm> _grid = default!;
-    private IList<EmployeeVm>? _data;
+    private RadzenDataGrid<DefectiveVm> _grid = default!;
+    private IList<DefectiveVm>? _data;
     private int _totalCount;
     private bool _isLoading;
     private async Task OnLoadData(LoadDataArgs args)
     {
         _isLoading = true;
-        var response = await EmployeeService.GetAllAsync(args);
+        var response = await DefectiveService.GetAllAsync(args);
         if (response.Success)
         {
             _data = response.Data?.Items.ToList();
@@ -58,44 +51,44 @@
     private async Task OnInsertClicked(MouseEventArgs args)
     {
         if (!_grid.IsValid) return;
-        var item = new EmployeeVm();
+        var item = new DefectiveVm();
         await _grid.InsertRow(item);
     }
 
-    private async Task OnRowUpdate(EmployeeVm item)
+    private async Task OnRowUpdate(DefectiveVm item)
     {
-        await EmployeeService.UpdateAsync(item.Id, item);
+        await DefectiveService.UpdateAsync(item.Id, item);
         await _grid.Reload();
     }
 
-    private async Task OnRowCreate(EmployeeVm item)
+    private async Task OnRowCreate(DefectiveVm item)
     {
-        await EmployeeService.CreateAsync(item);
+        await DefectiveService.CreateAsync(item);
         await _grid.Reload();
     }
 
-    private async Task OnEditRowClicked(EmployeeVm item)
+    private async Task OnEditRowClicked(DefectiveVm item)
     {
         if (!_grid.IsValid) return;
         await _grid.EditRow(item);
     }
 
-    private async Task OnDeleteRowClicked(EmployeeVm item)
+    private async Task OnDeleteRowClicked(DefectiveVm item)
     {
         var dialogResult = await DialogService.Confirm("Soll der Datensatz wirklich gelöscht werden?", "Datensatz löschen", new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
         if (dialogResult != true) return;
 
-        await EmployeeService.DeleteAsync(item.Id);
+        await DefectiveService.DeleteAsync(item.Id);
         await _grid.Reload();
     }
 
-    private async Task OnCancelEditRowClicked(EmployeeVm item)
+    private async Task OnCancelEditRowClicked(DefectiveVm item)
     {
         _grid.CancelEditRow(item);
         await _grid.Reload();
     }
 
-    private async Task OnSaveRowClicked(EmployeeVm item)
+    private async Task OnSaveRowClicked(DefectiveVm item)
     {
         await _grid.UpdateRow(item);
     }

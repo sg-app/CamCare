@@ -1,4 +1,29 @@
 ﻿@using CamCare.Models.Amicron
+
+<RadzenDataGrid TItem="Artikel"
+                Data="_data"
+                LoadData="OnLoadData"
+                IsLoading="_isLoading"
+                Count="_totalCount"
+                AllowPaging="true"
+                PageSize="10"
+                AllowFiltering="true"
+                FilterMode="FilterMode.Simple"
+                Density="Density.Compact"
+                SelectionMode="DataGridSelectionMode.Single"
+                @bind-Value="@_selectedItems"
+                RowDoubleClick="OnItemDoubleClicked"
+                AllowColumnResize="true"
+                ShowEmptyMessage="false" Style="height:370px">
+    <Columns>
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Artikelnummer)" Title="Artikel-Nr" Width="150px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Description)" Title="Bezeichnung" MinWidth="200px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Unit)" Title="Einheit" Width="80px" Filterable="false" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.InStock)" Title="Bestand" Width="100px" Filterable="false" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.MinStock)" Title="Mind. Bestand" Width="80px" Filterable="false" />
+        @* <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Picture)" Title="Bild" Width="80px" Filterable="false" /> *@
+    </Columns>
+</RadzenDataGrid>
 <RadzenDataGrid class="mt-2"
                 @ref="_grid"
                 Data="@RepairOrder.RepairPositions"
@@ -30,44 +55,31 @@
                 @item.Description
             </Template>
             <EditTemplate Context="item">
-                <RadzenAutoComplete Value="@item.Description"
-                                    Change="OnDescriptionChanged"
-                                    Data=@_repairPositions
-                                    LoadData="OnLoadRepairPositionCatalog"
-                                    OpenOnFocus="true"
-                                    TextProperty="@nameof(RepairPositionVm.Description)"
-                                    Style="width: 100%"
-                                    InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Artikel Katalog" } })" />
+                @if (item.FromAmicron == true)
+                {
+                    @item.Description
+                }
+                else
+                {
+                    <RadzenAutoComplete Value="@item.Description"
+                                        Change="OnDescriptionChanged"
+                                        Data=@_repairPositions
+                                        LoadData="OnLoadRepairPositionCatalog"
+                                        OpenOnFocus="true"
+                                        TextProperty="@nameof(RepairPositionVm.Description)"
+                                        Style="width: 100%"
+                                        InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Artikel Katalog" } })" />
+                }
             </EditTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridInlineEditColumn TItem="RepairPositionVm" DeleteRow="OnDeleteRow" SaveRow="OnSaveRow" CancelEditRow="OnCancelEditRow" EditRow="OnEditRow" />
-    </Columns>
-</RadzenDataGrid>
-<RadzenDataGrid TItem="Artikel"
-                Data="_data"
-                LoadData="OnLoadData"
-                IsLoading="_isLoading"
-                Count="_totalCount"
-                AllowPaging="true"
-                PageSize="10"
-                AllowFiltering="true"
-                FilterMode="FilterMode.Simple"
-                Density="Density.Compact"
-                AllowColumnResize="true"
-                ShowEmptyMessage="false">
-    <Columns>
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Artikelnummer)" Title="Artikel-Nr" Width="150px" FilterPlaceholder="Filter" />
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Description)" Title="Bezeichnung" MinWidth="200px" FilterPlaceholder="Filter" />
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Unit)" Title="Einheit" Width="80px" Filterable="false" />
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.InStock)" Title="Bestand" Width="100px" Filterable="false" />
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.MinStock)" Title="Mind. Bestand" Width="80px" Filterable="false" />
-        @* <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Picture)" Title="Bild" Width="80px" Filterable="false" /> *@
     </Columns>
 </RadzenDataGrid>
 @code {
     [Inject] protected ILogger<RepairPositionAssign> Logger { get; set; } = default!;
     [Inject] protected IRepairPositionService RepairPositionService { get; set; } = default!;
     [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
 
     [Parameter] public RepairOrderVm RepairOrder { get; set; } = new();
 
@@ -82,6 +94,8 @@
     private bool _isLoading;
     private int _totalCount;
     private ArtikelFilter? _filter;
+    private IList<Artikel>? _selectedItems;
+    private Artikel? SelectedItem => _selectedItems?.FirstOrDefault();
 
     public static string? ToBase64String(byte[]? data)
     {
@@ -149,7 +163,7 @@
             return;
 
         Logger.LogInformation("New position added.");
-        _toEdit = new RepairPositionVm();
+        _toEdit = new RepairPositionVm() { Quantity = 1m };
         await _grid.InsertRow(_toEdit);
     }
 
@@ -207,6 +221,24 @@
         catch (TaskCanceledException)
         {
             // Ignorieren, weil ein neuer Wert kam
+        }
+    }
+
+    private async Task OnItemDoubleClicked(DataGridRowMouseEventArgs<Artikel> args)
+    {
+        var dialogResult = await DialogService.OpenAsync<AddItemDialog>("Menge eingeben", null,
+            new DialogOptions { Width = "400px", Height = "200px" });
+
+        if (dialogResult is decimal value)
+        {
+            RepairOrder.RepairPositions!.Add(new RepairPositionVm
+            {
+                Artikelnummer = args.Data.Artikelnummer,
+                Description = args.Data.Description ?? string.Empty,
+                Quantity = value,
+                FromAmicron = true
+            });
+            await _grid.Reload();
         }
     }
 }

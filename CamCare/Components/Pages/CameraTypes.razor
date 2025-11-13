@@ -1,16 +1,13 @@
-﻿@page "/CameraTypePage"
+﻿@page "/CameraTypes"
 
 
 <InsertButton InsertClick="OnInsertClicked" />
 <RadzenDataGrid @ref="_grid"
                 TItem="CameraTypeVm"
-                Data="_data"
-                LoadData="OnLoadData"
-                IsLoading="_isLoading"
-                Count="_totalCount"
+                Data="@(MasterdataService.Get<CameraTypeVm>())"
                 AllowPaging="true"
                 PageSize="20"
-                AllowFiltering="true"
+                AllowFiltering="@(MasterdataService.Get<CameraTypeVm>().Count >= 20 ? true : false)"
                 FilterMode="FilterMode.Simple"
                 FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                 RowUpdate="OnRowUpdate"
@@ -20,7 +17,7 @@
                 ShowEmptyMessage="false"
                 Style="width:800px">
     <Columns>
-        <RadzenDataGridColumn TItem="CameraTypeVm" Property="@nameof(CameraTypeVm.Name)" Title="Name" MinWidth="200px">
+        <RadzenDataGridColumn TItem="CameraTypeVm" Property="@nameof(CameraTypeVm.Name)" Title="Name" MinWidth="200px" FilterPlaceholder="Filter">
             <EditTemplate Context="item">
                 <RadzenTextBox @bind-Value="item.Name" Style="width:100%" />
             </EditTemplate>
@@ -31,25 +28,12 @@
 
 @code {
     [Inject] protected ICameraTypeService CameraTypeService { get; set; } = default!;
+    [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
     [Inject] protected DialogService DialogService { get; set; } = default!;
     [Inject] protected IJSRuntime JSRuntime { get; set; } = default!;
 
     private RadzenDataGrid<CameraTypeVm> _grid = default!;
-    private IList<CameraTypeVm>? _data;
-    private int _totalCount;
-    private bool _isLoading;
-    private async Task OnLoadData(LoadDataArgs args)
-    {
-        _isLoading = true;
-        var response = await CameraTypeService.GetAllAsync(args);
-        if (response.Success)
-        {
-            _data = response.Data?.Items.ToList();
-            _totalCount = response.Data?.TotalCount ?? 0;
-        }
-        _isLoading = false;
-    }
-
+  
     private async Task OnInsertClicked(MouseEventArgs args)
     {
         if (!_grid.IsValid) return;
@@ -60,12 +44,14 @@
     private async Task OnRowUpdate(CameraTypeVm item)
     {
         await CameraTypeService.UpdateAsync(item.Id, item);
+        await MasterdataService.ReloadAsync<CameraTypeVm>();
         await _grid.Reload();
     }
 
     private async Task OnRowCreate(CameraTypeVm item)
     {
         await CameraTypeService.CreateAsync(item);
+        await MasterdataService.ReloadAsync<CameraTypeVm>();
         await _grid.Reload();
     }
 
@@ -81,6 +67,7 @@
         if (dialogResult != true) return;
 
         await CameraTypeService.DeleteAsync(item.Id);
+        await MasterdataService.ReloadAsync<CameraTypeVm>();
         await _grid.Reload();
     }
 

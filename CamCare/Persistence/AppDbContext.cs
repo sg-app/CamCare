@@ -24,7 +24,6 @@ namespace CamCare.Persistence
                 .WithMany(e => e.RepairOrders)
                 .UsingEntity<RepairOrderRepairPosition>();
 
-
             modelBuilder.Entity<RepairOrderStatus>()
                 .HasData(
                     new RepairOrderStatus { Id = 1, Order = 1, Name = "In Anlieferung", Description = "Reparatur wurde von Kunden angemeldet.", BackgroundColor = "rgb(206, 206, 206)", FontColor = "rgb(0, 0, 0)", IsDefault = true },
@@ -38,22 +37,6 @@ namespace CamCare.Persistence
                     new RepairOrderStatus { Id = 9, Order = 9, Name = "Versendet", Description = "Kamera wurde versendet.", BackgroundColor = "rgb(125, 218, 88)", FontColor = "rgb(0, 0, 0)" }
                 );
 
-            modelBuilder.Entity<Defective>()
-                .HasData(
-                    new Defective { Id = 1, Description = "Display defekt" },
-                    new Defective { Id = 2, Description = "Objektiv defekt" },
-                    new Defective { Id = 3, Description = "Akku defekt" },
-                    new Defective { Id = 4, Description = "Gehäuse defekt" }
-                );
-
-            modelBuilder.Entity<RepairPosition>()
-                .HasData(
-                    new RepairPosition { Id = 1, Description = "Display tauschen" },
-                    new RepairPosition { Id = 2, Artikelnummer = "01532", Description = "Objektiv tauschen" },
-                    new RepairPosition { Id = 3, Artikelnummer = "0153215", Description = "Akku tauschen" },
-                    new RepairPosition { Id = 4, Description = "Gehäuse tauschen" }
-                );
-
             modelBuilder.Entity<CameraType>()
                 .HasData(
                     new CameraType { Id = 1, Name = "Mini 3000" },
@@ -61,15 +44,13 @@ namespace CamCare.Persistence
                     new CameraType { Id = 3, Name = "4540" },
                     new CameraType { Id = 4, Name = "5030" }
                 );
-            
+
             modelBuilder.Entity<LogisticProvider>()
                 .HasData(
                     new LogisticProvider { Id = 1, Name = "DHL", IsDefault = true, IsActive = true },
                     new LogisticProvider { Id = 2, Name = "Dachser", IsDefault = false, IsActive = true },
                     new LogisticProvider { Id = 3, Name = "DPD", IsDefault = false, IsActive = true }
                 );
-
-           
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

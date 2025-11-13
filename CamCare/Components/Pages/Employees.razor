@@ -1,9 +1,9 @@
-﻿@page "/RepairPositionPage"
+﻿@page "/Employees"
 
 
 <InsertButton InsertClick="OnInsertClicked" />
 <RadzenDataGrid @ref="_grid"
-                TItem="RepairPositionVm"
+                TItem="EmployeeVm"
                 Data="_data"
                 LoadData="OnLoadData"
                 IsLoading="_isLoading"
@@ -17,34 +17,36 @@
                 RowCreate="OnRowCreate"
                 Density="Density.Compact"
                 AllowColumnResize="true"
-                ShowEmptyMessage="false">
+                ShowEmptyMessage="false"
+                Style="width:800px">
     <Columns>
-        <RadzenDataGridColumn TItem="RepairPositionVm" Property="@nameof(RepairPositionVm.Artikelnummer)" Title="Artikelnummer" Width="200px">
+        <RadzenDataGridColumn TItem="EmployeeVm" Property="@nameof(EmployeeVm.FirstName)" Title="Vorname" MinWidth="200px">
             <EditTemplate Context="item">
-                <RadzenTextBox @bind-Value="item.Artikelnummer" Style="width:100%" />
+                <RadzenTextBox @bind-Value="item.FirstName" Style="width:100%" />
             </EditTemplate>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairPositionVm" Property="@nameof(RepairPositionVm.Description)" Title="Beschreibung">
+        <RadzenDataGridColumn TItem="EmployeeVm" Property="@nameof(EmployeeVm.LastName)" Title="Nachname" MinWidth="200px">
             <EditTemplate Context="item">
-                <RadzenTextBox @bind-Value="item.Description" Style="width:100%" />
+                <RadzenTextBox @bind-Value="item.LastName" Style="width:100%" />
             </EditTemplate>
         </RadzenDataGridColumn>
-        <RadzenDataGridInlineEditColumn TItem="RepairPositionVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
+        <RadzenDataGridInlineEditColumn TItem="EmployeeVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
     </Columns>
 </RadzenDataGrid>
 
 @code {
-    [Inject] protected IRepairPositionService RepairPositionService { get; set; } = default!;
+    [Inject] protected IEmployeeService EmployeeService { get; set; } = default!;
     [Inject] protected DialogService DialogService { get; set; } = default!;
+    [Inject] protected IJSRuntime JSRuntime { get; set; } = default!;
 
-    private RadzenDataGrid<RepairPositionVm> _grid = default!;
-    private IList<RepairPositionVm>? _data;
+    private RadzenDataGrid<EmployeeVm> _grid = default!;
+    private IList<EmployeeVm>? _data;
     private int _totalCount;
     private bool _isLoading;
     private async Task OnLoadData(LoadDataArgs args)
     {
         _isLoading = true;
-        var response = await RepairPositionService.GetAllAsync(args);
+        var response = await EmployeeService.GetAllAsync(args);
         if (response.Success)
         {
             _data = response.Data?.Items.ToList();
@@ -56,44 +58,44 @@
     private async Task OnInsertClicked(MouseEventArgs args)
     {
         if (!_grid.IsValid) return;
-        var item = new RepairPositionVm();
+        var item = new EmployeeVm();
         await _grid.InsertRow(item);
     }
 
-    private async Task OnRowUpdate(RepairPositionVm item)
+    private async Task OnRowUpdate(EmployeeVm item)
     {
-        await RepairPositionService.UpdateAsync(item.Id, item);
+        await EmployeeService.UpdateAsync(item.Id, item);
         await _grid.Reload();
     }
 
-    private async Task OnRowCreate(RepairPositionVm item)
+    private async Task OnRowCreate(EmployeeVm item)
     {
-        await RepairPositionService.CreateAsync(item);
+        await EmployeeService.CreateAsync(item);
         await _grid.Reload();
     }
 
-    private async Task OnEditRowClicked(RepairPositionVm item)
+    private async Task OnEditRowClicked(EmployeeVm item)
     {
         if (!_grid.IsValid) return;
         await _grid.EditRow(item);
     }
 
-    private async Task OnDeleteRowClicked(RepairPositionVm item)
+    private async Task OnDeleteRowClicked(EmployeeVm item)
     {
         var dialogResult = await DialogService.Confirm("Soll der Datensatz wirklich gelöscht werden?", "Datensatz löschen", new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
         if (dialogResult != true) return;
 
-        await RepairPositionService.DeleteAsync(item.Id);
+        await EmployeeService.DeleteAsync(item.Id);
         await _grid.Reload();
     }
 
-    private async Task OnCancelEditRowClicked(RepairPositionVm item)
+    private async Task OnCancelEditRowClicked(EmployeeVm item)
     {
         _grid.CancelEditRow(item);
         await _grid.Reload();
     }
 
-    private async Task OnSaveRowClicked(RepairPositionVm item)
+    private async Task OnSaveRowClicked(EmployeeVm item)
     {
         await _grid.UpdateRow(item);
     }

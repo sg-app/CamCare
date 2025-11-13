@@ -4,9 +4,12 @@ using CamCare.Interfaces.Services;
 using CamCare.Persistence;
 using CamCare.Services;
 using FluentValidation;
+using Fluxor;
+using Fluxor.Blazor.Web.ReduxDevTools;
 using Microsoft.EntityFrameworkCore;
 using NLog.Extensions.Logging;
 using Radzen;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,10 +20,20 @@ builder.Logging.AddNLog();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddFluxor(options =>
+{
+    options.ScanAssemblies(typeof(_Imports).Assembly);
+#if DEBUG
+    options.UseReduxDevTools();
+#endif
+});
+
+
 builder.Services.AddRadzenComponents();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddSingleton<IMapper, Mapper>();
+builder.Services.AddSingleton<IMasterdataService, MasterdataService>();
 builder.Services.AddScoped<IRepairOrderStatusService, RepairOrderStatusService>();
 builder.Services.AddScoped<ICameraTypeService, CameraTypeService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
@@ -46,13 +59,16 @@ var dbContextFactory = scope.ServiceProvider.GetRequiredService<IAppDbContextFac
 using var dbContext = dbContextFactory.CreateDbContext();
 await dbContext.Database.MigrateAsync();
 
+var masterdataService = scope.ServiceProvider.GetRequiredService<IMasterdataService>();
+await masterdataService.InitializeAsync();
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
-    
+
 }
 
 app.UseHttpsRedirection();

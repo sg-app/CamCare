@@ -7,9 +7,9 @@
 
 <RadzenText Text="Aufträge" TextStyle="TextStyle.H4" />
 <RadzenStack Orientation="Orientation.Horizontal" Wrap="FlexWrap.Wrap" class="pb-3">
-    <RadzenTile Icon="order_approve" Text="Auftragsübersicht" Click="@(() => NavigationManager.NavigateTo("RepairOrderPage"))" />
-    <RadzenTile Icon="add_task" Text="Auftrag erstellen" ButtonStyle="ButtonStyle.Success" Click="@(() => NavigationManager.NavigateTo("RepairOrderEditorPage"))" />
+    <RadzenTile Icon="order_approve" Text="Auftragsübersicht" Click="@(() => NavigationManager.NavigateTo("RepairOrders"))" />
+    <RadzenTile Icon="add_task" Text="Auftrag erstellen" ButtonStyle="ButtonStyle.Success" Click="@(() => NavigationManager.NavigateTo("CreateRepairOrder"))" />
 </RadzenStack>
 
 <RadzenText Text="Alte Aufträge" TextStyle="TextStyle.H4" />
-<RadzenTile Icon="elderly" Text="Alte Aufträge" class="d-block" ButtonStyle="ButtonStyle.Info" Click="@(() => NavigationManager.NavigateTo("KrdDataPage"))" />
+<RadzenTile Icon="elderly" Text="Alte Aufträge" class="d-block" ButtonStyle="ButtonStyle.Info" Click="@(() => NavigationManager.NavigateTo("KrdData"))" />

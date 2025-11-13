@@ -12,12 +12,15 @@ namespace CamCare.Services
 {
     public class RepairOrderService : DbService<RepairOrder, RepairOrderVm>, IRepairOrderService
     {
-        public RepairOrderService(IAppDbContextFactory contextFactory, IMapper mapper, ILogger<RepairOrderService> logger, NotificationService notificationService)
+        private readonly IAmicronDataService _amicronDataService;
+
+        public RepairOrderService(IAppDbContextFactory contextFactory, IMapper mapper, ILogger<RepairOrderService> logger, NotificationService notificationService, IAmicronDataService amicronDataService)
             : base(contextFactory, mapper, logger, notificationService)
         {
+            _amicronDataService = amicronDataService;
         }
 
-        public async Task<ServiceResponse<Paginated<RepairOrderVm>>> GetAllAsync(LoadDataArgs args, bool viewCurrentOrders, Expression<Func<RepairOrder, bool>>? predicate = null)
+        public async Task<ServiceResponse<Paginated<RepairOrderVm>>> GetAllAsync(LoadDataArgs args, bool viewCurrentOrders)
         {
             using var context = _contextFactory.CreateDbContext();
             var query = context.RepairOrders
@@ -40,10 +43,9 @@ namespace CamCare.Services
                 query = query.Take(args.Top.Value);
             }
             query = query
-                .Include(i => i.Camera)
                 .Include(i => i.RepairOrderStatus)
-                .Include(i=>i.RepairOrderStatusHistory)
-                    .ThenInclude(i=>i.RepairOrderStatus)
+                .Include(i => i.RepairOrderStatusHistory)
+                    .ThenInclude(i => i.RepairOrderStatus)
                 .Include(i => i.LogisticProvider)
                 .Include(i => i.Employees)
                 .Include(i => i.Defectives)
@@ -56,6 +58,19 @@ namespace CamCare.Services
             var items = await query.ToListAsync();
 
             var vms = items.Select(_mapper.Map<RepairOrder, RepairOrderVm>).ToList();
+
+            foreach (var vm in vms)
+            {
+                if (!vm.CustomerId.HasValue)
+                    continue;
+
+                var customerResponse = await _amicronDataService.GetAddressByCustomerIdAsync(vm.CustomerId.Value);
+                if (!customerResponse.Success)
+                    continue;
+
+                vm.Customer = customerResponse.Data;
+            }
+
             var paginated = new Paginated<RepairOrderVm>
             {
                 Items = vms,
@@ -243,7 +258,7 @@ namespace CamCare.Services
             foreach (var e in newEmployees)
                 entity.Employees.Add(e);
 
-            
+
 
             await context.SaveChangesAsync();
 

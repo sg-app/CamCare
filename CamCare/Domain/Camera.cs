@@ -10,7 +10,6 @@ namespace CamCare.Domain
         public int CustomerId { get; set; }
         public int CameraTypeId { get; set; }
 
-        public virtual ICollection<RepairOrder>? RepairOrders { get; set; }
         public virtual CameraType CameraType { get; set; } = null!;
     }
 }

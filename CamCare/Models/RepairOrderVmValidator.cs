@@ -10,10 +10,6 @@ namespace CamCare.Models
                 .NotEmpty()
                 .WithMessage("Kunde darf nicht leer sein.");
             
-            RuleFor(r => r.CameraSerialNumber)
-                .NotEmpty()
-                .WithMessage("Kamera Seriennummer darf nicht leer sein.");
-            
             RuleFor(r => r.RepairOrderStatusId)
                 .GreaterThan(0)
                 .WithMessage("Bearbeitungsstatus muss ausgewählt sein.");

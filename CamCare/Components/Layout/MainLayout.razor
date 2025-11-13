@@ -10,19 +10,19 @@
     <RadzenSidebar @bind-Expanded="@sidebar1Expanded">
         <RadzenPanelMenu>
             <RadzenPanelMenuItem Text="Home" Icon="home" Path="/" />
-            <RadzenPanelMenuItem Text="Aufträge" Icon="order_approve" Path="RepairOrderPage" />
+            <RadzenPanelMenuItem Text="Aufträge" Icon="order_approve" Path="RepairOrders" />
             <RadzenPanelMenuItem Text="Stammdaten" Icon="database">
-                <RadzenPanelMenuItem Text="Kunden" Icon="group" Path="CustomerPage" />
-                <RadzenPanelMenuItem Text="Kameras" Icon="video_camera_back" Path="CameraPage" />
-                <RadzenPanelMenuItem Text="Status" Icon="sweep" Path="RepairOrderStatusPage" />
-                <RadzenPanelMenuItem Text="Defekte" Icon="broken_image" Path="DefectivePage" />
-                <RadzenPanelMenuItem Text="Reparaturen" Icon="build" Path="RepairPositionPage" />
-                <RadzenPanelMenuItem Text="Kameratypen" Icon="flip_camera_ios" Path="CameraTypePage" />
-                <RadzenPanelMenuItem Text="Mitarbeiter" Icon="person_apron" Path="EmployeePage" />
-                <RadzenPanelMenuItem Text="Logistikpartner" Icon="delivery_truck_speed" Path="LogisticProviderPage" />
+                <RadzenPanelMenuItem Text="Kunden" Icon="group" Path="Customers" />
+                <RadzenPanelMenuItem Text="Kameras" Icon="video_camera_back" Path="CameraTypes" />
+                <RadzenPanelMenuItem Text="Status" Icon="sweep" Path="RepairOrderStates" />
+                <RadzenPanelMenuItem Text="Defekte" Icon="broken_image" Path="Defectives" />
+                <RadzenPanelMenuItem Text="Reparaturen" Icon="build" Path="RepairPositions" />
+                <RadzenPanelMenuItem Text="Kameratypen" Icon="flip_camera_ios" Path="CameraTypes" />
+                <RadzenPanelMenuItem Text="Mitarbeiter" Icon="person_apron" Path="Employees" />
+                <RadzenPanelMenuItem Text="Logistikpartner" Icon="delivery_truck_speed" Path="LogisticProviders" />
             </RadzenPanelMenuItem>
-            <RadzenPanelMenuItem Text="Auftrag erstellen" Icon="add_task" Path="RepairOrderEditorPage" />
-            <RadzenPanelMenuItem Text="Alte Aufträge" Icon="elderly" Path="KrdDataPage" />
+            <RadzenPanelMenuItem Text="Auftrag erstellen" Icon="add_task" Path="CreateRepairOrder" />
+            <RadzenPanelMenuItem Text="Alte Aufträge" Icon="elderly" Path="KrdData" />
         </RadzenPanelMenu>
     </RadzenSidebar>
     <RadzenBody>

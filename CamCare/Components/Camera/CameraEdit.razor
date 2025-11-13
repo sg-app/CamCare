@@ -14,12 +14,9 @@
             <RadzenColumn>
                 <RadzenFormField Text="Kameratyp" Style="width: 400px">
                     <RadzenDropDown @bind-Value="@Value.CameraTypeId"
-                                    Data="_cameraTypes"
-                                    LoadData="OnCameraTypeLoadData"
-                                    Count="_totalCountCameraTypes"
+                                    Data="@(MasterdataService.Get<CameraTypeVm>())"
                                     TextProperty="@nameof(CameraTypeVm.Name)"
                                     ValueProperty="@nameof(CameraTypeVm.Id)"
-                                    AllowVirtualization="true"
                                     AllowClear="true"
                                     AllowFiltering="true"
                                     FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
@@ -34,7 +31,7 @@
 
 @code {
     [Inject] protected ICameraService CameraService { get; set; } = default!;
-    [Inject] protected ICameraTypeService CameraTypeService { get; set; } = default!;
+    [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
 
     [Parameter] public CameraVm? Value { get; set; }
     [Parameter] public EventCallback<CameraVm> ValueChanged { get; set; }
@@ -42,9 +39,6 @@
     [Parameter] public string? SerialNumber { get; set; }
     [Parameter] public int? CustomerId { get; set; }
     private bool IsEdit => !string.IsNullOrEmpty(SerialNumber);
-
-    private IEnumerable<CameraTypeVm>? _cameraTypes;
-    private int _totalCountCameraTypes;
 
 
     protected override async Task OnParametersSetAsync()
@@ -61,16 +55,6 @@
         }
         ArgumentNullException.ThrowIfNull(CustomerId, nameof(CustomerId));
         Value ??= new CameraVm { CustomerId = CustomerId.Value };
-    }
-
-    private async Task OnCameraTypeLoadData(LoadDataArgs args)
-    {
-        var result = await CameraTypeService.GetAllAsync(args);
-        if (result.Success)
-        {
-            _cameraTypes = result.Data?.Items;
-            _totalCountCameraTypes = result.Data?.TotalCount ?? 0;
-        }
     }
 
     private async Task OnCancelClicked(MouseEventArgs args)
