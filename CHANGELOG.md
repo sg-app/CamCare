@@ -1,3 +1,14 @@
+# [1.0.0-beta.16](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.15...v1.0.0-beta.16) (2025-11-13)
+
+
+### Features
+
+* add `RadzenDataGrid` for managing `Artikel` data ([25a0080](https://github.com/sg-app/CamCare/commit/25a0080a52e35f74a0f065b824c66132db915a2d))
+* enhance camera assignment and UI logic ([582bb4e](https://github.com/sg-app/CamCare/commit/582bb4efb139d6347c302aeddb09ac6600480c51))
+* Enhance customer management and logging ([4f77946](https://github.com/sg-app/CamCare/commit/4f7794645119356a218c1b12f9e8fcc9e8c9c8e0))
+* improve checkbox handling in RepairOrderEditorPage ([0bbd8f1](https://github.com/sg-app/CamCare/commit/0bbd8f11e0a1945a9369e6c65472c9681d4da6ea))
+* integrate Amicron database for customer management ([96b22a4](https://github.com/sg-app/CamCare/commit/96b22a4060a25b149ced129677c0ef11aabcdd6a))
+
 # [1.0.0-beta.15](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.14...v1.0.0-beta.15) (2025-08-13)
 
 
