@@ -1,3 +1,10 @@
+# [1.0.0-beta.17](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.16...v1.0.0-beta.17) (2025-11-16)
+
+
+### Features
+
+* Add support for managing Included Components ([8dc3107](https://github.com/sg-app/CamCare/commit/8dc31075632dfbe8b007f2b748a9ea138ef8ca9a))
+
 # [1.0.0-beta.16](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.15...v1.0.0-beta.16) (2025-11-13)
 
 
