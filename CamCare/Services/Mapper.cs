@@ -40,7 +40,6 @@ namespace CamCare.Services
                     rovm.CustomerId = ro.CustomerId;
                     rovm.CameraSerialNumber = ro.SerialNumber;
                     rovm.PiceOfEquipment = ro.PiceOfEquipment;
-                    rovm.AdditionalComponents = ro.AdditionalComponents;
                     rovm.RepairOrderStatusId = ro.RepairOrderStatusId;
                     rovm.ShippingMethod = ro.ShippingMethod;
                     rovm.LogisticProviderId = ro.LogisticProviderId;
@@ -58,6 +57,8 @@ namespace CamCare.Services
                         rovm.LogisticProvider = Map<LogisticProvider, LogisticProviderVm>(ro.LogisticProvider);
                     if (ro.Defectives != null)
                         rovm.Defectives = ro.Defectives.Select(Map<Defective, DefectiveVm>).ToList();
+                    if (ro.IncludedComponents != null)
+                        rovm.IncludedComponents = ro.IncludedComponents.Select(Map<IncludedComponent, IncludedComponentVm>).ToList();
                     if (ro.RepairPositions != null)
                         rovm.RepairPositions = ro.RepairOrderRepairPositions.Select(Map<RepairOrderRepairPosition, RepairPositionVm>).ToList();
                     if(ro.Employees != null)
@@ -68,7 +69,6 @@ namespace CamCare.Services
                     ro.CustomerId = rovm.CustomerId ?? 0;
                     ro.SerialNumber = rovm.CameraSerialNumber;
                     ro.PiceOfEquipment = rovm.PiceOfEquipment;
-                    ro.AdditionalComponents = rovm.AdditionalComponents;
                     ro.RepairOrderStatusId = rovm.RepairOrderStatusId;
                     ro.ShippingMethod = rovm.ShippingMethod;
                     ro.LogisticProviderId = rovm.LogisticProviderId;
@@ -126,6 +126,16 @@ namespace CamCare.Services
                 case DefectiveVm defvm when destination is Defective def:
                     def.Id = defvm.Id;
                     def.Description = defvm.Description;
+                    break;
+                case IncludedComponent includedComponent when destination is IncludedComponentVm includedComponentVm:
+                    includedComponentVm.Id = includedComponent.Id;
+                    includedComponentVm.Description = includedComponent.Description;
+                    includedComponentVm.CreatedAt = includedComponent.CreatedAt;
+                    includedComponentVm.UpdatedAt = includedComponent.UpdatedAt;
+                    break;
+                case IncludedComponentVm includedComponentVm when destination is IncludedComponent includedComponent:
+                    includedComponent.Id = includedComponentVm.Id;
+                    includedComponent.Description = includedComponentVm.Description;
                     break;
                 case CameraType ct when destination is CameraTypeVm ctv:
                     ctv.Id = ct.Id;

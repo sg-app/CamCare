@@ -11,6 +11,7 @@ namespace CamCare.Interfaces.Persistence
         DbSet<Camera> Cameras { get; set; }
         DbSet<CameraType> CameraTypes { get; set; }
         DbSet<Defective> Defectives { get; set; }
+        DbSet<IncludedComponent> IncludedComponents { get; set; }
         DbSet<RepairOrderStatus> RepairOrderStatuses { get; set; }
         DbSet<RepairOrder> RepairOrders { get; set; }
         DbSet<RepairPosition> RepairPositions { get; set; }

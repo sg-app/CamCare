@@ -41,6 +41,7 @@ builder.Services.AddScoped<ICameraService, CameraService>();
 builder.Services.AddScoped<ILogisticProviderService, LogisticProviderService>();
 builder.Services.AddScoped<IRepairPositionService, RepairPositionService>();
 builder.Services.AddScoped<IDefectiveService, DefectiveService>();
+builder.Services.AddScoped<IIncludedComponentService, IncludedComponentService>();
 builder.Services.AddScoped<IRepairOrderService, RepairOrderService>();
 builder.Services.AddScoped<IAmicronDataService, AmicronDataService>();
 

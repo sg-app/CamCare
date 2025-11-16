@@ -1,6 +1,7 @@
 ﻿@using CamCare.Models.Amicron
 
 <RadzenDataGrid TItem="Artikel"
+                class="mt-2"
                 Data="_data"
                 LoadData="OnLoadData"
                 IsLoading="_isLoading"
@@ -24,8 +25,7 @@
         @* <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Picture)" Title="Bild" Width="80px" Filterable="false" /> *@
     </Columns>
 </RadzenDataGrid>
-<RadzenDataGrid class="mt-2"
-                @ref="_grid"
+<RadzenDataGrid @ref="_grid"
                 Data="@RepairOrder.RepairPositions"
                 TItem="RepairPositionVm"
                 RowUpdate="OnRowUpdate"

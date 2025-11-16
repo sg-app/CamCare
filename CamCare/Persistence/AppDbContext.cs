@@ -9,6 +9,7 @@ namespace CamCare.Persistence
         public DbSet<Camera> Cameras { get; set; }
         public DbSet<CameraType> CameraTypes { get; set; }
         public DbSet<Defective> Defectives { get; set; }
+        public DbSet<IncludedComponent> IncludedComponents { get; set; }
         public DbSet<RepairOrderStatus> RepairOrderStatuses { get; set; }
         public DbSet<RepairOrder> RepairOrders { get; set; }
         public DbSet<RepairPosition> RepairPositions { get; set; }
@@ -18,7 +19,7 @@ namespace CamCare.Persistence
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
+                        
             modelBuilder.Entity<RepairOrder>()
                 .HasMany(e => e.RepairPositions)
                 .WithMany(e => e.RepairOrders)

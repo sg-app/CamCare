@@ -8,6 +8,10 @@
         public int? KundenLfdNr { get; set; }
         public string? Artikelbezeichnung { get; set; }
 
+        public string? CustomerName { get; set; }
+        public string? CustomerNumber { get; set; }
+        public string? CustomerPlz { get; set; }
+
         public string DisplayName => $"{Seriennummer} - {Artikelbezeichnung}";
     }
 }

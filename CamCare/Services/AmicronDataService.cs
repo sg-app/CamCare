@@ -3,6 +3,7 @@ using CamCare.Models;
 using CamCare.Models.Amicron;
 using FirebirdSql.Data.FirebirdClient;
 using Radzen;
+using System.Runtime.ConstrainedExecution;
 
 namespace CamCare.Services
 {
@@ -184,6 +185,99 @@ namespace CamCare.Services
             using var command2 = new FbCommand(countQuery, connection);
             command2.Parameters.AddWithValue("@CustomerId", customerId);
             command2.Parameters.AddWithValue("@Filter", filter);
+            var countReader = await command2.ExecuteScalarAsync();
+            var totalCount = Convert.ToInt32(countReader);
+
+            return ServiceResponse.Success(new Paginated<Serials>
+            {
+                Items = result,
+                TotalCount = totalCount
+            });
+        }
+
+        public async Task<ServiceResponse<Paginated<Serials>>> GetAllSerialsAsync(LoadDataArgs args, SerialsFilter? filter = null)
+        {
+            var top = args.Top ?? 100;
+            var skip = args.Skip ?? 0;
+            var result = new List<Serials>();
+
+            using var connection = new FbConnection(ConnectionString);
+            await connection.OpenAsync();
+            var query = "SELECT FIRST @Top SKIP @Skip ser.LFDNR, ser.SERIENNR, a.BEZEICHNUNG, ad.NR, ad.NAME, ad.PLZ" +
+                " FROM ARTSERNR ser " +
+                " LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
+                " LEFT JOIN ADRESSEN ad ON ser.KUNDENLFDNR = ad.LFDNR " +
+                " WHERE 1=1";
+            var countQuery = "SELECT COUNT(*)" +
+                " FROM ARTSERNR ser" +
+                " LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
+                " LEFT JOIN ADRESSEN ad ON ser.KUNDENLFDNR = ad.LFDNR " +
+                " WHERE 1=1";
+
+            using var command = new FbCommand();
+            using var command2 = new FbCommand();
+
+            if (filter?.SerialNumber is not null)
+            {
+                var serialNumber = $"%{filter.SerialNumber}%";
+                command.Parameters.AddWithValue("@Serialnumber", serialNumber);
+                command2.Parameters.AddWithValue("@Serialnumber", serialNumber);
+                query += " AND UPPER(ser.SERIENNR) LIKE UPPER(@Serialnumber)";
+                countQuery += " AND UPPER(ser.SERIENNR) LIKE UPPER(@Serialnumber)";
+            }
+            if (filter?.ArticleName is not null)
+            {
+                var articleName = $"%{filter.ArticleName}%";
+                command.Parameters.AddWithValue("@Article", articleName);
+                command2.Parameters.AddWithValue("@Article", articleName);
+                query += " AND UPPER(a.BEZEICHNUNG) LIKE UPPER(@Article)";
+                countQuery += " AND UPPER(a.BEZEICHNUNG) LIKE UPPER(@Article)";
+            }
+            if (filter?.CustomerName is not null)
+            {
+                var customerName = $"%{filter.CustomerName}%";
+                command.Parameters.AddWithValue("@CustomerName", customerName);
+                command2.Parameters.AddWithValue("@CustomerName", customerName);
+                query += " AND UPPER(ad.NAME) LIKE UPPER(@CustomerName)";
+                countQuery += " AND UPPER(ad.NAME) LIKE UPPER(@CustomerName)";
+            }
+            if (filter?.CustomerNumber is not null)
+            {
+                var customerNumber = $"%{filter.CustomerNumber}%";
+                command.Parameters.AddWithValue("@CustomerNumber", customerNumber);
+                command2.Parameters.AddWithValue("@CustomerNumber", customerNumber);
+                query += " AND UPPER(ad.NR) LIKE UPPER(@CustomerNumber)";
+                countQuery += " AND UPPER(ad.NR) LIKE UPPER(@CustomerNumber)";
+            }
+
+            query += $" ORDER BY ser.LFDNR";
+
+            logger.LogDebug(query);
+
+            command.Parameters.AddWithValue("@Top", top);
+            command.Parameters.AddWithValue("@Skip", skip);
+
+            logger.LogDebug(query);
+            command.Connection = connection;
+            command.CommandText = query;
+            using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                result.Add(new Serials
+                {
+                    LfdNr = reader.GetInt32(0),
+                    Seriennummer = reader.GetString(1),
+                    Artikelbezeichnung = reader.GetString(2),
+                    CustomerNumber = reader.GetString(3),
+                    CustomerName = reader.GetString(4),
+                    CustomerPlz = reader.GetString(5),
+                });
+            }
+
+            logger.LogDebug(countQuery);
+            command2.Connection = connection;
+            command2.CommandText = countQuery;
             var countReader = await command2.ExecuteScalarAsync();
             var totalCount = Convert.ToInt32(countReader);
 

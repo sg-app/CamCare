@@ -49,6 +49,7 @@ namespace CamCare.Services
                 .Include(i => i.LogisticProvider)
                 .Include(i => i.Employees)
                 .Include(i => i.Defectives)
+                .Include(i => i.IncludedComponents)
                 .Include(i => i.RepairOrderRepairPositions)
                     .ThenInclude(rp => rp.RepairPosition);
 
@@ -103,6 +104,23 @@ namespace CamCare.Services
                 }
             }
 
+            // Included Components zuordnen oder anlegen
+            entity.IncludedComponents = new List<IncludedComponent>();
+            if (vm.IncludedComponents != null)
+            {
+                foreach (var incVm in vm.IncludedComponents)
+                {
+                    var includedComponent = await context.IncludedComponents.FirstOrDefaultAsync(ic => ic.Description == incVm.Description);
+                    if (includedComponent == null)
+                    {
+                        includedComponent = new IncludedComponent { Description = incVm.Description, CreatedAt = DateTime.UtcNow };
+                        context.IncludedComponents.Add(includedComponent);
+                        await context.SaveChangesAsync();
+                    }
+                    entity.IncludedComponents.Add(includedComponent);
+                }
+            }
+
             // RepairPositions zuordnen oder anlegen
             entity.RepairPositions = new List<RepairPosition>();
             if (vm.RepairPositions != null)
@@ -153,6 +171,7 @@ namespace CamCare.Services
 
             var entity = await context.RepairOrders
                 .Include(r => r.Defectives)
+                .Include(r => r.IncludedComponents)
                 .Include(r => r.RepairOrderRepairPositions)
                     .ThenInclude(rp => rp.RepairPosition)
                 .Include(r => r.Employees)
@@ -196,6 +215,31 @@ namespace CamCare.Services
             entity.Defectives.Clear();
             foreach (var d in newDefectives)
                 entity.Defectives.Add(d);
+
+
+
+            // --- Included Components synchronisieren ---
+            var newIncludeComponents = new List<IncludedComponent>();
+            if (vm.IncludedComponents != null)
+            {
+                foreach (var incVm in vm.IncludedComponents)
+                {
+                    var includedComponent = await context.IncludedComponents.FirstOrDefaultAsync(ic => ic.Description == incVm.Description);
+                    if (includedComponent == null)
+                    {
+                        includedComponent = new IncludedComponent { Description = incVm.Description, CreatedAt = DateTime.UtcNow };
+                        context.IncludedComponents.Add(includedComponent);
+                        await context.SaveChangesAsync();
+                    }
+                    newIncludeComponents.Add(includedComponent);
+                }
+            }
+            // Entfernte Included Components löschen
+            entity.IncludedComponents.Clear();
+            foreach (var d in newIncludeComponents)
+                entity.IncludedComponents.Add(d);
+
+
 
             // --- RepairPositions synchronisieren ---
             // Entfernte Positionen löschen
@@ -273,6 +317,7 @@ namespace CamCare.Services
                 using var context = _contextFactory.CreateDbContext();
                 var entity = await context.RepairOrders
                     .Include(i => i.Defectives)
+                    .Include(i => i.IncludedComponents)
                     .Include(i => i.RepairPositions)
                     .Include(i => i.RepairOrderStatus)
                     .Where(f => f.Id == (int)id)

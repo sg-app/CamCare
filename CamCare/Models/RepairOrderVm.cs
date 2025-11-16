@@ -1,3 +1,4 @@
+using CamCare.Domain;
 using CamCare.Models.Amicron;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,6 @@ namespace CamCare.Models
         public int? CustomerId { get; set; }
         public string? CameraSerialNumber { get; set; }
         public string? PiceOfEquipment { get; set; }
-        public string? AdditionalComponents { get; set; }
         public int RepairOrderStatusId { get; set; }
         public ShippingMethod ShippingMethod { get; set; }
         public int? LogisticProviderId { get; set; }
@@ -27,6 +27,7 @@ namespace CamCare.Models
         public RepairOrderStatusVm? RepairOrderStatus { get; set; }
         public LogisticProviderVm? LogisticProvider { get; set; }
         public ICollection<DefectiveVm>? Defectives { get; set; }
+        public ICollection<IncludedComponentVm>? IncludedComponents { get; set; }
         public ICollection<RepairPositionVm>? RepairPositions { get; set; }
         public ICollection<EmployeeVm>? Employees { get; set; }
         public ICollection<RepairOrderStatusHistoryVm>? RepairOrderStatusHistories { get; set; }

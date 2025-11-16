@@ -55,6 +55,18 @@
         <RadzenDataGridInlineEditColumn TItem="RepairOrderVm" EditRow="OnEditRowClicked" CanDelete="(_) => false" />
     </Columns>
     <Template Context="item">
+        @if (item.IncludedComponents?.Any() == true && item.IncludedComponents.Count >= 1)
+        {
+            <RadzenText TextStyle="TextStyle.H5" class="d-block">
+                Mitgelieferte Komponenten
+            </RadzenText>
+            @foreach (var includedComonents in item.IncludedComponents ?? [])
+            {
+                <RadzenText class="d-block">
+                    @includedComonents.Description
+                </RadzenText>
+            }
+        }
         <RadzenText TextStyle="TextStyle.H5" class="d-block">
             Defekte
         </RadzenText>

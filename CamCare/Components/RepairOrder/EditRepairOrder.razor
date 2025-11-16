@@ -2,93 +2,25 @@
 @inherits FluxorComponent
 @using CamCare.Store.RepairOrderFeature
 
-@if (RepairOrder.CustomerId is not null)
-{
-    <RadzenFieldset Text="@(_entryWithoutCamera ? "Einzelteil" : "Kamera")">
-        <RadzenRow>
-            <div class="p-1">
-                <RadzenCheckBox TValue="bool" Value=@_entryWithoutCamera ValueChanged="OnWithoutCameraSelected" Name="_entryWithoutCamera" Disabled="_isEditMode" />
-                <RadzenLabel Text="Erfassung ohne Kamera" Component="_entryWithoutCamera" class="ms-2" />
-            </div>
-            <div class="p-1">
-                <RadzenCheckBox TValue="bool" Value=@_cameraNotFound ValueChanged="OnCameraNotFountSelected" Name="_cameraNotFound" Disabled="_isEditMode" />
-                <RadzenLabel Text="Nicht in Amicron Liste" Component="_cameraNotFound" class="ms-2" />
-            </div>
-        </RadzenRow>
-        <div class="pt-1">
+<RadzenFieldset Text="@(_entryWithoutCamera ? "Einzelteil" : "Kamera")">
 
-            @if (_entryWithoutCamera)
-            {
-                <RadzenFormField class="d-block" Text="Einzelteil Beschreibung">
-                    <RadzenTextBox @bind-Value="RepairOrder.PiceOfEquipment" Style="width:500px" />
-                </RadzenFormField>
-            }
-            else if (_cameraNotFound)
-            {
-                <CameraAssign CustomerId="@RepairOrder.CustomerId" @bind-Value="RepairOrder.CameraSerialNumber" IsEditMode="_isEditMode" />
-            }
-            else
-            {
-                <AmicronCameraAssign CustomerId="@RepairOrder.CustomerId" @bind-Value="RepairOrder.CameraSerialNumber" IsEditMode="_isEditMode" />
-            }
-        </div>
-    </RadzenFieldset>
-}
+    @if (!string.IsNullOrEmpty(RepairOrder.PiceOfEquipment))
+    {
+        <RadzenFormField class="d-block" Text="Einzelteil Beschreibung">
+            <RadzenTextBox @bind-Value="RepairOrder.PiceOfEquipment" Style="width:500px" />
+        </RadzenFormField>
+    }
+    @if (!string.IsNullOrEmpty(RepairOrder.CameraSerialNumber))
+    {
+        <AmicronCameraAssign CustomerId="@RepairOrder.CustomerId" @bind-Value="RepairOrder.CameraSerialNumber" IsEditMode="_isEditMode" />
+    }
+</RadzenFieldset>
 
-@if (RepairOrder.CustomerId is not null)
-{
-    <RadzenFieldset Text="Beschreibung">
-        <RadzenFormField class="d-block" Text="Zusätzlich mitgelieferte Komponenten">
-            <RadzenTextArea @bind-Value="RepairOrder.AdditionalComponents" Cols="100" Rows="2" />
-        </RadzenFormField>
-
-        <RadzenFormField class="d-block pt-2" Text="Eingetroffen">
-            <RadzenDatePicker @bind-Value="RepairOrder.ArrivedAt" ShowTime="true" DateFormat="dd.MM.yyyy HH:mm" />
-        </RadzenFormField>
-        <RadzenFormField class="pt-2" Text="Status">
-            <RadzenDropDown @bind-Value="RepairOrder.RepairOrderStatusId"
-                            Data="@(MasterdataService.Get<RepairOrderStatusVm>())"
-                            AllowFiltering="true"
-                            TextProperty="@nameof(RepairOrderStatusVm.Name)"
-                            ValueProperty="@nameof(RepairOrderStatusVm.Id)"
-                            AllowClear="true"
-                            Style="width:500px" />
-        </RadzenFormField>
-        <div>
-            <RadzenLabel Text="@(MasterdataService.Get<RepairOrderStatusVm>()?.FirstOrDefault(f => f.Id == RepairOrder.RepairOrderStatusId)?.Description)" />
-        </div>
-        <RadzenRadioButtonList class="pt-2" @bind-Value="RepairOrder.ShippingMethod">
-            <Items>
-                <RadzenRadioButtonListItem Text="@ShippingMethod.PickedUp.GetDisplayDescription()" Value="ShippingMethod.PickedUp" />
-                <RadzenRadioButtonListItem Text="@ShippingMethod.SentByCustomer.GetDisplayDescription()" Value="ShippingMethod.SentByCustomer" />
-            </Items>
-        </RadzenRadioButtonList>
-        @if (RepairOrder.ShippingMethod == ShippingMethod.PickedUp)
-        {
-            <LogisticProviderAssign RepairOrder="@RepairOrder" />
-        }
-        <RadzenFormField class="d-block pt-2" Text="Versandbemerkung">
-            <RadzenTextArea @bind-Value="RepairOrder.ShippingMethodDescription" Rows="2" Cols="100" />
-        </RadzenFormField>
-
-        <RadzenFormField class="pt-2" Text="Mitarbeiter">
-            <RadzenDropDown @bind-Value="RepairOrder.Employees"
-                            Data="@(MasterdataService.Get<EmployeeVm>())"
-                            Multiple="true"
-                            Chips="true"
-                            AllowFiltering="true"
-                            TextProperty="@nameof(EmployeeVm.DisplayName)"
-                            AllowClear="true"
-                            Style="width:500px" />
-        </RadzenFormField>
-        <div class="pt-2">
-            <DefectiveAssign RepairOrder="@RepairOrder" />
-        </div>
-        <div class="pt-2">
-            <RepairPositionAssign RepairOrder="@RepairOrder" />
-        </div>
-    </RadzenFieldset>
-}
+<RadzenFieldset Text="Beschreibung" Visible="@(RepairOrder.CustomerId != null)">
+    <RepairOrderDescription RepairOrder="@RepairOrder" />
+    <DefectiveAssign RepairOrder="@RepairOrder" />
+    <RepairPositionAssign RepairOrder="@RepairOrder" />
+</RadzenFieldset>
 
 <FormButtons Class="pt-2" SaveClick="OnSaveClicked" CancelClick="OnCancelClicked" />
 
@@ -96,6 +28,7 @@
     [Inject] protected IState<RepairOrderState> RepairOrderState { get; set; } = default!;
 
     [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
+    [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
     [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
 

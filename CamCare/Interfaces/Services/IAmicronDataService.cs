@@ -11,5 +11,6 @@ namespace CamCare.Interfaces.Services
         Task<ServiceResponse<Adressen>> GetAddressByCustomerIdAsync(int customerId);
         Task<ServiceResponse<Paginated<Serials>>> GetSerialsFromCustomerIdAsync(LoadDataArgs args, int customerId);
         Task<ServiceResponse<Paginated<Artikel>>> GetArticleAsync(LoadDataArgs args, ArtikelFilter? filter = null);
+        Task<ServiceResponse<Paginated<Serials>>> GetAllSerialsAsync(LoadDataArgs args, SerialsFilter? filter = null);
     }
 }
