@@ -4,6 +4,7 @@ using CamCare.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CamCare.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251117152938_AddDataStore")]
+    partial class AddDataStore
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -336,6 +339,27 @@ namespace CamCare.Migrations
                     b.ToTable("RepairOrders");
                 });
 
+            modelBuilder.Entity("CamCare.Domain.RepairOrderRepairPosition", b =>
+                {
+                    b.Property<int>("RepairOrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RepairPositionId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("decimal(16,4)");
+
+                    b.Property<int>("RepairPostionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("RepairOrderId", "RepairPositionId");
+
+                    b.HasIndex("RepairPositionId");
+
+                    b.ToTable("RepairOrderRepairPosition");
+                });
+
             modelBuilder.Entity("CamCare.Domain.RepairOrderStatus", b =>
                 {
                     b.Property<int>("Id")
@@ -601,30 +625,12 @@ namespace CamCare.Migrations
                     b.ToTable("IncludedComponentRepairOrder");
                 });
 
-            modelBuilder.Entity("RepairOrderRepairPosition", b =>
-                {
-                    b.Property<int>("RepairOrderId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RepairPositionId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("decimal(16,4)");
-
-                    b.HasKey("RepairOrderId", "RepairPositionId");
-
-                    b.HasIndex("RepairPositionId");
-
-                    b.ToTable("RepairOrderRepairPosition");
-                });
-
             modelBuilder.Entity("CamCare.Domain.Camera", b =>
                 {
                     b.HasOne("CamCare.Domain.CameraType", "CameraType")
                         .WithMany("Cameras")
                         .HasForeignKey("CameraTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("CameraType");
@@ -650,12 +656,31 @@ namespace CamCare.Migrations
                     b.HasOne("CamCare.Domain.RepairOrderStatus", "RepairOrderStatus")
                         .WithMany()
                         .HasForeignKey("RepairOrderStatusId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("LogisticProvider");
 
                     b.Navigation("RepairOrderStatus");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.RepairOrderRepairPosition", b =>
+                {
+                    b.HasOne("CamCare.Domain.RepairOrder", "RepairOrder")
+                        .WithMany("RepairOrderRepairPositions")
+                        .HasForeignKey("RepairOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CamCare.Domain.RepairPosition", "RepairPosition")
+                        .WithMany("RepairOrderRepairPositions")
+                        .HasForeignKey("RepairPositionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RepairOrder");
+
+                    b.Navigation("RepairPosition");
                 });
 
             modelBuilder.Entity("CamCare.Domain.RepairOrderStatusHistory", b =>
@@ -680,7 +705,7 @@ namespace CamCare.Migrations
                     b.HasOne("CamCare.Domain.Defective", null)
                         .WithMany()
                         .HasForeignKey("DefectivesId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("CamCare.Domain.RepairOrder", null)
@@ -695,7 +720,7 @@ namespace CamCare.Migrations
                     b.HasOne("CamCare.Domain.Employee", null)
                         .WithMany()
                         .HasForeignKey("EmployeesId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("CamCare.Domain.RepairOrder", null)
@@ -710,7 +735,7 @@ namespace CamCare.Migrations
                     b.HasOne("CamCare.Domain.IncludedComponent", null)
                         .WithMany()
                         .HasForeignKey("IncludedComponentsId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("CamCare.Domain.RepairOrder", null)
@@ -718,25 +743,6 @@ namespace CamCare.Migrations
                         .HasForeignKey("RepairOrdersId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("RepairOrderRepairPosition", b =>
-                {
-                    b.HasOne("CamCare.Domain.RepairOrder", "RepairOrder")
-                        .WithMany("RepairOrderRepairPositions")
-                        .HasForeignKey("RepairOrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CamCare.Domain.RepairPosition", "RepairPosition")
-                        .WithMany("RepairOrderRepairPositions")
-                        .HasForeignKey("RepairPositionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("RepairOrder");
-
-                    b.Navigation("RepairPosition");
                 });
 
             modelBuilder.Entity("CamCare.Domain.CameraType", b =>

@@ -80,7 +80,7 @@ namespace CamCare.Services
                     ro.UpdatedAt = rovm.UpdatedAt;
                     break;
                 case RepairOrderRepairPosition rorp when destination is RepairPositionVm rpvm:
-                    rpvm.Id = rorp.RepairPostionId;
+                    rpvm.Id = rorp.RepairPositionId;
                     rpvm.Artikelnummer = rorp.RepairPosition.Artikelnummer;
                     rpvm.Description = rorp.RepairPosition.Description;
                     rpvm.SortOrder = rorp.RepairPosition.SortOrder;

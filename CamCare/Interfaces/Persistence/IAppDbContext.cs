@@ -17,6 +17,7 @@ namespace CamCare.Interfaces.Persistence
         DbSet<RepairPosition> RepairPositions { get; set; }
         DbSet<LogisticProvider> LogisticProviders { get; set; }
         DbSet<RepairOrderStatusHistory> RepairOrderStatusHistories { get; set; }
+        DbSet<DataStore> DataStores { get; set; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }

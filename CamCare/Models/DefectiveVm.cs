@@ -13,6 +13,8 @@ namespace CamCare.Models
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
+        public bool CanDelete { get; set; }
+
         public override string ToString()
             => $"[{Id}] {Description}";
     }

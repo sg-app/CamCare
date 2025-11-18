@@ -85,7 +85,7 @@
         var dialogResult = await DialogService.Confirm("Soll der Datensatz wirklich gelöscht werden?", "Datensatz löschen", new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
         if (dialogResult != true) return;
 
-        await EmployeeService.DeleteAsync(item.Id);
+        await EmployeeService.DeleteAsync(item.Id, false);
         await _grid.Reload();
     }
 

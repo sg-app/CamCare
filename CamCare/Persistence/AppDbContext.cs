@@ -15,15 +15,67 @@ namespace CamCare.Persistence
         public DbSet<RepairPosition> RepairPositions { get; set; }
         public DbSet<LogisticProvider> LogisticProviders { get; set; }
         public DbSet<RepairOrderStatusHistory> RepairOrderStatusHistories { get; set; }
+        public DbSet<DataStore> DataStores { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-                        
+
             modelBuilder.Entity<RepairOrder>()
-                .HasMany(e => e.RepairPositions)
+                .HasMany(ro => ro.RepairPositions)
+                .WithMany(rp => rp.RepairOrders)
+                .UsingEntity<RepairOrderRepairPosition>(
+                    "RepairOrderRepairPosition",
+                    right => right
+                        .HasOne(rp => rp.RepairPosition)
+                        .WithMany(rp => rp.RepairOrderRepairPositions)
+                        .HasForeignKey(rp => rp.RepairPositionId)
+                        .OnDelete(DeleteBehavior.Restrict), // <--- Hier das Verhalten für RepairPosition
+                    left => left
+                        .HasOne(rp => rp.RepairOrder)
+                        .WithMany(ro => ro.RepairOrderRepairPositions)
+                        .HasForeignKey(rp => rp.RepairOrderId)
+                        .OnDelete(DeleteBehavior.Cascade) // Verhalten für RepairOrder
+                );
+
+            modelBuilder.Entity<RepairOrder>()
+                .HasMany(e => e.Defectives)
                 .WithMany(e => e.RepairOrders)
-                .UsingEntity<RepairOrderRepairPosition>();
+                .UsingEntity(
+                    "DefectiveRepairOrder",
+                    r => r.HasOne(typeof(Defective)).WithMany().OnDelete(DeleteBehavior.Restrict),
+                    l => l.HasOne(typeof(RepairOrder)).WithMany().OnDelete(DeleteBehavior.Cascade)
+                );
+
+            modelBuilder.Entity<RepairOrder>()
+                .HasMany(e => e.IncludedComponents)
+                .WithMany(e => e.RepairOrders)
+                .UsingEntity(
+                    "IncludedComponentRepairOrder",
+                    r => r.HasOne(typeof(IncludedComponent)).WithMany().OnDelete(DeleteBehavior.Restrict),
+                    l => l.HasOne(typeof(RepairOrder)).WithMany().OnDelete(DeleteBehavior.Cascade)
+                );
+
+            modelBuilder.Entity<RepairOrder>()
+               .HasMany(e => e.Employees)
+               .WithMany(e => e.RepairOrders)
+               .UsingEntity(
+                   "EmployeeRepairOrder",
+                   r => r.HasOne(typeof(Employee)).WithMany().OnDelete(DeleteBehavior.Restrict),
+                   l => l.HasOne(typeof(RepairOrder)).WithMany().OnDelete(DeleteBehavior.Cascade)
+               );
+
+            modelBuilder.Entity<Camera>()
+               .HasOne(c => c.CameraType)
+               .WithMany(c=>c.Cameras)
+               .HasForeignKey(c => c.CameraTypeId)
+               .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<RepairOrder>()
+               .HasOne(ro => ro.RepairOrderStatus)
+               .WithMany()
+               .HasForeignKey(ro => ro.RepairOrderStatusId)
+               .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<RepairOrderStatus>()
                 .HasData(
@@ -52,6 +104,7 @@ namespace CamCare.Persistence
                     new LogisticProvider { Id = 2, Name = "Dachser", IsDefault = false, IsActive = true },
                     new LogisticProvider { Id = 3, Name = "DPD", IsDefault = false, IsActive = true }
                 );
+
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

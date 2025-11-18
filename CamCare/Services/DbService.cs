@@ -2,6 +2,7 @@ using CamCare.Extensions;
 using CamCare.Interfaces.Persistence;
 using CamCare.Interfaces.Services;
 using CamCare.Models;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Radzen;
 using System.Linq.Dynamic.Core;
@@ -210,7 +211,7 @@ namespace CamCare.Services
             }
         }
 
-        public virtual async Task<ServiceResponse<bool>> DeleteAsync(object id)
+        public virtual async Task<ServiceResponse<bool>> DeleteAsync(object id, bool archive = true)
         {
             try
             {
@@ -219,7 +220,7 @@ namespace CamCare.Services
                 if (entity == null)
                     return ServiceResponse.Failure<bool>("Nicht gefunden");
 
-                if(entity is IAuditableEntity auditableEntity)
+                if(entity is IAuditableEntity auditableEntity && archive)
                 {
                     auditableEntity.ArchivedAt = DateTime.UtcNow;
                     context.Set<TEntity>().Entry(entity).State = EntityState.Modified;
@@ -230,6 +231,20 @@ namespace CamCare.Services
                 }
                 await context.SaveChangesAsync();
                 return ServiceResponse.Success(true);
+            }
+            catch (DbUpdateException updateException)
+            {
+                string errorMessage = "Fehler beim Löschen des Datensatzes";
+                if (updateException.InnerException is not null)
+                {
+                    if (updateException.InnerException.Message.Contains("conflicted with the REFERENCE constraint"))
+                    {
+                        errorMessage = "Löschen nicht möglich, da noch verknüpfte Daten existieren.";
+                    }
+                }
+                _logger.LogError(updateException, "Fehler in DeleteAsync");
+                NotifyError(errorMessage);
+                return ServiceResponse.Failure<bool>(errorMessage, updateException);
             }
             catch (Exception ex)
             {

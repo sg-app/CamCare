@@ -14,6 +14,6 @@ namespace CamCare.Interfaces.Services
         Task<ServiceResponse<Paginated<TVm>>> GetAllAsync(LoadDataArgs args, params string[] includes);
         Task<ServiceResponse<TVm>> CreateAsync(TVm vm);
         Task<ServiceResponse<TVm>> UpdateAsync(object id, TVm vm);
-        Task<ServiceResponse<bool>> DeleteAsync(object id);
+        Task<ServiceResponse<bool>> DeleteAsync(object id, bool archive = true);
     }
 }
