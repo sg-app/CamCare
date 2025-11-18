@@ -145,6 +145,22 @@ namespace CamCare.Services
                     ct.Id = ctv.Id;
                     ct.Name = ctv.Name;
                     break;
+                case DataStore ds when destination is DataStoreVm dsvm:
+                    dsvm.Id = ds.Id;
+                    dsvm.RepairOrderId = ds.RepairOrderId;
+                    dsvm.Filename = ds.Filename;
+                    dsvm.Description = ds.Description;
+                    dsvm.Data = ds.Data;
+                    dsvm.Type = ds.Type;
+                    break;
+                case DataStoreVm dsvm when destination is DataStore ds:
+                    ds.Id = dsvm.Id;
+                    ds.RepairOrderId = dsvm.RepairOrderId;
+                    ds.Filename = dsvm.Filename;
+                    ds.Description = dsvm.Description;
+                    ds.Data = dsvm.Data;
+                    ds.Type = dsvm.Type;
+                    break;
                 case RepairOrderStatus ros when destination is RepairOrderStatusVm rosvm:
                     rosvm.Id = ros.Id;
                     rosvm.Name = ros.Name;

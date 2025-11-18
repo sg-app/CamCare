@@ -1,0 +1,121 @@
+﻿﻿<style>
+     #uploadWithDragAndDrop {
+         left: 0;
+         --rz-upload-button-bar-background-color: transparent;
+         --rz-upload-button-bar-padding: 0;
+     }
+
+         #uploadWithDragAndDrop .rz-fileupload-buttonbar .rz-fileupload-choose {
+             width: 100%;
+             text-align: center;
+             font-size: 16px;
+             padding: 40px 0;
+         }
+
+     .rz-datalist-content .rz-g > div, .rz-datalist-data > li {
+        border:none;
+    }
+
+</style>
+
+<RadzenCard class="mt-2">
+    <RadzenText TextStyle="TextStyle.H6">Dateiupload</RadzenText>
+    <div id="uploadWithDragAndDrop" class="rz-fileupload" style="width:100%">
+        <div class="rz-fileupload-buttonbar">
+            <span class="rz-fileupload-choose rz-button">
+                <text>
+                    <InputFile @key="@_inputFieldKey" class="form-control" id="inputGroupFile01" @ref="inputFile" multiple="true" OnChange="@OnChange" />
+                    <span class="rz-button-text">Drag and drop here or click to choose files</span>
+                </text>
+            </span>
+        </div>
+    </div>
+
+    <RadzenDataList TItem="DataStoreVm" Data="@RepairOrder.DataStores" WrapItems="true" Density="Density.Compact">
+        <Template Context="item">
+            <div class="d-flex">
+                <div class="flex-row">
+
+                    @if (item.Type.StartsWith("image"))
+                    {
+                        <RadzenImage class="m-2" Path="@($"data:{item.Type};base64,{Convert.ToBase64String(item.Data)}")" Style="width: 15rem;" />
+                    }
+                    else if (item.Type == "application/pdf")
+                    {
+                        <iframe class="m-2"
+                                style="width: 15rem; height: 20rem; border: 1px solid #ccc;"
+                                src="@($"data:application/pdf;base64,{Convert.ToBase64String(item.Data)}")"
+                                title="PDF Preview"></iframe>
+                    }
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Click="@(()=>OnDeleteClicked(item))" />
+                    <RadzenText class="text-wrap text-break">@item.Filename</RadzenText>
+                </div>
+            </div>
+        </Template>
+    </RadzenDataList>
+</RadzenCard>
+
+
+@code {
+    [Inject] protected ILogger<DataAssign> Logger { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+
+    [Parameter] public RepairOrderVm RepairOrder { get; set; } = new();
+
+    private RadzenUpload _upload = default!;
+    private InputFile inputFile = default!;
+    private Guid _inputFieldKey = Guid.NewGuid();
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (RepairOrder is null)
+            throw new ArgumentNullException(nameof(RepairOrder), "RepairOrder cannot be null");
+
+        Logger.LogInformation("RepairOrder set to: {repairOrder}", RepairOrder);
+        RepairOrder.DataStores ??= [];
+        return base.OnParametersSetAsync();
+    }
+
+
+    private async Task OnUpload()
+    {
+        await _upload.Upload();
+
+    }
+
+    private async Task OnDeleteClicked(DataStoreVm item)
+    {
+        var toDelete = RepairOrder.DataStores!.FirstOrDefault(f => f.Filename == item.Filename);
+        if (toDelete is null)
+            return;
+
+        var dialogResult = await DialogService.Confirm("Soll die Datei wirklich gelöscht werden?", "Datensatz löschen", new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
+        if (dialogResult != true) return;
+
+        RepairOrder.DataStores!.Remove(toDelete);
+    }
+
+    private async Task OnChange(InputFileChangeEventArgs args)
+    {
+        RepairOrder.DataStores ??= [];
+        var files = args.GetMultipleFiles();
+        foreach (var file in files)
+        {
+            var maxAllowedSize = 10 * 1024 * 1024; // 10 MB
+            var stream = file.OpenReadStream(maxAllowedSize);
+            if (stream == null) continue;
+            using var mStream = new MemoryStream();
+            await stream.CopyToAsync(mStream);
+            var data = mStream.ToArray();
+            RepairOrder.DataStores.Add(new()
+            {
+                Type = file.ContentType,
+                Filename = file.Name,
+                Data = data
+            });
+
+            Logger.LogDebug($"Uploaded: {file.Name} / {file.Size} bytes");
+        }
+    }
+
+}

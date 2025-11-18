@@ -71,6 +71,7 @@ namespace CamCare.Persistence
                .HasForeignKey(c => c.CameraTypeId)
                .OnDelete(DeleteBehavior.Restrict);
 
+
             modelBuilder.Entity<RepairOrder>()
                .HasOne(ro => ro.RepairOrderStatus)
                .WithMany()

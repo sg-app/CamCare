@@ -1,4 +1,5 @@
-﻿@if (CustomerId is not null)
+﻿@using CamCare.Models.Amicron
+@if (CustomerId is not null)
 {
     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
         <RadzenFormField Text="Kamera wählen">
@@ -6,11 +7,11 @@
                             TValue="string"
                             Value="Value"
                             ValueChanged="OnValueChanged"
-                            Data="_cameras"
+                            Data="_serialnumbers"
                             LoadData="OnCameraLoadData"
                             Count="_totalCountCameras"
-                            TextProperty="@nameof(CameraVm.DisplayName)"
-                            ValueProperty="@nameof(CameraVm.SerialNumber)"
+                            TextProperty="@nameof(Serials.DisplayName)"
+                            ValueProperty="@nameof(Serials.Seriennummer)"
                             AllowVirtualization="true"
                             AllowClear="true"
                             AllowFiltering="true"
@@ -19,16 +20,11 @@
                             Style="width:500px"
                             Disabled="IsEditMode"/>
         </RadzenFormField>
-        <InsertIconButton Class="mt-2" Size="ButtonSize.Medium" Click="@(() => _createCamera = true)" Disabled="IsEditMode" />
     </RadzenStack>
-    @if (_createCamera)
-    {
-        <CameraEdit CustomerId="@CustomerId" ValueChanged="OnCameraCreated" CancelEdit="OnCancelCameraEdit" />
-    }
 }
 @code {
-    [Inject] protected ICameraService CameraService { get; set; } = default!;
-    [Inject] protected ILogger<CameraAssign> Logger { get; set; } = default!;
+    [Inject] protected ILogger<AmicronCameraAssign> Logger { get; set; } = default!;
+    [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
 
     [Parameter] public int? CustomerId { get; set; }
     [Parameter] public string Value { get; set; } = string.Empty;
@@ -36,14 +32,13 @@
     [Parameter] public bool IsEditMode { get; set; }
 
     private RadzenDropDown<string> _dropDown = default!;
-    private IEnumerable<CameraVm>? _cameras;
+    private IEnumerable<Serials>? _serialnumbers;
     private int _totalCountCameras;
-    private bool _createCamera;
 
     protected override async Task OnParametersSetAsync()
     {
         await base.OnParametersSetAsync();
-        await OnCameraLoadData(new() { Top = 9});
+        await OnCameraLoadData(new() { Top = 9 });
     }
 
     private async Task OnCameraLoadData(LoadDataArgs args)
@@ -51,25 +46,13 @@
         if(CustomerId is null)
             return; 
 
-        var response = await CameraService.GetForDropdownAsync(args, CustomerId.Value);
+        var response = await AmicronDataService.GetSerialsFromCustomerIdAsync(args, CustomerId.Value);
 
         if (response.Success)
         {
-            _cameras = response.Data?.Items;
+            _serialnumbers = response.Data?.Items;
             _totalCountCameras = response.Data?.TotalCount ?? 0;
         }
-    }
-
-    private async Task OnCameraCreated(CameraVm args)
-    {
-        await OnCameraLoadData(new LoadDataArgs { Filter = args.SerialNumber });
-        var serialNumber = _cameras?.FirstOrDefault(x => x.SerialNumber == args.SerialNumber)?.SerialNumber ?? string.Empty;
-        _createCamera = false;
-        await OnValueChanged(serialNumber);
-    }
-    private void OnCancelCameraEdit(MouseEventArgs args)
-    {
-        _createCamera = false;
     }
 
     private async Task OnValueChanged(string serialNumber)

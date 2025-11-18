@@ -13,10 +13,6 @@
                 <RadzenCheckBox TValue="bool" Value=@_entryWithoutCamera ValueChanged="OnWithoutCameraSelected" Name="_entryWithoutCamera" />
                 <RadzenLabel Text="Erfassung ohne Kamera" Component="_entryWithoutCamera" class="ms-2" />
             </div>
-            @*    <div class="p-1">
-                <RadzenCheckBox TValue="bool" Value=@_cameraNotFound ValueChanged="OnCameraNotFountSelected" Name="_cameraNotFound" />
-                <RadzenLabel Text="Nicht in Amicron Liste" Component="_cameraNotFound" class="ms-2" />
-            </div> *@
         </RadzenRow>
         <div class="pt-1">
             @if (_entryWithoutCamera)
@@ -24,11 +20,6 @@
                 <RadzenFormField class="d-block" Text="Einzelteil Beschreibung">
                     <RadzenTextBox @bind-Value="_repairOrder.PiceOfEquipment" Style="width:500px" />
                 </RadzenFormField>
-            }
-            else if (_cameraNotFound)
-            {
-                <CameraAssign CustomerId="@_repairOrder.CustomerId" @bind-Value="_repairOrder.CameraSerialNumber" />
-                <ValidationMessage For="@(() => _repairOrder.CameraSerialNumber)" />
             }
             else
             {
@@ -55,7 +46,6 @@
     private FluentValidationValidator _fluentValidationValidator = default!;
 
     private bool _entryWithoutCamera;
-    private bool _cameraNotFound;
 
     protected override void OnInitialized()
     {
@@ -88,17 +78,7 @@
         _entryWithoutCamera = args;
         if (args)
         {
-            _cameraNotFound = false;
             _repairOrder.CameraSerialNumber = null;
-        }
-    }
-    private void OnCameraNotFountSelected(bool args)
-    {
-        _cameraNotFound = args;
-        _repairOrder.CameraSerialNumber = null;
-        if (args)
-        {
-            _entryWithoutCamera = false;
         }
     }
 }

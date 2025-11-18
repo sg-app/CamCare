@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace CamCare.Domain
+namespace CamCare.Models
 {
-    public class DataStore : AuditableEntity
+    public class DataStoreVm
     {
         [Key]
         public int Id { get; set; }
@@ -12,7 +12,7 @@ namespace CamCare.Domain
         public byte[] Data { get; set; } = default!;
         public string Type { get; set; } = string.Empty;
 
-        public virtual RepairOrder RepairOrder { get; set; } = null!;
+        public virtual RepairOrderVm RepairOrder { get; set; } = null!;
 
     }
 }

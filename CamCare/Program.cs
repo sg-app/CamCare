@@ -43,6 +43,7 @@ builder.Services.AddScoped<IRepairPositionService, RepairPositionService>();
 builder.Services.AddScoped<IDefectiveService, DefectiveService>();
 builder.Services.AddScoped<IIncludedComponentService, IncludedComponentService>();
 builder.Services.AddScoped<IRepairOrderService, RepairOrderService>();
+builder.Services.AddScoped<IDataStoreService, DataStoreService>();
 builder.Services.AddScoped<IAmicronDataService, AmicronDataService>();
 
 builder.Services.AddScoped<IKrdDataService, KrdDataService>();
