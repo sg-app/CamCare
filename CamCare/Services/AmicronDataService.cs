@@ -137,6 +137,135 @@ namespace CamCare.Services
             });
         }
 
+        public async Task<ServiceResponse<Paginated<Adressen>>> GetAllAddressAsync(LoadDataArgs args, AdressenFilter filter, string serialnumber)
+        {
+            var top = args.Top ?? 100;
+            var skip = args.Skip ?? 0;
+
+            var result = new List<Adressen>();
+
+            using var connection = new FbConnection(ConnectionString);
+            await connection.OpenAsync();
+            var query = "SELECT FIRST @Top SKIP @Skip a.LFDNR, NR, ART, VORNAME, NAME, STRASSE, LAND, PLZ, ORT, ZAHLWEISE" +
+                " FROM ADRESSEN a" +
+                " LEFT JOIN ARTSERNR ser ON a.LFDNR = ser.KUNDENLFDNR" +
+                " WHERE ser.SERIENNR = @Serialnumber ";
+
+            var countQuery = "SELECT COUNT(*)" +
+                " FROM ADRESSEN" +
+                " LEFT JOIN ARTSERNR ser ON ADRESSEN.LFDNR = ser.KUNDENLFDNR" +
+                " WHERE ser.SERIENNR = @Serialnumber ";
+
+            using var command = new FbCommand();
+            using var command2 = new FbCommand();
+            command.Parameters.AddWithValue("@Serialnumber", serialnumber);
+            command2.Parameters.AddWithValue("@Serialnumber", serialnumber);
+
+            if (filter?.KdNummer is not null)
+            {
+                var kdNummer = $"%{filter.KdNummer}%";
+                command.Parameters.AddWithValue("@KdNummer", kdNummer);
+                command2.Parameters.AddWithValue("@KdNummer", kdNummer);
+                query += " AND UPPER(KDNUMMER) LIKE UPPER(@KdNummer)";
+                countQuery += " AND WHERE UPPER(KDNUMMER) LIKE UPPER(@KdNummer)";
+            }
+            if (filter?.Name is not null)
+            {
+                var name = $"%{filter.Name}%";
+                command.Parameters.AddWithValue("@Name", name);
+                command2.Parameters.AddWithValue("@Name", name);
+                query += " AND UPPER(NAME) LIKE UPPER(@Name)";
+                countQuery += " AND UPPER(NAME) LIKE UPPER(@Name)";
+            }
+            if (filter?.Plz is not null)
+            {
+                var plz = $"{filter.Plz}%";
+                command.Parameters.AddWithValue("@Plz", plz);
+                command2.Parameters.AddWithValue("@Plz", plz);
+                query += " AND PLZ LIKE @Plz";
+                countQuery += " AND PLZ LIKE @Plz";
+            }
+            if (filter?.Ort is not null)
+            {
+                var ort = $"%{filter.Ort}%";
+                command.Parameters.AddWithValue("@Ort", ort);
+                command2.Parameters.AddWithValue("@Ort", ort);
+                query += " AND UPPER(ORT) LIKE UPPER(@Ort)";
+                countQuery += " AND UPPER(ORT) LIKE UPPER(@Ort)";
+            }
+
+
+            query += $" ORDER BY LFDNR";
+
+
+            command.Parameters.AddWithValue("@Top", top);
+            command.Parameters.AddWithValue("@Skip", skip);
+
+            logger.LogDebug(query);
+            command.Connection = connection;
+            command.CommandText = query;
+
+            using var reader = await command.ExecuteReaderAsync();
+
+
+            while (await reader.ReadAsync())
+            {
+                result.Add(new Adressen
+                {
+                    LfdNr = reader.GetInt32(0),
+                    KdNummer = reader.GetString(1),
+                    Art = reader.GetString(2),
+                    Vorname = reader.GetString(3),
+                    Name = reader.GetString(4),
+                    Strasse = reader.GetString(5),
+                    Land = reader.GetString(6),
+                    Plz = reader.GetString(7),
+                    Ort = reader.GetString(8),
+                    Zahlweise = reader.GetString(9)
+                });
+            }
+
+            command2.Connection = connection;
+            command2.CommandText = countQuery;
+            var countReader = await command2.ExecuteScalarAsync();
+            var totalCount = Convert.ToInt32(countReader);
+
+            return ServiceResponse.Success(new Paginated<Adressen>
+            {
+                Items = result,
+                TotalCount = totalCount
+            });
+        }
+
+        public async Task<ServiceResponse<List<Serials>>> GetSerialsFromCustomerIdAsync(int customerId)
+        {
+            using var connection = new FbConnection(ConnectionString);
+            await connection.OpenAsync();
+            var query = "SELECT ser.SERIENNR, a.BEZEICHNUNG " +
+                "FROM ARTSERNR ser " +
+                "LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
+                "WHERE ser.KUNDENLFDNR = @CustomerId";
+            
+            using var command = new FbCommand(query, connection);
+            command.Parameters.AddWithValue("@CustomerId", customerId);
+            logger.LogDebug(query);
+
+            using var reader = await command.ExecuteReaderAsync();
+            
+            var result = new List<Serials>();
+            while (await reader.ReadAsync())
+            {
+                result.Add(new Serials
+                {
+                    Seriennummer = reader.GetString(0),
+                    Artikelbezeichnung = reader.GetString(1),
+                });
+            }
+            
+            return result.Any()
+                ? ServiceResponse.Success(result)
+                : ServiceResponse.Failure<List<Serials>>("Kein Datensatz gefunden.");
+        }
         public async Task<ServiceResponse<Paginated<Serials>>> GetSerialsFromCustomerIdAsync(LoadDataArgs args, int customerId)
         {
             var top = args.Top ?? 100;
@@ -200,6 +329,7 @@ namespace CamCare.Services
             var top = args.Top ?? 100;
             var skip = args.Skip ?? 0;
             var result = new List<Serials>();
+            
 
             using var connection = new FbConnection(ConnectionString);
             await connection.OpenAsync();
@@ -217,6 +347,11 @@ namespace CamCare.Services
             using var command = new FbCommand();
             using var command2 = new FbCommand();
 
+            if(!string.IsNullOrEmpty(args.Filter))
+            {
+                filter ??= new();
+                filter.SerialNumber = args.Filter;
+            }
             if (filter?.SerialNumber is not null)
             {
                 var serialNumber = $"%{filter.SerialNumber}%";

@@ -15,6 +15,8 @@ namespace CamCare.Models.Amicron
         public string? Ort { get; set; }
         public string? Zahlweise { get; set; }
 
+        public ICollection<Serials>? Serials { get; set; }
+
         public string DisplayName => $"[{KdNummer}] - {Name} - {Plz} {Ort}";
         public string FullName
         {

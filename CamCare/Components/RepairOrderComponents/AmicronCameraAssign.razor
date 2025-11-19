@@ -1,6 +1,5 @@
 ﻿@using CamCare.Models.Amicron
-@if (CustomerId is not null)
-{
+
     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
         <RadzenFormField Text="Kamera wählen">
             <RadzenDropDown @ref="@_dropDown"
@@ -21,7 +20,7 @@
                             Disabled="IsEditMode"/>
         </RadzenFormField>
     </RadzenStack>
-}
+
 @code {
     [Inject] protected ILogger<AmicronCameraAssign> Logger { get; set; } = default!;
     [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;

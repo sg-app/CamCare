@@ -23,7 +23,7 @@ namespace CamCare.Models
         public DateTime? UpdatedAt { get; set; }
 
         public Adressen? Customer { get; set; }
-        public CameraVm? Camera { get; set; }
+        public Serials? Serials { get; set; }
         public RepairOrderStatusVm? RepairOrderStatus { get; set; }
         public LogisticProviderVm? LogisticProvider { get; set; }
         public ICollection<DefectiveVm>? Defectives { get; set; }

@@ -90,7 +90,7 @@
             throw new ArgumentNullException(nameof(RepairOrder), "RepairOrder cannot be null");
 
         Logger.LogInformation("RepairOrder set to: {repairOrder}", RepairOrder);
-        var response = await DataStoreService.GetAllAsync();
+        var response = await DataStoreService.GetFromRepairOrderAsync(RepairOrder.Id);
         RepairOrder.DataStores = response.Data;
         RepairOrder.DataStores ??= [];
 

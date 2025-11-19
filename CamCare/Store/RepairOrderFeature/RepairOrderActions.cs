@@ -3,5 +3,4 @@
 namespace CamCare.Store.RepairOrderFeature
 {
    public record SetCurrentRepairOrderAction(RepairOrderVm RepairOrder);
-
 }

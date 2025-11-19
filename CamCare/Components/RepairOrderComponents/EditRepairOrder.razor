@@ -2,19 +2,26 @@
 @inherits FluxorComponent
 @using CamCare.Store.RepairOrderFeature
 
-<RadzenFieldset Text="@(_entryWithoutCamera ? "Einzelteil" : "Kamera")">
+<RadzenStack Orientation="Orientation.Horizontal">
 
-    @if (!string.IsNullOrEmpty(RepairOrder.PiceOfEquipment))
-    {
-        <RadzenFormField class="d-block" Text="Einzelteil Beschreibung">
-            <RadzenTextBox @bind-Value="RepairOrder.PiceOfEquipment" Style="width:500px" />
-        </RadzenFormField>
-    }
-    @if (!string.IsNullOrEmpty(RepairOrder.CameraSerialNumber))
-    {
-        <AmicronCameraAssign CustomerId="@RepairOrder.CustomerId" @bind-Value="RepairOrder.CameraSerialNumber" IsEditMode="_isEditMode" />
-    }
-</RadzenFieldset>
+    <RadzenFieldset Text="Kunde" class="w-50">
+        <RadzenText>@RepairOrder.Customer?.KdNummer - @RepairOrder.Customer?.FullName</RadzenText>
+        <RadzenText>@RepairOrder.Customer?.Plz @RepairOrder.Customer?.Ort</RadzenText>
+    </RadzenFieldset>
+
+    <RadzenFieldset Text="@(string.IsNullOrEmpty(RepairOrder.CameraSerialNumber) ? "Einzelteil" : "Kamera")" class="w-50">
+        @if (string.IsNullOrEmpty(RepairOrder.CameraSerialNumber))
+        {
+            <RadzenFormField class="d-block" Text="Einzelteil Beschreibung">
+                <RadzenTextBox @bind-Value="RepairOrder.PiceOfEquipment" Style="width:600px" />
+            </RadzenFormField>
+        }
+        else
+        {
+            <RadzenText>@RepairOrder.CameraSerialNumber</RadzenText>
+        }
+    </RadzenFieldset>
+</RadzenStack>
 
 <RadzenFieldset Text="Beschreibung" Visible="@(RepairOrder.CustomerId != null)">
     <RepairOrderDescription RepairOrder="@RepairOrder" />

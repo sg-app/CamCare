@@ -1,7 +1,24 @@
 ﻿@page "/Customers"
 @using CamCare.Models.Amicron
+@using CamCare.Store.RepairOrderFeature
 
-
+<RadzenText TextStyle="TextStyle.H4">Kunden</RadzenText>
+<RadzenFormField Text="Seriennummer" class="py-2">
+    <RadzenDropDown TValue="string"
+                    Value="_selectedSerial"
+                    ValueChanged="OnValueChanged"
+                    Data="_serialnumbers"
+                    LoadData="OnLoadSerialsData"
+                    Count="_totalCountSerials"
+                    TextProperty="@nameof(Serials.DisplayName)"
+                    ValueProperty="@nameof(Serials.Seriennummer)"
+                    AllowVirtualization="true"
+                    AllowClear="true"
+                    AllowFiltering="true"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    FilterOperator="StringFilterOperator.Contains"
+                    Style="width:500px" />
+</RadzenFormField>
 <RadzenDataGrid @ref="_grid"
                 TItem="Adressen"
                 Data="_data"
@@ -14,6 +31,7 @@
                 FilterMode="FilterMode.Simple"
                 FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                 Density="Density.Compact"
+                RowExpand="OnRowExpanded"
                 AllowColumnResize="true"
                 ShowEmptyMessage="false">
     <Columns>
@@ -23,19 +41,61 @@
         <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.Strasse)" Title="Straße" MinWidth="200px" Filterable="false" />
         <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.Plz)" Title="PLZ" Width="80px" FilterPlaceholder="Filter" />
         <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.Ort)" Title="Ort" MinWidth="200px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn Width="50px">
+            <Template Context="customer">
+                <RadzenButton Click="@(() => OnSerialSelected(customer, null))" 
+                    Icon="add_task" Size="ButtonSize.ExtraSmall" 
+                    ButtonStyle="ButtonStyle.Info" 
+                    MouseEnter="@(args => ShowTooltip(args, "Auftrag ohne Seriennummer erstellen."))" />
+            </Template>
+        </RadzenDataGridColumn>
     </Columns>
+    <Template Context="customer">
+        @if (customer.Serials is null)
+        {
+            <RadzenText TextStyle="TextStyle.Subtitle2" class="ms-4">Keine Daten gefunden.</RadzenText>
+        }
+        else
+        {
+            <RadzenDataGrid TItem="Serials"
+            Data="customer.Serials"
+                        Density="Density.Compact"
+                        AllowColumnResize="true"
+                        ShowEmptyMessage="false">
+            <Columns>
+                <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.Seriennummer)" Title="Seriennummer" Width="150px" FilterPlaceholder="Filter" />
+                <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.Artikelbezeichnung)" Title="Artikel" MinWidth="200px" FilterPlaceholder="Filter" />
+                <RadzenDataGridColumn Width="50px">
+                    <Template Context="serial">
+                            <RadzenButton Click="@(() => OnSerialSelected(customer, serial))" 
+                                Icon="add_task" 
+                                Size="ButtonSize.ExtraSmall" 
+                                ButtonStyle="ButtonStyle.Info" 
+                                MouseEnter="@(args => ShowTooltip(args, "Auftrag mit Seriennummer erstellen."))" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+        }
+    </Template>
 </RadzenDataGrid>
 
 @code {
 
     [Inject] protected DialogService DialogService { get; set; } = default!;
+    [Inject] protected TooltipService TooltipService { get; set; } = default!;
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
     [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
+    [Inject] protected IDispatcher Dispatcher { get; set; } = default!;
+
     private RadzenDataGrid<Adressen> _grid = default!;
     private IList<Adressen>? _data;
     private int _totalCount;
     private bool _isLoading;
     private AdressenFilter? _filter;
+    private IEnumerable<Serials>? _serialnumbers;
+    private int _totalCountSerials;
+    private string? _selectedSerial;
 
     private async Task OnLoadData(LoadDataArgs args)
     {
@@ -59,12 +119,68 @@
                     break;
             }
         }
-        var response = await AmicronDataService.GetAllAddressAsync(args, _filter);
+        ServiceResponse<Paginated<Adressen>> response;
+
+        if(!string.IsNullOrEmpty(_selectedSerial))
+        {
+            response = await AmicronDataService.GetAllAddressAsync(args, _filter, _selectedSerial);
+        }
+        else
+        {
+            response = await AmicronDataService.GetAllAddressAsync(args, _filter);
+        }
+
         if (response.Success)
         {
             _data = response.Data?.Items.ToList();
             _totalCount = response.Data?.TotalCount ?? 0;
         }
+
+        if (!string.IsNullOrEmpty(_selectedSerial))
+            await _grid.ExpandRows(_data);
+
         _isLoading = false;
     }
+
+    private async Task OnRowExpanded(Adressen args)
+    {
+        var response = await AmicronDataService.GetSerialsFromCustomerIdAsync(args.LfdNr);
+        if (response.Success)
+        {
+            args.Serials = response.Data;
+        }
+    }
+
+    private void OnSerialSelected(Adressen customer, Serials? serials)
+    {
+        var repairOrder = new RepairOrderVm
+        {
+            CustomerId = customer.LfdNr,
+            Customer = customer,
+            CameraSerialNumber = serials?.Seriennummer,
+            Serials = serials
+        };
+
+        Dispatcher.Dispatch(new SetCurrentRepairOrderAction(repairOrder));
+        NavigationManager.NavigateTo("/CreateRepairOrder");
+    }
+
+    private async Task OnLoadSerialsData(LoadDataArgs args)
+    {
+        var response = await AmicronDataService.GetAllSerialsAsync(args);
+
+        if (response.Success)
+        {
+            _serialnumbers = response.Data?.Items;
+            _totalCountSerials = response.Data?.TotalCount ?? 0;
+        }
+    }
+
+    private async Task OnValueChanged(string serialnumber)
+    {
+        _selectedSerial = serialnumber;
+        await _grid.Reload();
+    }
+
+    void ShowTooltip(ElementReference elementReference, string text) => TooltipService.Open(elementReference, text, new TooltipOptions{ Duration = 1000});
 }
