@@ -25,7 +25,7 @@
         <div class="rz-fileupload-buttonbar">
             <span class="rz-fileupload-choose rz-button">
                 <text>
-                    <InputFile @key="@_inputFieldKey" class="form-control" id="inputGroupFile01" @ref="inputFile" multiple="true" accept="image/*,application/pdf" OnChange="@OnChange" />
+                    <InputFile @key="@_inputFieldKey" class="form-control" id="inputGroupFile01" @ref="inputFile" multiple="true" accept="image/*,video/*,application/pdf" OnChange="@OnChange" />
                     <span class="rz-button-text">Drag and drop here or click to choose files</span>
                 </text>
             </span>
@@ -48,6 +48,15 @@
                                 style="width: 15rem; height: 20rem; border: 1px solid #ccc;"
                                 src="@($"data:application/pdf;base64,{Convert.ToBase64String(item.Data)}")"
                                 title="PDF Preview"></iframe>
+                    }
+                    else if (item.Type.StartsWith("video"))
+                    {
+                        <video class="m-2"
+                               style="width: 15rem; border: 1px solid #ccc;"
+                               controls
+                               src="@($"data:{item.Type};base64,{Convert.ToBase64String(item.Data)}")">
+                            Ihr Browser unterstützt das Video-Tag nicht.
+                        </video>
                     }
                 </div>
                 <div class="align-self-center">
