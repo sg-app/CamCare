@@ -13,18 +13,19 @@
          }
 
      .rz-datalist-content .rz-g > div, .rz-datalist-data > li {
-        border:none;
-    }
+         border: none;
+     }
 
 </style>
 
 <RadzenCard class="mt-2">
     <RadzenText TextStyle="TextStyle.H6">Dateiupload</RadzenText>
+    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H6">Nur bilder und pdf mit maximal 10GB</RadzenText>
     <div id="uploadWithDragAndDrop" class="rz-fileupload" style="width:100%">
         <div class="rz-fileupload-buttonbar">
             <span class="rz-fileupload-choose rz-button">
                 <text>
-                    <InputFile @key="@_inputFieldKey" class="form-control" id="inputGroupFile01" @ref="inputFile" multiple="true" OnChange="@OnChange" />
+                    <InputFile @key="@_inputFieldKey" class="form-control" id="inputGroupFile01" @ref="inputFile" multiple="true" accept="image/*,application/pdf" OnChange="@OnChange" />
                     <span class="rz-button-text">Drag and drop here or click to choose files</span>
                 </text>
             </span>
@@ -33,12 +34,13 @@
 
     <RadzenDataList TItem="DataStoreVm" Data="@RepairOrder.DataStores" WrapItems="true" Density="Density.Compact">
         <Template Context="item">
-            <div class="d-flex">
-                <div class="flex-row">
-
+            <div class="d-flex flex-column justify-content-center">
+                <div class="align-self-center">
                     @if (item.Type.StartsWith("image"))
                     {
-                        <RadzenImage class="m-2" Path="@($"data:{item.Type};base64,{Convert.ToBase64String(item.Data)}")" Style="width: 15rem;" />
+                        <RadzenImage class="m-2"
+                                     Path="@($"data:{item.Type};base64,{Convert.ToBase64String(item.Data)}")"
+                                     Style="width: 15rem;" />
                     }
                     else if (item.Type == "application/pdf")
                     {
@@ -47,7 +49,12 @@
                                 src="@($"data:application/pdf;base64,{Convert.ToBase64String(item.Data)}")"
                                 title="PDF Preview"></iframe>
                     }
-                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Click="@(()=>OnDeleteClicked(item))" />
+                </div>
+                <div class="align-self-center">
+                    <RadzenButton Icon="download" Click="@(() => OnDownloadClicked(item))" Size="ButtonSize.Small" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => OnDeleteClicked(item))" />
+                </div>
+                <div class="align-self-center">
                     <RadzenText class="text-wrap text-break">@item.Filename</RadzenText>
                 </div>
             </div>
@@ -59,6 +66,8 @@
 @code {
     [Inject] protected ILogger<DataAssign> Logger { get; set; } = default!;
     [Inject] protected DialogService DialogService { get; set; } = default!;
+    [Inject] protected IDataStoreService DataStoreService { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     [Parameter] public RepairOrderVm RepairOrder { get; set; } = new();
 
@@ -66,31 +75,30 @@
     private InputFile inputFile = default!;
     private Guid _inputFieldKey = Guid.NewGuid();
 
-    protected override Task OnParametersSetAsync()
+    protected override async Task OnParametersSetAsync()
     {
         if (RepairOrder is null)
             throw new ArgumentNullException(nameof(RepairOrder), "RepairOrder cannot be null");
 
         Logger.LogInformation("RepairOrder set to: {repairOrder}", RepairOrder);
+        var response = await DataStoreService.GetAllAsync();
+        RepairOrder.DataStores = response.Data;
         RepairOrder.DataStores ??= [];
-        return base.OnParametersSetAsync();
-    }
 
-
-    private async Task OnUpload()
-    {
-        await _upload.Upload();
-
+        await base.OnParametersSetAsync();
     }
 
     private async Task OnDeleteClicked(DataStoreVm item)
     {
-        var toDelete = RepairOrder.DataStores!.FirstOrDefault(f => f.Filename == item.Filename);
+        var toDelete = RepairOrder.DataStores!.FirstOrDefault(f => f.Id == item.Id);
         if (toDelete is null)
             return;
 
         var dialogResult = await DialogService.Confirm("Soll die Datei wirklich gelöscht werden?", "Datensatz löschen", new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
         if (dialogResult != true) return;
+
+        var response = await DataStoreService.DeleteAsync(toDelete.Id, false);
+        if (!response.Success) return;
 
         RepairOrder.DataStores!.Remove(toDelete);
     }
@@ -107,15 +115,25 @@
             using var mStream = new MemoryStream();
             await stream.CopyToAsync(mStream);
             var data = mStream.ToArray();
-            RepairOrder.DataStores.Add(new()
+            var item = new DataStoreVm
             {
+                RepairOrderId = RepairOrder.Id,
                 Type = file.ContentType,
                 Filename = file.Name,
                 Data = data
-            });
+            };
+
+            var response = await DataStoreService.CreateAsync(item);
+            if (response.Success && response.Data is not null)
+                RepairOrder.DataStores.Add(response.Data);
 
             Logger.LogDebug($"Uploaded: {file.Name} / {file.Size} bytes");
         }
     }
 
+    private async Task OnDownloadClicked(DataStoreVm item)
+    {
+        // All OK. Download file!
+        await JS.InvokeVoidAsync("downloadFileFromByteArray", item.Filename, item.Data);
+    }
 }
