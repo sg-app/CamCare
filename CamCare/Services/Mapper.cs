@@ -18,22 +18,6 @@ namespace CamCare.Services
         {
             switch (source)
             {
-                case Camera cam when destination is CameraVm camVm:
-                    camVm.SerialNumber = cam.SerialNumber;
-                    camVm.CustomerId = cam.CustomerId;
-                    camVm.CameraTypeId = cam.CameraTypeId;
-                    camVm.CreatedAt = cam.CreatedAt;
-                    camVm.UpdatedAt = cam.UpdatedAt;
-                    if (cam.CameraType != null)
-                        camVm.CameraType = Map<CameraType, CameraTypeVm>(cam.CameraType);
-                    break;
-                case CameraVm camVm when destination is Camera cam:
-                    cam.SerialNumber = camVm.SerialNumber;
-                    cam.CustomerId = camVm.CustomerId;
-                    cam.CameraTypeId = camVm.CameraTypeId;
-                    cam.CreatedAt = camVm.CreatedAt;
-                    cam.UpdatedAt = camVm.UpdatedAt;
-                    break;
                 case RepairOrder ro when destination is RepairOrderVm rovm:
                     rovm.Id = ro.Id;
                     rovm.CustomerId = ro.CustomerId;
@@ -135,14 +119,6 @@ namespace CamCare.Services
                 case IncludedComponentVm includedComponentVm when destination is IncludedComponent includedComponent:
                     includedComponent.Id = includedComponentVm.Id;
                     includedComponent.Description = includedComponentVm.Description;
-                    break;
-                case CameraType ct when destination is CameraTypeVm ctv:
-                    ctv.Id = ct.Id;
-                    ctv.Name = ct.Name;
-                    break;
-                case CameraTypeVm ctv when destination is CameraType ct:
-                    ct.Id = ctv.Id;
-                    ct.Name = ctv.Name;
                     break;
                 case DataStore ds when destination is DataStoreVm dsvm:
                     dsvm.Id = ds.Id;

@@ -6,8 +6,6 @@ namespace CamCare.Persistence
 {
     public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options), IAppDbContext
     {
-        public DbSet<Camera> Cameras { get; set; }
-        public DbSet<CameraType> CameraTypes { get; set; }
         public DbSet<Defective> Defectives { get; set; }
         public DbSet<IncludedComponent> IncludedComponents { get; set; }
         public DbSet<RepairOrderStatus> RepairOrderStatuses { get; set; }
@@ -65,12 +63,6 @@ namespace CamCare.Persistence
                    l => l.HasOne(typeof(RepairOrder)).WithMany().OnDelete(DeleteBehavior.Cascade)
                );
 
-            modelBuilder.Entity<Camera>()
-               .HasOne(c => c.CameraType)
-               .WithMany(c => c.Cameras)
-               .HasForeignKey(c => c.CameraTypeId)
-               .OnDelete(DeleteBehavior.Restrict);
-
 
             modelBuilder.Entity<RepairOrder>()
                .HasOne(ro => ro.RepairOrderStatus)
@@ -89,14 +81,6 @@ namespace CamCare.Persistence
                     new RepairOrderStatus { Id = 7, Order = 7, Name = "Warte auf Ersatzteile", Description = "Reparatur kann nicht fortgesetzt werden da Ersatzteile bestellt wurden." },
                     new RepairOrderStatus { Id = 8, Order = 8, Name = "Reparatur fertig", Description = "Kamera ist fertig repariert." },
                     new RepairOrderStatus { Id = 9, Order = 9, Name = "Versendet", Description = "Kamera wurde versendet.", BackgroundColor = "rgb(125, 218, 88)", FontColor = "rgb(0, 0, 0)" }
-                );
-
-            modelBuilder.Entity<CameraType>()
-                .HasData(
-                    new CameraType { Id = 1, Name = "Mini 3000" },
-                    new CameraType { Id = 2, Name = "Mini 3110" },
-                    new CameraType { Id = 3, Name = "4540" },
-                    new CameraType { Id = 4, Name = "5030" }
                 );
 
             modelBuilder.Entity<LogisticProvider>()

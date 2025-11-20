@@ -15,7 +15,6 @@ namespace CamCare.Services
 
         public async Task InitializeAsync()
         {
-            Register<CameraType, CameraTypeVm>();
             Register<Employee, EmployeeVm>();
             Register<LogisticProvider, LogisticProviderVm>();
             Register<RepairOrderStatus, RepairOrderStatusVm>();

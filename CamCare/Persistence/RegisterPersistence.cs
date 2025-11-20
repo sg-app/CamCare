@@ -14,7 +14,6 @@ namespace CamCare.Persistence
             services.AddDbContextFactory<AppDbContext>(options =>
             {
                 options.UseSqlServer(connectionString);
-                //options.UseSqlite(connectionString);
             });
             services.AddScoped<IAppDbContextFactory, AppDbContextFactory>();
 

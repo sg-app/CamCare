@@ -8,8 +8,6 @@ namespace CamCare.Interfaces.Persistence
     {
         DatabaseFacade Database { get; }
         DbSet<TEntity> Set<TEntity>() where TEntity : class;
-        DbSet<Camera> Cameras { get; set; }
-        DbSet<CameraType> CameraTypes { get; set; }
         DbSet<Defective> Defectives { get; set; }
         DbSet<IncludedComponent> IncludedComponents { get; set; }
         DbSet<RepairOrderStatus> RepairOrderStatuses { get; set; }
