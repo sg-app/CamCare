@@ -3,7 +3,6 @@ using CamCare.Models;
 using CamCare.Models.Amicron;
 using FirebirdSql.Data.FirebirdClient;
 using Radzen;
-using System.Runtime.ConstrainedExecution;
 
 namespace CamCare.Services
 {
@@ -245,13 +244,13 @@ namespace CamCare.Services
                 "FROM ARTSERNR ser " +
                 "LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
                 "WHERE ser.KUNDENLFDNR = @CustomerId";
-            
+
             using var command = new FbCommand(query, connection);
             command.Parameters.AddWithValue("@CustomerId", customerId);
             logger.LogDebug(query);
 
             using var reader = await command.ExecuteReaderAsync();
-            
+
             var result = new List<Serials>();
             while (await reader.ReadAsync())
             {
@@ -261,7 +260,7 @@ namespace CamCare.Services
                     Artikelbezeichnung = reader.GetString(1),
                 });
             }
-            
+
             return result.Any()
                 ? ServiceResponse.Success(result)
                 : ServiceResponse.Failure<List<Serials>>("Kein Datensatz gefunden.");
@@ -329,7 +328,7 @@ namespace CamCare.Services
             var top = args.Top ?? 100;
             var skip = args.Skip ?? 0;
             var result = new List<Serials>();
-            
+
 
             using var connection = new FbConnection(ConnectionString);
             await connection.OpenAsync();
@@ -347,7 +346,7 @@ namespace CamCare.Services
             using var command = new FbCommand();
             using var command2 = new FbCommand();
 
-            if(!string.IsNullOrEmpty(args.Filter))
+            if (!string.IsNullOrEmpty(args.Filter))
             {
                 filter ??= new();
                 filter.SerialNumber = args.Filter;

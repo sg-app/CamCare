@@ -1,7 +1,6 @@
 using CamCare.Domain;
 using CamCare.Interfaces.Services;
 using CamCare.Models;
-using System.Linq;
 
 namespace CamCare.Services
 {
@@ -61,7 +60,7 @@ namespace CamCare.Services
                         rovm.IncludedComponents = ro.IncludedComponents.Select(Map<IncludedComponent, IncludedComponentVm>).ToList();
                     if (ro.RepairPositions != null)
                         rovm.RepairPositions = ro.RepairOrderRepairPositions.Select(Map<RepairOrderRepairPosition, RepairPositionVm>).ToList();
-                    if(ro.Employees != null)
+                    if (ro.Employees != null)
                         rovm.Employees = ro.Employees.Select(Map<Employee, EmployeeVm>).ToList();
                     break;
                 case RepairOrderVm rovm when destination is RepairOrder ro:
@@ -192,7 +191,7 @@ namespace CamCare.Services
                     vm.RepairOrderId = history.RepairOrderId;
                     vm.RepairOrderStatusId = history.RepairOrderStatusId;
                     vm.ChangedAt = history.ChangedAt.ToLocalTime();
-                    if(history.RepairOrderStatus != null)
+                    if (history.RepairOrderStatus != null)
                         vm.RepairOrderStatus = Map<RepairOrderStatus, RepairOrderStatusVm>(history.RepairOrderStatus);
                     break;
                 case RepairOrderStatusHistoryVm vm when destination is RepairOrderStatusHistory history:

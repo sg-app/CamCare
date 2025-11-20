@@ -4,9 +4,7 @@ using CamCare.Interfaces.Persistence;
 using CamCare.Interfaces.Services;
 using CamCare.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Radzen;
-using System;
 
 namespace CamCare.Services
 {

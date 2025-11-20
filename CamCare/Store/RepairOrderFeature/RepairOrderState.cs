@@ -6,7 +6,7 @@ namespace CamCare.Store.RepairOrderFeature
     [FeatureState]
     public record RepairOrderState
     {
-        public RepairOrderVm? CurrentRepairOrder{ get; set; }
+        public RepairOrderVm? CurrentRepairOrder { get; set; }
         private RepairOrderState() { }
     }
 }

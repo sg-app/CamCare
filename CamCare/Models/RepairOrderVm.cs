@@ -1,7 +1,4 @@
-using CamCare.Domain;
 using CamCare.Models.Amicron;
-using System;
-using System.Collections.Generic;
 
 namespace CamCare.Models
 {

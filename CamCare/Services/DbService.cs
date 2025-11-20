@@ -2,7 +2,6 @@ using CamCare.Extensions;
 using CamCare.Interfaces.Persistence;
 using CamCare.Interfaces.Services;
 using CamCare.Models;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Radzen;
 using System.Linq.Dynamic.Core;
@@ -220,7 +219,7 @@ namespace CamCare.Services
                 if (entity == null)
                     return ServiceResponse.Failure<bool>("Nicht gefunden");
 
-                if(entity is IAuditableEntity auditableEntity && archive)
+                if (entity is IAuditableEntity auditableEntity && archive)
                 {
                     auditableEntity.ArchivedAt = DateTime.UtcNow;
                     context.Set<TEntity>().Entry(entity).State = EntityState.Modified;

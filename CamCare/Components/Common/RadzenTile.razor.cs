@@ -2,8 +2,6 @@
 using Microsoft.AspNetCore.Components.Web;
 using Radzen;
 using Radzen.Blazor.Rendering;
-using System;
-using System.Threading.Tasks;
 namespace CamCare.Components.Common
 {
     public partial class RadzenTile : RadzenComponent

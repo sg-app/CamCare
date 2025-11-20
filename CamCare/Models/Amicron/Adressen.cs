@@ -23,11 +23,11 @@ namespace CamCare.Models.Amicron
             get
             {
                 var sb = new StringBuilder();
-                if(!string.IsNullOrEmpty(Vorname))
+                if (!string.IsNullOrEmpty(Vorname))
                     sb.Append(Vorname);
                 if (!string.IsNullOrEmpty(Name))
                     sb.Append(' ');
-                    sb.Append(Name);
+                sb.Append(Name);
                 return sb.ToString();
             }
         }

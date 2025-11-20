@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-
-namespace CamCare.Models
+﻿namespace CamCare.Models
 {
     public class Krd_DataVm
     {

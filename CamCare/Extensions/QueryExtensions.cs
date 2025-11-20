@@ -1,15 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Radzen;
-using System;
+﻿using Radzen;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
-using System.Reflection;
 
 namespace CamCare.Extensions
 {
     public static class QueryExtensions
     {
-        public static (int TotalCount, IQueryable<T> query) LoadByLoadDataArgs<T>(this IQueryable<T> query, LoadDataArgs args, Expression<Func<T,bool>>? predicate = null)
+        public static (int TotalCount, IQueryable<T> query) LoadByLoadDataArgs<T>(this IQueryable<T> query, LoadDataArgs args, Expression<Func<T, bool>>? predicate = null)
         {
             // Sorting
             if (!string.IsNullOrEmpty(args.OrderBy))
@@ -18,7 +15,7 @@ namespace CamCare.Extensions
             }
 
             // Filtering
-            if( predicate != null)
+            if (predicate != null)
             {
                 query = query.Where(predicate);
             }
@@ -32,7 +29,7 @@ namespace CamCare.Extensions
             // Paging
             if (args.Skip.HasValue)
                 query = query.Skip(args.Skip.Value);
-            
+
             if (args.Top.HasValue)
                 query = query.Take(args.Top.Value);
 

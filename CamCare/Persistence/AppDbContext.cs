@@ -67,7 +67,7 @@ namespace CamCare.Persistence
 
             modelBuilder.Entity<Camera>()
                .HasOne(c => c.CameraType)
-               .WithMany(c=>c.Cameras)
+               .WithMany(c => c.Cameras)
                .HasForeignKey(c => c.CameraTypeId)
                .OnDelete(DeleteBehavior.Restrict);
 

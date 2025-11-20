@@ -5,8 +5,8 @@ namespace CamCare.Models
 {
     public class CameraVm
     {
-        [Required(ErrorMessage ="Seriennummer muss eingetragen sein.")]
-        [MaxLength(100, ErrorMessage ="Maximal {1} Zeichen erlaubt.")]
+        [Required(ErrorMessage = "Seriennummer muss eingetragen sein.")]
+        [MaxLength(100, ErrorMessage = "Maximal {1} Zeichen erlaubt.")]
         public string SerialNumber { get; set; } = string.Empty;
         public int CustomerId { get; set; }
         [Range(1, int.MaxValue, ErrorMessage = "Kamera-Typ muss ausgewählt sein.")]
@@ -20,8 +20,8 @@ namespace CamCare.Models
         public Amicron.Adressen? Customer { get; set; }
 
         public override string ToString() => $"{SerialNumber}, CustomerId: {CustomerId}";
-        
-        public string DisplayName 
+
+        public string DisplayName
             => CameraType is null
             ? $"{SerialNumber} {ArtikelName}"
             : $"[{CameraType.Name}] {SerialNumber}";

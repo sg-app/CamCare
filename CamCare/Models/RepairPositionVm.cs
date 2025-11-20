@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace CamCare.Models
 {
     public class RepairPositionVm
@@ -14,7 +11,7 @@ namespace CamCare.Models
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
-        
+
         public ICollection<RepairOrderVm>? RepairOrders { get; set; }
 
         public override string ToString() => $"[{Id}] {Quantity} - {Description}";

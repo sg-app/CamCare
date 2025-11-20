@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace CamCare.Models
+﻿namespace CamCare.Models
 {
     public class LogisticProviderVm
     {

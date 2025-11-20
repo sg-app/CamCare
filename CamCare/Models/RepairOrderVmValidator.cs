@@ -9,11 +9,11 @@ namespace CamCare.Models
             RuleFor(r => r.CustomerId)
                 .NotEmpty()
                 .WithMessage("Kunde darf nicht leer sein.");
-            
+
             RuleFor(r => r.RepairOrderStatusId)
                 .GreaterThan(0)
                 .WithMessage("Bearbeitungsstatus muss ausgewählt sein.");
-            
+
             RuleFor(r => r.LogisticProviderId)
                 .NotNull()
                 .GreaterThan(0)

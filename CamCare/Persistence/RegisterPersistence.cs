@@ -10,7 +10,7 @@ namespace CamCare.Persistence
             var connectionString = configuration.GetConnectionString("Default");
             if (string.IsNullOrEmpty(connectionString))
                 throw new InvalidOperationException("Connection string 'Default' is not configured.");
-            
+
             services.AddDbContextFactory<AppDbContext>(options =>
             {
                 options.UseSqlServer(connectionString);

@@ -9,7 +9,6 @@ using Fluxor.Blazor.Web.ReduxDevTools;
 using Microsoft.EntityFrameworkCore;
 using NLog.Extensions.Logging;
 using Radzen;
-using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 

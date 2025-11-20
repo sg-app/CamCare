@@ -7,7 +7,7 @@
             if (string.IsNullOrEmpty(str) || length <= 0)
                 return str;
 
-            if (str.Length <= length) 
+            if (str.Length <= length)
                 return str;
 
             return str.Substring(0, length) + "...";

@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace CamCare.Models;
+﻿namespace CamCare.Models;
 
 public class EmployeeVm
 {
@@ -8,9 +6,9 @@ public class EmployeeVm
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
 
-    public string DisplayName 
+    public string DisplayName
         => $"{FirstName} {LastName}";
 
-    public override string ToString() 
+    public override string ToString()
         => $"[{Id}] {DisplayName}";
 }

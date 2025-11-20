@@ -1,12 +1,9 @@
 ﻿using CamCare.Domain;
 using CamCare.Interfaces.Persistence;
 using CamCare.Interfaces.Services;
-using CamCare.Migrations;
 using CamCare.Models;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Collections.Concurrent;
-using System.Text.RegularExpressions;
 
 namespace CamCare.Services
 {
