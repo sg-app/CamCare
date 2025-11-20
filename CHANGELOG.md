@@ -1,3 +1,10 @@
+# [1.0.0-beta.19](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.18...v1.0.0-beta.19) (2025-11-20)
+
+
+### Features
+
+* remove Camera and CameraType entities ([e62abb2](https://github.com/sg-app/CamCare/commit/e62abb2905230f1726584900cd5029e86228c7b9))
+
 # [1.0.0-beta.18](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.17...v1.0.0-beta.18) (2025-11-19)
 
 
