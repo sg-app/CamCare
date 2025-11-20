@@ -1,3 +1,13 @@
+# [1.0.0-beta.18](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.17...v1.0.0-beta.18) (2025-11-19)
+
+
+### Features
+
+* add DataStore entity and enhance delete behavior ([9a55178](https://github.com/sg-app/CamCare/commit/9a5517824a7fd924a61ef30ab282550c2c1b5104))
+* add file download support and improve file uploads ([1af1282](https://github.com/sg-app/CamCare/commit/1af1282bd9d7ef58cd5bc6f3a03f985dda80ec1c))
+* add video upload and preview support ([5a9055e](https://github.com/sg-app/CamCare/commit/5a9055ea0e4157a2cbf5173ac11cb1babfd70b8c))
+* enhance repair order workflow and data management ([cf5a532](https://github.com/sg-app/CamCare/commit/cf5a5323315d5a2a8a5c96a93e38d6bbeb37065f))
+
 # [1.0.0-beta.17](https://github.com/sg-app/CamCare/compare/v1.0.0-beta.16...v1.0.0-beta.17) (2025-11-16)
 
 
