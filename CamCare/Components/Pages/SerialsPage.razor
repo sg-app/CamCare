@@ -1,0 +1,68 @@
+﻿@page "/Serials"
+@using CamCare.Models.Amicron
+
+<RadzenDataGrid @ref="_grid"
+                TItem="Serials"
+                Data="_data"
+                LoadData="OnLoadData"
+                IsLoading="_isLoading"
+                Count="_totalCount"
+                AllowPaging="true"
+                PageSize="20"
+                AllowFiltering="true"
+                FilterMode="FilterMode.Simple"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                Density="Density.Compact"
+                AllowColumnResize="true"
+                ShowEmptyMessage="false">
+    <Columns>
+        <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.Seriennummer)" Title="Seriennummer" Width="150px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.Artikelbezeichnung)" Title="Artikel" MinWidth="200px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.CustomerNumber)" Title="Kundennummer" MinWidth="100px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.CustomerName)" Title="Name" MinWidth="250px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.CustomerPlz)" Title="PLZ" Width="80px" Filterable="false" />
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+    [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
+    private RadzenDataGrid<Serials> _grid = default!;
+    private IList<Serials>? _data;
+    private int _totalCount;
+    private bool _isLoading;
+    private SerialsFilter? _filter;
+
+    private async Task OnLoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        _filter = new();
+        foreach (var filter in args.Filters)
+        {
+            switch (filter.Property)
+            {
+                case nameof(Serials.Seriennummer):
+                    _filter.SerialNumber = filter.FilterValue?.ToString();
+                    break;
+                case nameof(Serials.Artikelbezeichnung):
+                    _filter.ArticleName = filter.FilterValue?.ToString();
+                    break;
+                case nameof(Serials.CustomerNumber):
+                    _filter.CustomerNumber = filter.FilterValue?.ToString();
+                    break;
+                case nameof(Serials.CustomerName):
+                    _filter.CustomerName = filter.FilterValue?.ToString();
+                    break;
+            }
+        }
+        var response = await AmicronDataService.GetAllSerialsAsync(args, _filter);
+        if (response.Success)
+        {
+            _data = response.Data?.Items.ToList();
+            _totalCount = response.Data?.TotalCount ?? 0;
+        }
+        _isLoading = false;
+    }
+}

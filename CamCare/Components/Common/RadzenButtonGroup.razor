@@ -1,0 +1,15 @@
+﻿@using Radzen.Blazor.Rendering
+@inherits RadzenComponent
+
+<CascadingValue IsFixed="true" Value="this">
+    <div class="@GetCssClass()" id="@GetId()" @attributes="Attributes" role="group">
+        @ChildContent
+    </div>
+</CascadingValue>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    protected override string GetComponentCssClass()
+        => ClassList.Create("rz-button-group").ToString();
+
+}

@@ -1,0 +1,114 @@
+﻿@page "/LogisticProviders"
+
+
+<InsertButton InsertClick="OnInsertClicked" />
+<RadzenDataGrid @ref="_grid"
+                TItem="LogisticProviderVm"
+                Data="_data"
+                LoadData="OnLoadData"
+                IsLoading="_isLoading"
+                Count="_totalCount"
+                AllowPaging="true"
+                PageSize="20"
+                AllowFiltering="true"
+                FilterMode="FilterMode.Simple"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                RowUpdate="OnRowUpdate"
+                RowCreate="OnRowCreate"
+                Density="Density.Compact" 
+                AllowColumnResize="true"
+                ShowEmptyMessage="false"
+                Style="width:800px">
+    <Columns>
+        <RadzenDataGridColumn TItem="LogisticProviderVm" Property="@nameof(LogisticProviderVm.Name)" Title="Name" MinWidth="200px">
+            <EditTemplate Context="item">
+                <RadzenTextBox @bind-Value="item.Name" Style="width:100%" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="LogisticProviderVm" Property="@nameof(LogisticProviderVm.IsDefault)" Title="Standard" Width="80px" Filterable="false">
+            <Template Context="item">
+                <RadzenIcon Icon="@(item.IsDefault ? "check_circle" : "circle")" />
+            </Template>
+            <EditTemplate Context="item">
+                <RadzenCheckBox @bind-Value="item.IsDefault" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="LogisticProviderVm" Property="@nameof(LogisticProviderVm.IsActive)" Title="Aktiv" Width="80px" Filterable="false">
+            <Template Context="item">
+                <RadzenIcon Icon="@(item.IsActive ? "check_circle" : "circle")" />
+            </Template>
+            <EditTemplate Context="item">
+                <RadzenCheckBox @bind-Value="item.IsActive" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridInlineEditColumn TItem="LogisticProviderVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    [Inject] protected ILogisticProviderService LogisticProviderService { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+    [Inject] protected IJSRuntime JSRuntime { get; set; } = default!;
+
+    private RadzenDataGrid<LogisticProviderVm> _grid = default!;
+    private IList<LogisticProviderVm>? _data;
+    private int _totalCount;
+    private bool _isLoading;
+    private LogisticProviderVm? draggedItem;
+    private async Task OnLoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        var response = await LogisticProviderService.GetAllAsync(args);
+        if (response.Success)
+        {
+            _data = response.Data?.Items.ToList();
+            _totalCount = response.Data?.TotalCount ?? 0;
+        }
+        _isLoading = false;
+    }
+
+    private async Task OnInsertClicked(MouseEventArgs args)
+    {
+        if (!_grid.IsValid) return;
+        var item = new LogisticProviderVm();
+        await _grid.InsertRow(item);
+    }
+
+    private async Task OnRowUpdate(LogisticProviderVm item)
+    {
+        await LogisticProviderService.UpdateAsync(item.Id, item);
+        await _grid.Reload();
+    }
+
+    private async Task OnRowCreate(LogisticProviderVm item)
+    {
+        await LogisticProviderService.CreateAsync(item);
+        await _grid.Reload();
+    }
+
+    private async Task OnEditRowClicked(LogisticProviderVm item)
+    {
+        if (!_grid.IsValid) return;
+        await _grid.EditRow(item);
+    }
+
+    private async Task OnDeleteRowClicked(LogisticProviderVm item)
+    {
+        var dialogResult = await DialogService.Confirm("Soll der Datensatz wirklich gelöscht werden?", "Datensatz löschen", new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
+        if (dialogResult != true) return;
+
+        await LogisticProviderService.DeleteAsync(item.Id, false);
+        await _grid.Reload();
+    }
+
+    private async Task OnCancelEditRowClicked(LogisticProviderVm item)
+    {
+        _grid.CancelEditRow(item);
+        await _grid.Reload();
+    }
+
+    private async Task OnSaveRowClicked(LogisticProviderVm item)
+    {
+        await _grid.UpdateRow(item);
+    }
+}

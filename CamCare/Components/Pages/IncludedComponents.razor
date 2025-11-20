@@ -1,0 +1,95 @@
+﻿@page "/IncludedComponents"
+
+
+<InsertButton InsertClick="OnInsertClicked" />
+<RadzenDataGrid @ref="_grid"
+                TItem="IncludedComponentVm"
+                Data="_data"
+                LoadData="OnLoadData"
+                IsLoading="_isLoading"
+                Count="_totalCount"
+                AllowPaging="true"
+                PageSize="20"
+                AllowFiltering="true"
+                FilterMode="FilterMode.Simple"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                RowUpdate="OnRowUpdate"
+                RowCreate="OnRowCreate"
+                Density="Density.Compact"
+                AllowColumnResize="true"
+                ShowEmptyMessage="false">
+    <Columns>
+        <RadzenDataGridColumn TItem="IncludedComponentVm" Property="@nameof(IncludedComponentVm.Description)" Title="Beschreibung">
+            <EditTemplate Context="item">
+                <RadzenTextBox @bind-Value="item.Description" Style="width:100%" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridInlineEditColumn TItem="IncludedComponentVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    [Inject] protected IIncludedComponentService IncludedComponentService { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+
+    private RadzenDataGrid<IncludedComponentVm> _grid = default!;
+    private IList<IncludedComponentVm>? _data;
+    private int _totalCount;
+    private bool _isLoading;
+    private async Task OnLoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        var response = await IncludedComponentService.GetAllAsync(args);
+        if (response.Success)
+        {
+            _data = response.Data?.Items.ToList();
+            _totalCount = response.Data?.TotalCount ?? 0;
+        }
+        _isLoading = false;
+    }
+
+    private async Task OnInsertClicked(MouseEventArgs args)
+    {
+        if (!_grid.IsValid) return;
+        var item = new IncludedComponentVm();
+        await _grid.InsertRow(item);
+    }
+
+    private async Task OnRowUpdate(IncludedComponentVm item)
+    {
+        await IncludedComponentService.UpdateAsync(item.Id, item);
+        await _grid.Reload();
+    }
+
+    private async Task OnRowCreate(IncludedComponentVm item)
+    {
+        await IncludedComponentService.CreateAsync(item);
+        await _grid.Reload();
+    }
+
+    private async Task OnEditRowClicked(IncludedComponentVm item)
+    {
+        if (!_grid.IsValid) return;
+        await _grid.EditRow(item);
+    }
+
+    private async Task OnDeleteRowClicked(IncludedComponentVm item)
+    {
+        var dialogResult = await DialogService.Confirm("Soll der Datensatz wirklich gelöscht werden?", "Datensatz löschen", new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
+        if (dialogResult != true) return;
+
+        await IncludedComponentService.DeleteAsync(item.Id, false);
+        await _grid.Reload();
+    }
+
+    private async Task OnCancelEditRowClicked(IncludedComponentVm item)
+    {
+        _grid.CancelEditRow(item);
+        await _grid.Reload();
+    }
+
+    private async Task OnSaveRowClicked(IncludedComponentVm item)
+    {
+        await _grid.UpdateRow(item);
+    }
+}

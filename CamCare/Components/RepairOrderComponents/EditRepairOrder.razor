@@ -1,0 +1,86 @@
+﻿@page "/EditRepairOrder"
+@inherits FluxorComponent
+@using CamCare.Store.RepairOrderFeature
+
+<RadzenStack Orientation="Orientation.Horizontal">
+
+    <RadzenFieldset Text="Kunde" class="w-50">
+        <RadzenText>@RepairOrder.Customer?.KdNummer - @RepairOrder.Customer?.FullName</RadzenText>
+        <RadzenText>@RepairOrder.Customer?.Plz @RepairOrder.Customer?.Ort</RadzenText>
+    </RadzenFieldset>
+
+    <RadzenFieldset Text="@(string.IsNullOrEmpty(RepairOrder.CameraSerialNumber) ? "Einzelteil" : "Kamera")" class="w-50">
+        @if (string.IsNullOrEmpty(RepairOrder.CameraSerialNumber))
+        {
+            <RadzenFormField class="d-block" Text="Einzelteil Beschreibung">
+                <RadzenTextBox @bind-Value="RepairOrder.PiceOfEquipment" Style="width:600px" />
+            </RadzenFormField>
+        }
+        else
+        {
+            <RadzenText>@RepairOrder.CameraSerialNumber</RadzenText>
+        }
+    </RadzenFieldset>
+</RadzenStack>
+
+<RadzenFieldset Text="Beschreibung" Visible="@(RepairOrder.CustomerId != null)">
+    <RepairOrderDescription RepairOrder="@RepairOrder" />
+    <DefectiveAssign RepairOrder="@RepairOrder" />
+    <RepairPositionAssign RepairOrder="@RepairOrder" />
+    <DataAssign RepairOrder="@RepairOrder" />
+</RadzenFieldset>
+
+<FormButtons Class="pt-2" SaveClick="OnSaveClicked" CancelClick="OnCancelClicked" />
+
+@code {
+    [Inject] protected IState<RepairOrderState> RepairOrderState { get; set; } = default!;
+
+    [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
+    [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
+    [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
+
+    [Parameter] public int RepairOrderId { get; set; }
+
+    private RepairOrderVm RepairOrder => RepairOrderState.Value.CurrentRepairOrder!;
+    private bool _entryWithoutCamera;
+    private bool _cameraNotFound;
+    private bool _isEditMode = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        ArgumentNullException.ThrowIfNull(RepairOrderState);
+    }
+
+    private async Task OnSaveClicked(MouseEventArgs args)
+    {
+        await RepairOrderService.UpdateAsync(RepairOrder.Id, RepairOrder);
+        NavigationManager.NavigateTo("/RepairOrders");
+    }
+
+    private void OnCancelClicked(MouseEventArgs args)
+    {
+        NavigationManager.NavigateTo("/RepairOrders");
+    }
+
+    private void OnWithoutCameraSelected(bool args)
+    {
+        _entryWithoutCamera = args;
+        if (args)
+        {
+            _cameraNotFound = false;
+            RepairOrder.CameraSerialNumber = null;
+        }
+    }
+
+    private void OnCameraNotFountSelected(bool args)
+    {
+        _cameraNotFound = args;
+        RepairOrder.CameraSerialNumber = null;
+        if (args)
+        {
+            _entryWithoutCamera = false;
+        }
+    }
+}

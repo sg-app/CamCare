@@ -1,0 +1,102 @@
+﻿@page "/Employees"
+
+
+<InsertButton InsertClick="OnInsertClicked" />
+<RadzenDataGrid @ref="_grid"
+                TItem="EmployeeVm"
+                Data="_data"
+                LoadData="OnLoadData"
+                IsLoading="_isLoading"
+                Count="_totalCount"
+                AllowPaging="true"
+                PageSize="20"
+                AllowFiltering="true"
+                FilterMode="FilterMode.Simple"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                RowUpdate="OnRowUpdate"
+                RowCreate="OnRowCreate"
+                Density="Density.Compact"
+                AllowColumnResize="true"
+                ShowEmptyMessage="false"
+                Style="width:800px">
+    <Columns>
+        <RadzenDataGridColumn TItem="EmployeeVm" Property="@nameof(EmployeeVm.FirstName)" Title="Vorname" MinWidth="200px">
+            <EditTemplate Context="item">
+                <RadzenTextBox @bind-Value="item.FirstName" Style="width:100%" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="EmployeeVm" Property="@nameof(EmployeeVm.LastName)" Title="Nachname" MinWidth="200px">
+            <EditTemplate Context="item">
+                <RadzenTextBox @bind-Value="item.LastName" Style="width:100%" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridInlineEditColumn TItem="EmployeeVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    [Inject] protected IEmployeeService EmployeeService { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+    [Inject] protected IJSRuntime JSRuntime { get; set; } = default!;
+
+    private RadzenDataGrid<EmployeeVm> _grid = default!;
+    private IList<EmployeeVm>? _data;
+    private int _totalCount;
+    private bool _isLoading;
+    private async Task OnLoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        var response = await EmployeeService.GetAllAsync(args);
+        if (response.Success)
+        {
+            _data = response.Data?.Items.ToList();
+            _totalCount = response.Data?.TotalCount ?? 0;
+        }
+        _isLoading = false;
+    }
+
+    private async Task OnInsertClicked(MouseEventArgs args)
+    {
+        if (!_grid.IsValid) return;
+        var item = new EmployeeVm();
+        await _grid.InsertRow(item);
+    }
+
+    private async Task OnRowUpdate(EmployeeVm item)
+    {
+        await EmployeeService.UpdateAsync(item.Id, item);
+        await _grid.Reload();
+    }
+
+    private async Task OnRowCreate(EmployeeVm item)
+    {
+        await EmployeeService.CreateAsync(item);
+        await _grid.Reload();
+    }
+
+    private async Task OnEditRowClicked(EmployeeVm item)
+    {
+        if (!_grid.IsValid) return;
+        await _grid.EditRow(item);
+    }
+
+    private async Task OnDeleteRowClicked(EmployeeVm item)
+    {
+        var dialogResult = await DialogService.Confirm("Soll der Datensatz wirklich gelöscht werden?", "Datensatz löschen", new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
+        if (dialogResult != true) return;
+
+        await EmployeeService.DeleteAsync(item.Id, false);
+        await _grid.Reload();
+    }
+
+    private async Task OnCancelEditRowClicked(EmployeeVm item)
+    {
+        _grid.CancelEditRow(item);
+        await _grid.Reload();
+    }
+
+    private async Task OnSaveRowClicked(EmployeeVm item)
+    {
+        await _grid.UpdateRow(item);
+    }
+}

@@ -1,0 +1,244 @@
+﻿@using CamCare.Models.Amicron
+
+<RadzenDataGrid TItem="Artikel"
+                class="mt-2"
+                Data="_data"
+                LoadData="OnLoadData"
+                IsLoading="_isLoading"
+                Count="_totalCount"
+                AllowPaging="true"
+                PageSize="10"
+                AllowFiltering="true"
+                FilterMode="FilterMode.Simple"
+                Density="Density.Compact"
+                SelectionMode="DataGridSelectionMode.Single"
+                @bind-Value="@_selectedItems"
+                RowDoubleClick="OnItemDoubleClicked"
+                AllowColumnResize="true"
+                ShowEmptyMessage="false" Style="height:370px">
+    <Columns>
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Artikelnummer)" Title="Artikel-Nr" Width="150px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Description)" Title="Bezeichnung" MinWidth="200px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Unit)" Title="Einheit" Width="80px" Filterable="false" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.InStock)" Title="Bestand" Width="100px" Filterable="false" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.MinStock)" Title="Mind. Bestand" Width="80px" Filterable="false" />
+        @* <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Picture)" Title="Bild" Width="80px" Filterable="false" /> *@
+    </Columns>
+</RadzenDataGrid>
+<RadzenDataGrid @ref="_grid"
+                Data="@RepairOrder.RepairPositions"
+                TItem="RepairPositionVm"
+                RowUpdate="OnRowUpdate"
+                RowCreate="OnRowCreate"
+                Density="Density.Compact"
+                EmptyText="Keine Positionen eingetragen">
+    <HeaderTemplate>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+
+            <InsertIconButton Click="OnInsertClicked" />
+            <RadzenText Text="Reparaturpositionen" TextStyle="TextStyle.H6" />
+        </RadzenStack>
+    </HeaderTemplate>
+    <Columns>
+        <RadzenDataGridColumn TItem="RepairPositionVm" Title="Artikelnummer" Width="150px">
+            <Template Context="item">
+                @item.Artikelnummer
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairPositionVm" Title="Anzahl" Property="@nameof(RepairPositionVm.Quantity)" Width="150px">
+            <EditTemplate Context="item">
+                <RadzenNumeric @bind-Value="@item.Quantity" TValue="decimal" Style="width: 100%" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairPositionVm" Title="Beschreibung">
+            <Template Context="item">
+                @item.Description
+            </Template>
+            <EditTemplate Context="item">
+                @if (item.FromAmicron == true)
+                {
+                    @item.Description
+                }
+                else
+                {
+                    <RadzenAutoComplete Value="@item.Description"
+                                        Change="OnDescriptionChanged"
+                                        Data=@_repairPositions
+                                        LoadData="OnLoadRepairPositionCatalog"
+                                        OpenOnFocus="true"
+                                        TextProperty="@nameof(RepairPositionVm.Description)"
+                                        Style="width: 100%"
+                                        InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Artikel Katalog" } })" />
+                }
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridInlineEditColumn TItem="RepairPositionVm" DeleteRow="OnDeleteRow" SaveRow="OnSaveRow" CancelEditRow="OnCancelEditRow" EditRow="OnEditRow" />
+    </Columns>
+</RadzenDataGrid>
+@code {
+    [Inject] protected ILogger<RepairPositionAssign> Logger { get; set; } = default!;
+    [Inject] protected IRepairPositionService RepairPositionService { get; set; } = default!;
+    [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+
+    [Parameter] public RepairOrderVm RepairOrder { get; set; } = new();
+
+    private IList<RepairPositionVm>? _repairPositions;
+    private RadzenDataGrid<RepairPositionVm> _grid = default!;
+    private RepairPositionVm? repairOrderRepairPositionVm;
+    private RepairPositionVm? _toEdit;
+
+    private CancellationTokenSource? _defectiveChangedCts;
+    private object? _lastDefectiveChangedValue;
+    private IList<Artikel>? _data;
+    private bool _isLoading;
+    private int _totalCount;
+    private ArtikelFilter? _filter;
+    private IList<Artikel>? _selectedItems;
+    private Artikel? SelectedItem => _selectedItems?.FirstOrDefault();
+
+    public static string? ToBase64String(byte[]? data)
+    {
+        return data == null ? null : Convert.ToBase64String(data);
+    }
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (RepairOrder is null)
+            throw new ArgumentNullException(nameof(RepairOrder), "RepairOrder cannot be null");
+
+        Logger.LogInformation("RepairOrder set to: {repairOrder}", RepairOrder);
+        RepairOrder.RepairPositions ??= [];
+        return base.OnParametersSetAsync();
+    }
+
+    private async Task OnLoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        _filter = new();
+        foreach (var filter in args.Filters)
+        {
+            switch (filter.Property)
+            {
+                case nameof(Artikel.Artikelnummer):
+                    _filter.Artikelnummer = filter.FilterValue?.ToString();
+                    break;
+                case nameof(Artikel.Description):
+                    _filter.Description = filter.FilterValue?.ToString();
+                    break;
+            }
+        }
+        var response = await AmicronDataService.GetArticleAsync(args, _filter);
+        if (response.Success)
+        {
+            _data = response.Data?.Items.ToList();
+            _totalCount = response.Data?.TotalCount ?? 0;
+        }
+        _isLoading = false;
+    }
+
+    private async Task OnLoadRepairPositionCatalog(LoadDataArgs args)
+    {
+        Logger.LogTrace("Load Repair positions with Filter: {filter}", args.Filter);
+
+        ServiceResponse<Paginated<RepairPositionVm>> response;
+        if (!string.IsNullOrEmpty(args.Filter))
+            response = await RepairPositionService.GetAllAsync(args, rp => rp.Description.ToLower().Contains(args.Filter.ToLower()));
+        else
+            response = await RepairPositionService.GetAllAsync(args);
+
+        _repairPositions = response.Data?.Items.ToList() ?? [];
+    }
+
+    private async Task OnDeleteRow(RepairPositionVm item)
+    {
+        RepairOrder.RepairPositions!.Remove(item);
+        Logger.LogInformation("Position {item} deleted.", item);
+        await _grid.Reload();
+    }
+
+    private async Task OnInsertClicked(MouseEventArgs args)
+    {
+        if (_toEdit is not null)
+            return;
+
+        Logger.LogInformation("New position added.");
+        _toEdit = new RepairPositionVm() { Quantity = 1m };
+        await _grid.InsertRow(_toEdit);
+    }
+
+    private async Task OnSaveRow(RepairPositionVm item)
+    {
+        await _grid.UpdateRow(item);
+    }
+
+    private async Task OnCancelEditRow(RepairPositionVm item)
+    {
+        _toEdit = null;
+        _grid.CancelEditRow(item);
+        await _grid.Reload();
+    }
+
+    private async Task OnEditRow(RepairPositionVm item)
+    {
+        _toEdit = item;
+        await _grid.EditRow(item);
+    }
+
+    private Task OnRowCreate(RepairPositionVm item)
+    {
+        Logger.LogInformation("Row created with {item}.", item);
+        RepairOrder.RepairPositions!.Add(item);
+        _toEdit = null;
+        return Task.CompletedTask;
+    }
+
+    private Task OnRowUpdate(RepairPositionVm item)
+    {
+        _toEdit = null;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnDescriptionChanged(dynamic item)
+    {
+        _defectiveChangedCts?.Cancel();
+        _defectiveChangedCts = new CancellationTokenSource();
+        var token = _defectiveChangedCts.Token;
+        _lastDefectiveChangedValue = item;
+        Logger.LogDebug("Description changed to {item}.", _lastDefectiveChangedValue);
+        try
+        {
+            await Task.Delay(200, token); // 200 ms warten
+            if (!token.IsCancellationRequested)
+            {
+                var savedDefective = _repairPositions?.FirstOrDefault(d => d.Description == item?.ToString());
+                _toEdit!.Artikelnummer = savedDefective?.Artikelnummer;
+                _toEdit!.Id = savedDefective?.Id ?? 0;
+                _toEdit!.Description = savedDefective?.Description ?? item.ToString();
+                await _grid.UpdateRow(_toEdit);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Ignorieren, weil ein neuer Wert kam
+        }
+    }
+
+    private async Task OnItemDoubleClicked(DataGridRowMouseEventArgs<Artikel> args)
+    {
+        var dialogResult = await DialogService.OpenAsync<AddItemDialog>("Menge eingeben", null,
+            new DialogOptions { Width = "400px", Height = "200px" });
+
+        if (dialogResult is decimal value)
+        {
+            RepairOrder.RepairPositions!.Add(new RepairPositionVm
+            {
+                Artikelnummer = args.Data.Artikelnummer,
+                Description = args.Data.Description ?? string.Empty,
+                Quantity = value,
+                FromAmicron = true
+            });
+            await _grid.Reload();
+        }
+    }
+}

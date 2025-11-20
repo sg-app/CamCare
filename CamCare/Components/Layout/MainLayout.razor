@@ -9,12 +9,19 @@
     </RadzenHeader>
     <RadzenSidebar @bind-Expanded="@sidebar1Expanded">
         <RadzenPanelMenu>
-            <RadzenPanelMenuItem Text="Home" Icon="home" Path="/"/>
-            <RadzenPanelMenuItem Text="Status" Icon="account_box" Path="RepairOrderStatusPage" />
+            <RadzenPanelMenuItem Text="Home" Icon="home" Path="/" />
+            <RadzenPanelMenuItem Text="Aufträge" Icon="order_approve" Path="RepairOrders" />
+            <RadzenPanelMenuItem Text="Stammdaten" Icon="database">
+                <RadzenPanelMenuItem Text="Status" Icon="sweep" Path="RepairOrderStates" />
+                <RadzenPanelMenuItem Text="Defekte" Icon="broken_image" Path="Defectives" />
+                <RadzenPanelMenuItem Text="Reparaturen" Icon="build" Path="RepairPositions" />
+                <RadzenPanelMenuItem Text="Mitgel. Komponenten" Icon="tile_small" Path="IncludedComponents" />
+                <RadzenPanelMenuItem Text="Mitarbeiter" Icon="person_apron" Path="Employees" />
+                <RadzenPanelMenuItem Text="Logistikpartner" Icon="delivery_truck_speed" Path="LogisticProviders" />
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Auftrag erstellen" Icon="add_task" Path="Customers" />
+            <RadzenPanelMenuItem Text="Alte Aufträge" Icon="elderly" Path="KrdData" />
         </RadzenPanelMenu>
-        <div class="rz-p-4">
-            Sidebar
-        </div>
     </RadzenSidebar>
     <RadzenBody>
         @Body

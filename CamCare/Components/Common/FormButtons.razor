@@ -1,0 +1,12 @@
+﻿<div class="@Class">
+    <RadzenButton Text="@SaveText" ButtonType="ButtonType.Submit" Click="SaveClick" ButtonStyle="ButtonStyle.Primary" />
+    <RadzenButton Text="Abbruch" ButtonType="ButtonType.Reset" Click="CancelClick" ButtonStyle="ButtonStyle.Secondary" Visible="@CancelVisible" />
+</div>
+
+@code {
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public EventCallback<MouseEventArgs> SaveClick { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> CancelClick { get; set; }
+    [Parameter] public bool CancelVisible { get; set; } = true;
+    [Parameter] public string SaveText { get; set; } = "Speichern";
+}

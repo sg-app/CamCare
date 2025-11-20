@@ -1,0 +1,100 @@
+﻿@page "/RepairPositions"
+
+
+<InsertButton InsertClick="OnInsertClicked" />
+<RadzenDataGrid @ref="_grid"
+                TItem="RepairPositionVm"
+                Data="_data"
+                LoadData="OnLoadData"
+                IsLoading="_isLoading"
+                Count="_totalCount"
+                AllowPaging="true"
+                PageSize="20"
+                AllowFiltering="true"
+                FilterMode="FilterMode.Simple"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                RowUpdate="OnRowUpdate"
+                RowCreate="OnRowCreate"
+                Density="Density.Compact"
+                AllowColumnResize="true"
+                ShowEmptyMessage="false">
+    <Columns>
+        <RadzenDataGridColumn TItem="RepairPositionVm" Property="@nameof(RepairPositionVm.Artikelnummer)" Title="Artikelnummer" Width="200px">
+            <EditTemplate Context="item">
+                <RadzenTextBox @bind-Value="item.Artikelnummer" Style="width:100%" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairPositionVm" Property="@nameof(RepairPositionVm.Description)" Title="Beschreibung">
+            <EditTemplate Context="item">
+                <RadzenTextBox @bind-Value="item.Description" Style="width:100%" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridInlineEditColumn TItem="RepairPositionVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    [Inject] protected IRepairPositionService RepairPositionService { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+
+    private RadzenDataGrid<RepairPositionVm> _grid = default!;
+    private IList<RepairPositionVm>? _data;
+    private int _totalCount;
+    private bool _isLoading;
+    private async Task OnLoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        var response = await RepairPositionService.GetAllAsync(args);
+        if (response.Success)
+        {
+            _data = response.Data?.Items.ToList();
+            _totalCount = response.Data?.TotalCount ?? 0;
+        }
+        _isLoading = false;
+    }
+
+    private async Task OnInsertClicked(MouseEventArgs args)
+    {
+        if (!_grid.IsValid) return;
+        var item = new RepairPositionVm();
+        await _grid.InsertRow(item);
+    }
+
+    private async Task OnRowUpdate(RepairPositionVm item)
+    {
+        await RepairPositionService.UpdateAsync(item.Id, item);
+        await _grid.Reload();
+    }
+
+    private async Task OnRowCreate(RepairPositionVm item)
+    {
+        await RepairPositionService.CreateAsync(item);
+        await _grid.Reload();
+    }
+
+    private async Task OnEditRowClicked(RepairPositionVm item)
+    {
+        if (!_grid.IsValid) return;
+        await _grid.EditRow(item);
+    }
+
+    private async Task OnDeleteRowClicked(RepairPositionVm item)
+    {
+        var dialogResult = await DialogService.Confirm("Soll der Datensatz wirklich gelöscht werden?", "Datensatz löschen", new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
+        if (dialogResult != true) return;
+
+        await RepairPositionService.DeleteAsync(item.Id, false);
+        await _grid.Reload();
+    }
+
+    private async Task OnCancelEditRowClicked(RepairPositionVm item)
+    {
+        _grid.CancelEditRow(item);
+        await _grid.Reload();
+    }
+
+    private async Task OnSaveRowClicked(RepairPositionVm item)
+    {
+        await _grid.UpdateRow(item);
+    }
+}

@@ -1,13 +1,15 @@
-using CamCare.Models;
-using CamCare.Interfaces.Services;
+using CamCare.Extensions;
 using CamCare.Interfaces.Persistence;
+using CamCare.Interfaces.Services;
+using CamCare.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Radzen;
+using System.Linq.Dynamic.Core;
+using System.Linq.Expressions;
 
 namespace CamCare.Services
 {
-    public abstract class DbService<TEntity, TVm>
+    public abstract class DbService<TEntity, TVm> : IDbService<TEntity, TVm>
         where TEntity : class, new()
         where TVm : class, new()
     {
@@ -24,12 +26,12 @@ namespace CamCare.Services
             _notificationService = notificationService;
         }
 
-        private void NotifyError(string summary, int duration = 5000, NotificationSeverity severity = NotificationSeverity.Error)
+        protected void NotifyError(string summary, int duration = 5000, NotificationSeverity severity = NotificationSeverity.Error)
         {
             NotifyError(summary, null, duration, severity);
         }
 
-        private void NotifyError(string summary, string? message, int duration = 5000, NotificationSeverity severity = NotificationSeverity.Error)
+        protected void NotifyError(string summary, string? message, int duration = 5000, NotificationSeverity severity = NotificationSeverity.Error)
         {
             _notificationService.Notify(new NotificationMessage
             {
@@ -76,18 +78,63 @@ namespace CamCare.Services
             }
         }
 
-        public virtual async Task<ServiceResponse<Paginated<TVm>>> GetAllAsync(LoadDataArgs args)
+        public virtual async Task<ServiceResponse<Paginated<TVm>>> GetAllAsync(LoadDataArgs args, Expression<Func<TEntity, bool>>? predicate = null)
         {
             try
             {
                 using var context = _contextFactory.CreateDbContext();
-                var query = context.Set<TEntity>().AsQueryable();
+                var (totalCount, query) = context
+                    .Set<TEntity>()
+                    .AsNoTracking()
+                    .AsQueryable()
+                    .LoadByLoadDataArgs(args, predicate);
+
+                var items = await query.ToListAsync();
+                var vms = items.Select(e => _mapper.Map<TEntity, TVm>(e)).ToList();
+
+                var paginated = new Paginated<TVm>
+                {
+                    Items = vms,
+                    TotalCount = totalCount
+                };
+                return ServiceResponse.Success(paginated);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler in GetAllAsync(LoadDataArgs)");
+                NotifyError("Fehler beim Abrufen der Daten");
+                return ServiceResponse.Failure<Paginated<TVm>>("Fehler beim Abrufen der Daten", ex);
+            }
+        }
+
+        public virtual async Task<ServiceResponse<Paginated<TVm>>> GetAllAsync(LoadDataArgs args, params string[] includes)
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+                var query = context
+                    .Set<TEntity>()
+                    .AsQueryable();
+
+                if (typeof(IAuditableEntity).IsAssignableFrom(typeof(TEntity)))
+                {
+                    // Optional: Filter für archivierte Einträge
+                    query = query.Where(e => !((IAuditableEntity)e).ArchivedAt.HasValue);
+                }
+
+                // Navigationen laden
+                if (includes != null)
+                {
+                    foreach (var include in includes)
+                    {
+                        query = query.Include(include);
+                    }
+                }
 
                 // Filtering
                 if (!string.IsNullOrEmpty(args.Filter))
                 {
                     // Hinweis: Für produktiven Einsatz sollte ein dynamischer Filterbuilder verwendet werden
-                    // oder ein externes Paket wie Z.EntityFramework.Plus.DynamicQuery
                 }
 
                 // Sorting
@@ -116,7 +163,7 @@ namespace CamCare.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Fehler in GetAllAsync(LoadDataArgs)");
+                _logger.LogError(ex, "Fehler in GetAllAsync(LoadDataArgs, includes)");
                 NotifyError("Fehler beim Abrufen der Daten");
                 return ServiceResponse.Failure<Paginated<TVm>>("Fehler beim Abrufen der Daten", ex);
             }
@@ -163,7 +210,7 @@ namespace CamCare.Services
             }
         }
 
-        public virtual async Task<ServiceResponse<bool>> DeleteAsync(object id)
+        public virtual async Task<ServiceResponse<bool>> DeleteAsync(object id, bool archive = true)
         {
             try
             {
@@ -171,9 +218,32 @@ namespace CamCare.Services
                 var entity = await context.Set<TEntity>().FindAsync(id);
                 if (entity == null)
                     return ServiceResponse.Failure<bool>("Nicht gefunden");
-                context.Set<TEntity>().Remove(entity);
+
+                if (entity is IAuditableEntity auditableEntity && archive)
+                {
+                    auditableEntity.ArchivedAt = DateTime.UtcNow;
+                    context.Set<TEntity>().Entry(entity).State = EntityState.Modified;
+                }
+                else
+                {
+                    context.Set<TEntity>().Remove(entity);
+                }
                 await context.SaveChangesAsync();
                 return ServiceResponse.Success(true);
+            }
+            catch (DbUpdateException updateException)
+            {
+                string errorMessage = "Fehler beim Löschen des Datensatzes";
+                if (updateException.InnerException is not null)
+                {
+                    if (updateException.InnerException.Message.Contains("conflicted with the REFERENCE constraint"))
+                    {
+                        errorMessage = "Löschen nicht möglich, da noch verknüpfte Daten existieren.";
+                    }
+                }
+                _logger.LogError(updateException, "Fehler in DeleteAsync");
+                NotifyError(errorMessage);
+                return ServiceResponse.Failure<bool>(errorMessage, updateException);
             }
             catch (Exception ex)
             {

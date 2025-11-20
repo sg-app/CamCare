@@ -1,0 +1,9 @@
+﻿<RadzenButton class="my-1" Click="InsertClick" Icon="add" Text="@Text" Size="@Size" Disabled="@Disabled" />
+
+@code
+{
+    [Parameter] public string Text { get; set; } = "Einfügen";
+    [Parameter] public ButtonSize Size { get; set; } = ButtonSize.Small;
+    [Parameter] public EventCallback<MouseEventArgs> InsertClick { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+}

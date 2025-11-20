@@ -1,0 +1,38 @@
+﻿<RadzenFormField class="d-block pt-2" Text="Eingetroffen">
+    <RadzenDatePicker @bind-Value="RepairOrder.ArrivedAt" ShowTime="true" DateFormat="dd.MM.yyyy HH:mm" />
+</RadzenFormField>
+<RadzenFormField class="pt-2" Text="Status">
+    <RadzenDropDown @bind-Value="RepairOrder.RepairOrderStatusId"
+                    Data="@(MasterdataService.Get<RepairOrderStatusVm>())"
+                    AllowFiltering="true"
+                    AllowVirtualization="true"
+                    TextProperty="@nameof(RepairOrderStatusVm.Name)"
+                    ValueProperty="@nameof(RepairOrderStatusVm.Id)"
+                    AllowClear="true"
+                    Style="width:500px" />
+</RadzenFormField>
+<div>
+    <RadzenLabel Text="@(MasterdataService.Get<RepairOrderStatusVm>()?.FirstOrDefault(f => f.Id == RepairOrder.RepairOrderStatusId)?.Description)" />
+</div>
+<RadzenRadioButtonList class="pt-2" @bind-Value="RepairOrder.ShippingMethod">
+    <Items>
+        <RadzenRadioButtonListItem Text="@ShippingMethod.PickedUp.GetDisplayDescription()" Value="ShippingMethod.PickedUp" />
+        <RadzenRadioButtonListItem Text="@ShippingMethod.SentByCustomer.GetDisplayDescription()" Value="ShippingMethod.SentByCustomer" />
+        <RadzenRadioButtonListItem Text="@ShippingMethod.BroughtByCustomer.GetDisplayDescription()" Value="ShippingMethod.BroughtByCustomer" />
+    </Items>
+</RadzenRadioButtonList>
+@if (RepairOrder.ShippingMethod == ShippingMethod.PickedUp)
+{
+    <LogisticProviderAssign RepairOrder="@RepairOrder" />
+}
+<RadzenFormField class="d-block pt-2" Text="Versandbemerkung">
+    <RadzenTextArea @bind-Value="RepairOrder.ShippingMethodDescription" Rows="2" Cols="100" />
+</RadzenFormField>
+
+<IncludedComponentAssign RepairOrder="@RepairOrder" />
+
+@code {
+    [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
+
+    [Parameter] public RepairOrderVm RepairOrder { get; set; } = default!;
+}

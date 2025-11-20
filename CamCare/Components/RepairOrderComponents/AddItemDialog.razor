@@ -1,0 +1,12 @@
+﻿<RadzenLabel Text="Menge:" />
+<RadzenNumeric TValue="decimal" @bind-Value="@_value" />
+<RadzenRow class="pt-3" JustifyContent="JustifyContent.Center">
+    <RadzenButton Text="Ok" Click="@(() => DialogService.Close(_value))" Style="width:120px" />
+    <RadzenButton Text="Abbruch" Click="@(() => DialogService.Close(null))" Style="width:120px" ButtonStyle="ButtonStyle.Secondary" />
+</RadzenRow>
+@code {
+    [Inject] protected ILogger<AddItemDialog> Logger { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+
+    private decimal _value { get; set; } = 1m;
+}

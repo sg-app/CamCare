@@ -1,0 +1,173 @@
+﻿@page "/RepairOrders"
+@using CamCare.Store.RepairOrderFeature
+
+<div class="pe-2">
+    <RadzenCheckBox TValue="bool" Value="_archiveOrders" ValueChanged="@((val) => { _archiveOrders = val; _grid.Reload(); })" Name="_archiveOrders" />
+    <RadzenLabel Text="Archivierte Aufträge" Component="_archiveOrders" class="rz-ms-2" />
+</div>
+<InsertButton InsertClick="OnInsertClicked" />
+
+<RadzenDataGrid @ref="_grid"
+                TItem="RepairOrderVm"
+                Data="_data"
+                LoadData="OnLoadData"
+                IsLoading="_isLoading"
+                Count="_totalCount"
+                AllowPaging="true"
+                PageSize="20"
+                Density="Density.Compact"
+                AllowColumnResize="true"
+                ShowEmptyMessage="false">
+    <Columns>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status" Width="180px">
+            <Template Context="item">
+                <RadzenBadge Style="@item.RepairOrderStatus?.BadageStyle">@item.RepairOrderStatus?.Name</RadzenBadge>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Kunde">
+            <Template Context="item">
+                @item.Customer?.DisplayName
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Kamera" Width="180px">
+            <Template Context="item">
+                @item.CameraSerialNumber
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eigenversand" Width="100px">
+            <Template Context="item">
+                @{
+                    var icon = item.ShippingMethod == ShippingMethod.SentByCustomer ? "check_box" : "check_box_outline_blank";
+                }
+                <RadzenIcon Icon="@icon" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Versandunternehmen" Width="150px">
+            <Template Context="item">
+                @item.LogisticProvider?.Name
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eingetroffen" Property="@nameof(RepairOrderVm.ArrivedAt)" Width="150px" SortOrder="SortOrder.Descending">
+            <Template Context="item">
+                @item.ArrivedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridInlineEditColumn TItem="RepairOrderVm" EditRow="OnEditRowClicked" CanDelete="(_) => false" />
+    </Columns>
+    <Template Context="item">
+        @if (item.IncludedComponents?.Any() == true && item.IncludedComponents.Count >= 1)
+        {
+            <RadzenText TextStyle="TextStyle.H5" class="d-block">
+                Mitgelieferte Komponenten
+            </RadzenText>
+            @foreach (var includedComonents in item.IncludedComponents ?? [])
+            {
+                <RadzenText class="d-block">
+                    @includedComonents.Description
+                </RadzenText>
+            }
+        }
+        <RadzenText TextStyle="TextStyle.H5" class="d-block">
+            Defekte
+        </RadzenText>
+        @foreach (var defective in item.Defectives ?? [])
+        {
+            <RadzenText class="d-block">
+                @defective.Description
+            </RadzenText>
+        }
+        <RadzenFieldset Text="Reparaturpositionen">
+            @if (item.RepairPositions?.Any() == true && item.RepairPositions.Count >= 1)
+            {
+                <RadzenTable AllowAlternatingRows="true">
+                    <RadzenTableHeader>
+                        <RadzenTableHeaderRow>
+                            <RadzenTableHeaderCell Style="width:150px">
+                                Artikelnummer
+                            </RadzenTableHeaderCell>
+                            <RadzenTableHeaderCell Style="width:100px">
+                                Anzahl
+                            </RadzenTableHeaderCell>
+                            <RadzenTableHeaderCell>
+                                Beschreibung
+                            </RadzenTableHeaderCell>
+                        </RadzenTableHeaderRow>
+                    </RadzenTableHeader>
+                    <RadzenTableBody>
+                        @foreach (var repair in item.RepairPositions ?? [])
+                        {
+                            <RadzenTableRow>
+                                <RadzenTableCell>
+                                    @repair.Artikelnummer
+                                </RadzenTableCell>
+                                <RadzenTableCell>
+                                    @repair.Quantity
+                                </RadzenTableCell>
+                                <RadzenTableCell>
+                                    @repair.Description
+                                </RadzenTableCell>
+                            </RadzenTableRow>
+                        }
+                    </RadzenTableBody>
+                </RadzenTable>
+            }
+            else
+            {
+                <RadzenText TextStyle="TextStyle.H6">Keine Reparaturen durchgeführt.</RadzenText>
+            }
+        </RadzenFieldset>
+        <RadzenFieldset Text="Status Historie">
+            @if (item.RepairOrderStatusHistories?.Any() == true)
+            {
+                <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
+                    @foreach (var history in item.RepairOrderStatusHistories)
+                    {
+                        <RadzenStack Orientation="Orientation.Horizontal">
+                            <RadzenText>
+                                @history.ChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                            </RadzenText>
+                            <RadzenBadge Style="@history.RepairOrderStatus?.BadageStyle">
+                                @history.RepairOrderStatus?.Name
+                            </RadzenBadge>
+                        </RadzenStack>
+                    }
+                </RadzenStack>
+            }
+        </RadzenFieldset>
+    </Template>
+</RadzenDataGrid>
+
+@code {
+    [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
+    [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] protected IDispatcher Dispatcher { get; set; } = default!;
+
+    private RadzenDataGrid<RepairOrderVm> _grid = default!;
+    private IList<RepairOrderVm>? _data;
+    private int _totalCount;
+    private bool _isLoading;
+    private bool _archiveOrders;
+
+    private async Task OnLoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        var response = await RepairOrderService.GetAllAsync(args, !_archiveOrders);
+        if (response.Success)
+        {
+            _data = response.Data?.Items.ToList();
+            _totalCount = response.Data?.TotalCount ?? 0;
+        }
+        _isLoading = false;
+    }
+
+    private void OnInsertClicked(MouseEventArgs args)
+    {
+        NavigationManager.NavigateTo("/CreateRepairOrder");
+    }
+
+    private void OnEditRowClicked(RepairOrderVm item)
+    {
+        Dispatcher.Dispatch(new SetCurrentRepairOrderAction(item));
+        NavigationManager.NavigateTo($"/EditRepairOrder");
+    }
+}
