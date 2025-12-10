@@ -201,27 +201,12 @@
 
     private async Task OnDescriptionChanged(dynamic item)
     {
-        _defectiveChangedCts?.Cancel();
-        _defectiveChangedCts = new CancellationTokenSource();
-        var token = _defectiveChangedCts.Token;
-        _lastDefectiveChangedValue = item;
-        Logger.LogDebug("Description changed to {item}.", _lastDefectiveChangedValue);
-        try
-        {
-            await Task.Delay(200, token); // 200 ms warten
-            if (!token.IsCancellationRequested)
-            {
-                var savedDefective = _repairPositions?.FirstOrDefault(d => d.Description == item?.ToString());
-                _toEdit!.Artikelnummer = savedDefective?.Artikelnummer;
-                _toEdit!.Id = savedDefective?.Id ?? 0;
-                _toEdit!.Description = savedDefective?.Description ?? item.ToString();
-                await _grid.UpdateRow(_toEdit);
-            }
-        }
-        catch (TaskCanceledException)
-        {
-            // Ignorieren, weil ein neuer Wert kam
-        }
+        Logger.LogDebug("Description changed to {item}.", item as string);
+        var savedRepairPosition = _repairPositions?.FirstOrDefault(d => d.Description == item?.ToString());
+        _toEdit!.Artikelnummer = savedRepairPosition?.Artikelnummer;
+        _toEdit!.Id = savedRepairPosition?.Id ?? 0;
+        _toEdit!.Description = savedRepairPosition?.Description ?? item.ToString();
+        await _grid.UpdateRow(_toEdit);
     }
 
     private async Task OnItemDoubleClicked(DataGridRowMouseEventArgs<Artikel> args)
