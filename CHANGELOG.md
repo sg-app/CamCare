@@ -1,3 +1,10 @@
+## [1.0.1-beta.1](https://github.com/sg-app/CamCare/compare/v1.0.0...v1.0.1-beta.1) (2025-12-10)
+
+
+### Bug Fixes
+
+* remove debounce from OnDescriptionChanged methods ([c70b9d7](https://github.com/sg-app/CamCare/commit/c70b9d7647b38dda16fd56ba70eaa00dbe0b1bcd))
+
 # 1.0.0 (2025-11-20)
 
 
