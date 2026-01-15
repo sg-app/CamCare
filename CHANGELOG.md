@@ -1,3 +1,11 @@
+# [1.1.0-beta.2](https://github.com/sg-app/CamCare/compare/v1.1.0-beta.1...v1.1.0-beta.2) (2026-01-15)
+
+
+### Features
+
+* **layout:** update footer copyright to 2026 ([2fcc6c1](https://github.com/sg-app/CamCare/commit/2fcc6c1231d3bd846e29f80e11533855b30f13a9))
+* **ui:** format ArrivedAt column with date and time ([f506932](https://github.com/sg-app/CamCare/commit/f50693235c5147ab73abe30a57fec5cca48fdba3))
+
 # [1.1.0-beta.1](https://github.com/sg-app/CamCare/compare/v1.0.1-beta.1...v1.1.0-beta.1) (2026-01-15)
 
 
