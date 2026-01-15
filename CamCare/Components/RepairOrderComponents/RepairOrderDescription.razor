@@ -21,14 +21,35 @@
         <RadzenRadioButtonListItem Text="@ShippingMethod.BroughtByCustomer.GetDisplayDescription()" Value="ShippingMethod.BroughtByCustomer" />
     </Items>
 </RadzenRadioButtonList>
+
 @if (RepairOrder.ShippingMethod == ShippingMethod.PickedUp)
 {
     <LogisticProviderAssign RepairOrder="@RepairOrder" />
 }
+
 <RadzenFormField class="d-block pt-2" Text="Versandbemerkung">
     <RadzenTextArea @bind-Value="RepairOrder.ShippingMethodDescription" Rows="2" Cols="100" />
 </RadzenFormField>
 
+<RadzenRadioButtonList class="pt-2" @bind-Value="RepairOrder.PackagingType">
+    <Items>
+        <RadzenRadioButtonListItem Text="@PackagingType.CustomersBox.GetDisplayDescription()" Value="PackagingType.CustomersBox" />
+        <RadzenRadioButtonListItem Text="@PackagingType.NewBox.GetDisplayDescription()" Value="PackagingType.NewBox" />
+    </Items>
+</RadzenRadioButtonList>
+@if (RepairOrder.PackagingType == PackagingType.NewBox)
+{
+    <div>
+        <RadzenLabel Text="Kartonmaße in cm (L x B x H)" />
+        <RadzenNumeric @bind-Value="RepairOrder.PackagingLength" Style="width:100px" Min="1" />
+        <RadzenNumeric @bind-Value="RepairOrder.PackagingHeight" Style="width:100px" Min="1" />
+        <RadzenNumeric @bind-Value="RepairOrder.PackagingWidth" Style="width:100px" Min="1" />
+    </div>
+
+}
+<RadzenFormField class="d-block" Text="Verpackungsbemerkung">
+    <RadzenTextArea @bind-Value="RepairOrder.PackagingComment" Rows="2" Cols="100" />
+</RadzenFormField>
 <IncludedComponentAssign RepairOrder="@RepairOrder" />
 
 @code {

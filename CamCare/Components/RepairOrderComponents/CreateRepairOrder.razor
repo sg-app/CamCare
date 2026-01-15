@@ -45,6 +45,7 @@
 
         RepairOrder.RepairOrderStatusId = MasterdataService.Get<RepairOrderStatusVm>().FirstOrDefault(f => f.IsDefault)?.Id ?? 0;
         RepairOrder.ShippingMethod = ShippingMethod.SentByCustomer;
+        RepairOrder.PackagingType = PackagingType.CustomersBox;
         RepairOrder.ArrivedAt = DateTime.Now;
     }
 

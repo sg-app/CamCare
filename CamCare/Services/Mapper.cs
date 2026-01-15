@@ -25,6 +25,11 @@ namespace CamCare.Services
                     rovm.PiceOfEquipment = ro.PiceOfEquipment;
                     rovm.RepairOrderStatusId = ro.RepairOrderStatusId;
                     rovm.ShippingMethod = ro.ShippingMethod;
+                    rovm.PackagingType = ro.PackagingType;
+                    rovm.PackagingLength = ro.PackagingLength;
+                    rovm.PackagingWidth = ro.PackagingWidth;
+                    rovm.PackagingHeight = ro.PackagingHeight;
+                    rovm.PackagingComment = ro.PackagingComment;
                     rovm.LogisticProviderId = ro.LogisticProviderId;
                     rovm.OrderNumber = ro.OrderNumber;
                     rovm.QuoteNumber = ro.QuoteNumber;
@@ -54,6 +59,11 @@ namespace CamCare.Services
                     ro.PiceOfEquipment = rovm.PiceOfEquipment;
                     ro.RepairOrderStatusId = rovm.RepairOrderStatusId;
                     ro.ShippingMethod = rovm.ShippingMethod;
+                    ro.PackagingType = rovm.PackagingType;
+                    ro.PackagingLength = rovm.PackagingLength;
+                    ro.PackagingWidth = rovm.PackagingWidth;
+                    ro.PackagingHeight = rovm.PackagingHeight;
+                    ro.PackagingComment = rovm.PackagingComment;
                     ro.LogisticProviderId = rovm.LogisticProviderId;
                     ro.OrderNumber = rovm.OrderNumber;
                     ro.QuoteNumber = rovm.QuoteNumber;
@@ -61,6 +71,12 @@ namespace CamCare.Services
                     ro.ArrivedAt = rovm.ArrivedAt.ToUniversalTime();
                     ro.CreatedAt = rovm.CreatedAt;
                     ro.UpdatedAt = rovm.UpdatedAt;
+                    if(rovm.PackagingType == PackagingType.CustomersBox)
+                    {
+                        ro.PackagingLength = null;
+                        ro.PackagingWidth = null;
+                        ro.PackagingHeight = null;
+                    }
                     break;
                 case RepairOrderRepairPosition rorp when destination is RepairPositionVm rpvm:
                     rpvm.Id = rorp.RepairPositionId;
