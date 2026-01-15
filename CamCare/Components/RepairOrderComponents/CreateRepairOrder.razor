@@ -4,28 +4,32 @@
 
 @if (RepairOrder is not null)
 {
-    <RadzenFieldset Text="Kunde">
-        <RadzenText>@RepairOrder.Customer?.KdNummer - @RepairOrder.Customer?.FullName</RadzenText>
-        <RadzenText>@RepairOrder.Customer?.Plz @RepairOrder.Customer?.Ort</RadzenText>
-    </RadzenFieldset>
+    <RadzenTemplateForm Data="@RepairOrder" TItem="RepairOrderVm" Submit="OnSaveClicked" InvalidSubmit="OnInvalidSubmit">
+        <FluentValidator />
 
-    <RadzenFieldset Text="@(string.IsNullOrEmpty(RepairOrder.CameraSerialNumber) ? "Einzelteil" : "Kamera")">
-        @if (string.IsNullOrEmpty(RepairOrder.CameraSerialNumber))
-        {
-            <RadzenFormField class="d-block" Text="Einzelteil Beschreibung">
-                <RadzenTextBox @bind-Value="RepairOrder.PiceOfEquipment" Style="width:600px" />
-            </RadzenFormField>
-        }
-        else
-        {
-            <RadzenText>@RepairOrder.Serials?.DisplayName</RadzenText>
-        }
-    </RadzenFieldset>
+        <RadzenFieldset Text="Kunde">
+            <RadzenText>@RepairOrder.Customer?.KdNummer - @RepairOrder.Customer?.FullName</RadzenText>
+            <RadzenText>@RepairOrder.Customer?.Plz @RepairOrder.Customer?.Ort</RadzenText>
+        </RadzenFieldset>
 
-    <RadzenFieldset Text="Beschreibung">
-        <RepairOrderDescription RepairOrder="@RepairOrder" />
-    </RadzenFieldset>
-    <FormButtons SaveText="Erstellen" Class="pt-2" SaveClick="OnSaveClicked" CancelClick="OnCancelClicked" />
+        <RadzenFieldset Text="@(string.IsNullOrEmpty(RepairOrder.CameraSerialNumber) ? "Einzelteil" : "Kamera")">
+            @if (string.IsNullOrEmpty(RepairOrder.CameraSerialNumber))
+            {
+                <RadzenFormField class="d-block" Text="Einzelteil Beschreibung">
+                    <RadzenTextBox @bind-Value="RepairOrder.PiceOfEquipment" Style="width:600px" />
+                </RadzenFormField>
+            }
+            else
+            {
+                <RadzenText>@RepairOrder.Serials?.DisplayName</RadzenText>
+            }
+        </RadzenFieldset>
+
+        <RadzenFieldset Text="Beschreibung">
+            <RepairOrderDescription RepairOrder="@RepairOrder" />
+        </RadzenFieldset>
+        <FormButtons SaveText="Erstellen" Class="pt-2" CancelClick="OnCancelClicked" />
+    </RadzenTemplateForm>
 }
 
 @code {
@@ -34,6 +38,7 @@
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
     [Inject] protected IDispatcher Dispatcher { get; set; } = default!;
     [Inject] protected IState<RepairOrderState> RepairOrderState { get; set; } = default!;
+    [Inject] protected NotificationService NotificationService { get; set; } = default!;
 
     private RepairOrderVm? RepairOrder => RepairOrderState.Value.CurrentRepairOrder;
 
@@ -49,7 +54,43 @@
         RepairOrder.ArrivedAt = DateTime.Now;
     }
 
-    private async Task OnSaveClicked(MouseEventArgs args)
+    private void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var message in args.Errors)
+        {
+            sb.AppendLine(message);
+        }
+
+        NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = "Fehler",
+            DetailContent = ns => builder =>
+            {
+                var seq = 0;
+                builder.OpenElement(seq++, "div");
+
+                builder.OpenElement(seq++, "strong");
+                builder.AddContent(seq++, "Aufgrund fehlerhaften Eingaben kann nicht gespeichert werden.");
+                builder.CloseElement(); // strong
+
+                builder.OpenElement(seq++, "ul");
+                foreach (var message in args.Errors)
+                {
+                    builder.OpenElement(seq++, "li");
+                    builder.AddContent(seq++, message);
+                    builder.CloseElement(); // li
+                }
+                builder.CloseElement(); // ul
+
+                builder.CloseElement(); // div
+            },
+            Duration = 7000
+        });
+    }
+
+    private async Task OnSaveClicked(RepairOrderVm item)
     {
         if (RepairOrder is null)
             return;

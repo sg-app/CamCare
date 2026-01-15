@@ -40,12 +40,16 @@
 @if (RepairOrder.PackagingType == PackagingType.NewBox)
 {
     <div>
-        <RadzenLabel Text="Kartonmaße in cm (L x B x H)" />
+        <RadzenLabel Text="Kartonmaße in cm (L x B x H)" class="pe-2" />
         <RadzenNumeric @bind-Value="RepairOrder.PackagingLength" Style="width:100px" Min="1" />
         <RadzenNumeric @bind-Value="RepairOrder.PackagingHeight" Style="width:100px" Min="1" />
         <RadzenNumeric @bind-Value="RepairOrder.PackagingWidth" Style="width:100px" Min="1" />
     </div>
-
+    <div>
+        <ValidationMessage For="@(() => RepairOrder.PackagingLength)" />
+        <ValidationMessage For="@(() => RepairOrder.PackagingHeight)" />
+        <ValidationMessage For="@(() => RepairOrder.PackagingWidth)" />
+    </div>
 }
 <RadzenFormField class="d-block" Text="Verpackungsbemerkung">
     <RadzenTextArea @bind-Value="RepairOrder.PackagingComment" Rows="2" Cols="100" />

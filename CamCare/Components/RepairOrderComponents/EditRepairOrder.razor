@@ -1,36 +1,38 @@
 ﻿@page "/EditRepairOrder"
 @inherits FluxorComponent
 @using CamCare.Store.RepairOrderFeature
+<RadzenTemplateForm Data="@RepairOrder" TItem="RepairOrderVm" Submit="OnSaveClicked" InvalidSubmit="OnInvalidSubmit">
+    <FluentValidator />
+    <RadzenStack Orientation="Orientation.Horizontal">
 
-<RadzenStack Orientation="Orientation.Horizontal">
+        <RadzenFieldset Text="Kunde" class="w-50">
+            <RadzenText>@RepairOrder.Customer?.KdNummer - @RepairOrder.Customer?.FullName</RadzenText>
+            <RadzenText>@RepairOrder.Customer?.Plz @RepairOrder.Customer?.Ort</RadzenText>
+        </RadzenFieldset>
 
-    <RadzenFieldset Text="Kunde" class="w-50">
-        <RadzenText>@RepairOrder.Customer?.KdNummer - @RepairOrder.Customer?.FullName</RadzenText>
-        <RadzenText>@RepairOrder.Customer?.Plz @RepairOrder.Customer?.Ort</RadzenText>
+        <RadzenFieldset Text="@(string.IsNullOrEmpty(RepairOrder.CameraSerialNumber) ? "Einzelteil" : "Kamera")" class="w-50">
+            @if (string.IsNullOrEmpty(RepairOrder.CameraSerialNumber))
+            {
+                <RadzenFormField class="d-block" Text="Einzelteil Beschreibung">
+                    <RadzenTextBox @bind-Value="RepairOrder.PiceOfEquipment" Style="width:600px" />
+                </RadzenFormField>
+            }
+            else
+            {
+                <RadzenText>@RepairOrder.CameraSerialNumber</RadzenText>
+            }
+        </RadzenFieldset>
+    </RadzenStack>
+
+    <RadzenFieldset Text="Beschreibung" Visible="@(RepairOrder.CustomerId != null)">
+        <RepairOrderDescription RepairOrder="@RepairOrder" />
+        <DefectiveAssign RepairOrder="@RepairOrder" />
+        <RepairPositionAssign RepairOrder="@RepairOrder" />
+        <DataAssign RepairOrder="@RepairOrder" />
     </RadzenFieldset>
 
-    <RadzenFieldset Text="@(string.IsNullOrEmpty(RepairOrder.CameraSerialNumber) ? "Einzelteil" : "Kamera")" class="w-50">
-        @if (string.IsNullOrEmpty(RepairOrder.CameraSerialNumber))
-        {
-            <RadzenFormField class="d-block" Text="Einzelteil Beschreibung">
-                <RadzenTextBox @bind-Value="RepairOrder.PiceOfEquipment" Style="width:600px" />
-            </RadzenFormField>
-        }
-        else
-        {
-            <RadzenText>@RepairOrder.CameraSerialNumber</RadzenText>
-        }
-    </RadzenFieldset>
-</RadzenStack>
-
-<RadzenFieldset Text="Beschreibung" Visible="@(RepairOrder.CustomerId != null)">
-    <RepairOrderDescription RepairOrder="@RepairOrder" />
-    <DefectiveAssign RepairOrder="@RepairOrder" />
-    <RepairPositionAssign RepairOrder="@RepairOrder" />
-    <DataAssign RepairOrder="@RepairOrder" />
-</RadzenFieldset>
-
-<FormButtons Class="pt-2" SaveClick="OnSaveClicked" CancelClick="OnCancelClicked" />
+    <FormButtons Class="pt-2" CancelClick="OnCancelClicked" />
+</RadzenTemplateForm>
 
 @code {
     [Inject] protected IState<RepairOrderState> RepairOrderState { get; set; } = default!;
@@ -39,6 +41,7 @@
     [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
     [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
+    [Inject] protected NotificationService NotificationService { get; set; } = default!;
 
     [Parameter] public int RepairOrderId { get; set; }
 
@@ -53,7 +56,43 @@
         ArgumentNullException.ThrowIfNull(RepairOrderState);
     }
 
-    private async Task OnSaveClicked(MouseEventArgs args)
+    private void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var message in args.Errors)
+        {
+            sb.AppendLine(message);
+        }
+
+        NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = "Fehler",
+            DetailContent = ns => builder =>
+            {
+                var seq = 0;
+                builder.OpenElement(seq++, "div");
+
+                builder.OpenElement(seq++, "strong");
+                builder.AddContent(seq++, "Aufgrund fehlerhaften Eingaben kann nicht gespeichert werden.");
+                builder.CloseElement(); // strong
+
+                builder.OpenElement(seq++, "ul");
+                foreach (var message in args.Errors)
+                {
+                    builder.OpenElement(seq++, "li");
+                    builder.AddContent(seq++, message);
+                    builder.CloseElement(); // li
+                }
+                builder.CloseElement(); // ul
+
+                builder.CloseElement(); // div
+            },
+            Duration = 7000
+        });
+    }
+
+    private async Task OnSaveClicked(RepairOrderVm item)
     {
         await RepairOrderService.UpdateAsync(RepairOrder.Id, RepairOrder);
         NavigationManager.NavigateTo("/RepairOrders");
