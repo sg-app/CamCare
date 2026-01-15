@@ -1,3 +1,11 @@
+# [1.1.0-beta.1](https://github.com/sg-app/CamCare/compare/v1.0.1-beta.1...v1.1.0-beta.1) (2026-01-15)
+
+
+### Features
+
+* **forms:** migrate to Blazilla, improve validation UX ([8cd87c8](https://github.com/sg-app/CamCare/commit/8cd87c850ac0d8b98dffc859b84829f3f787490e))
+* **repair-order:** add packaging type and dimensions ([dd6aaf1](https://github.com/sg-app/CamCare/commit/dd6aaf1e00511039188244ca83e8649081473d16))
+
 ## [1.0.1-beta.1](https://github.com/sg-app/CamCare/compare/v1.0.0...v1.0.1-beta.1) (2025-12-10)
 
 
