@@ -1,31 +1,32 @@
 ﻿﻿<style>
-     #uploadWithDragAndDrop {
-         left: 0;
-         --rz-upload-button-bar-background-color: transparent;
-         --rz-upload-button-bar-padding: 0;
-     }
+    #uploadWithDragAndDrop {
+        left: 0;
+        --rz-upload-button-bar-background-color: transparent;
+        --rz-upload-button-bar-padding: 0;
+    }
 
-         #uploadWithDragAndDrop .rz-fileupload-buttonbar .rz-fileupload-choose {
-             width: 100%;
-             text-align: center;
-             font-size: 16px;
-             padding: 40px 0;
-         }
+    #uploadWithDragAndDrop .rz-fileupload-buttonbar .rz-fileupload-choose {
+        width: 100%;
+        text-align: center;
+        font-size: 16px;
+        padding: 40px 0;
+    }
 
-     .rz-datalist-content .rz-g > div, .rz-datalist-data > li {
-         border: none;
-     }
-
+    .rz-datalist-content .rz-g>div,
+    .rz-datalist-data>li {
+        border: none;
+    }
 </style>
 
 <RadzenCard class="mt-2">
     <RadzenText TextStyle="TextStyle.H6">Dateiupload</RadzenText>
-    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H6">Nur bilder und pdf mit maximal 10GB</RadzenText>
+    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H6">Nur bilder und pdf mit maximal 10MB</RadzenText>
     <div id="uploadWithDragAndDrop" class="rz-fileupload" style="width:100%">
         <div class="rz-fileupload-buttonbar">
             <span class="rz-fileupload-choose rz-button">
                 <text>
-                    <InputFile @key="@_inputFieldKey" class="form-control" id="inputGroupFile01" @ref="inputFile" multiple="true" accept="image/*,video/*,application/pdf" OnChange="@OnChange" />
+                    <InputFile @key="@_inputFieldKey" class="form-control" id="inputGroupFile01" @ref="inputFile"
+                               multiple="true" accept="image/*,video/*,application/pdf" OnChange="@OnChange" />
                     <span class="rz-button-text">Drag and drop here or click to choose files</span>
                 </text>
             </span>
@@ -38,22 +39,18 @@
                 <div class="align-self-center">
                     @if (item.Type.StartsWith("image"))
                     {
-                        <RadzenImage class="m-2"
-                                     Path="@($"data:{item.Type};base64,{Convert.ToBase64String(item.Data)}")"
+                        <RadzenImage class="m-2" Path="@($"data:{item.Type};base64,{Convert.ToBase64String(item.Data)}")"
                                      Style="width: 15rem;" />
                     }
                     else if (item.Type == "application/pdf")
                     {
-                        <iframe class="m-2"
-                                style="width: 15rem; height: 20rem; border: 1px solid #ccc;"
+                        <iframe class="m-2" style="width: 15rem; height: 20rem; border: 1px solid #ccc;"
                                 src="@($"data:application/pdf;base64,{Convert.ToBase64String(item.Data)}")"
                                 title="PDF Preview"></iframe>
                     }
                     else if (item.Type.StartsWith("video"))
                     {
-                        <video class="m-2"
-                               style="width: 15rem; border: 1px solid #ccc;"
-                               controls
+                        <video class="m-2" style="width: 15rem; border: 1px solid #ccc;" controls
                                src="@($"data:{item.Type};base64,{Convert.ToBase64String(item.Data)}")">
                             Ihr Browser unterstützt das Video-Tag nicht.
                         </video>
@@ -61,7 +58,8 @@
                 </div>
                 <div class="align-self-center">
                     <RadzenButton Icon="download" Click="@(() => OnDownloadClicked(item))" Size="ButtonSize.Small" />
-                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => OnDeleteClicked(item))" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                  Click="@(() => OnDeleteClicked(item))" />
                 </div>
                 <div class="align-self-center">
                     <RadzenText class="text-wrap text-break">@item.Filename</RadzenText>
@@ -103,7 +101,9 @@
         if (toDelete is null)
             return;
 
-        var dialogResult = await DialogService.Confirm("Soll die Datei wirklich gelöscht werden?", "Datensatz löschen", new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
+        var dialogResult = await DialogService.Confirm("Soll die Datei wirklich gelöscht werden?", "Datensatz löschen", new
+ConfirmOptions
+        { OkButtonText = "Ja", CancelButtonText = "Nein" });
         if (dialogResult != true) return;
 
         var response = await DataStoreService.DeleteAsync(toDelete.Id, false);

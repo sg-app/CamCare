@@ -3,6 +3,7 @@ using CamCare.Models;
 using CamCare.Models.Amicron;
 using FirebirdSql.Data.FirebirdClient;
 using Radzen;
+using System.Text;
 
 namespace CamCare.Services
 {
@@ -44,6 +45,47 @@ namespace CamCare.Services
                 : ServiceResponse.Failure<Adressen>("Kein Datensatz gefunden.");
         }
 
+        public async Task<ServiceResponse<List<Adressen>>> GetAddressesByCustomerIdsAsync(IEnumerable<int> customerIds)
+        {
+            var ids = customerIds.Distinct().ToList();
+            if (ids.Count == 0)
+                return ServiceResponse.Success(new List<Adressen>());
+
+            using var connection = new FbConnection(ConnectionString);
+            await connection.OpenAsync();
+
+            var parameterNames = ids.Select((_, index) => $"@CustomerId{index}").ToList();
+            var query = $"SELECT LFDNR, NR, ART, VORNAME, NAME, STRASSE, LAND, PLZ, ORT, ZAHLWEISE FROM ADRESSEN WHERE LFDNR IN ({string.Join(", ", parameterNames)})";
+
+            using var command = new FbCommand(query, connection);
+            for (var i = 0; i < ids.Count; i++)
+            {
+                command.Parameters.AddWithValue(parameterNames[i], ids[i]);
+            }
+
+            using var reader = await command.ExecuteReaderAsync();
+
+            var result = new List<Adressen>();
+            while (await reader.ReadAsync())
+            {
+                result.Add(new Adressen
+                {
+                    LfdNr = reader.GetInt32(0),
+                    KdNummer = reader.GetString(1),
+                    Art = reader.GetString(2),
+                    Vorname = reader.GetString(3),
+                    Name = reader.GetString(4),
+                    Strasse = reader.GetString(5),
+                    Land = reader.GetString(6),
+                    Plz = reader.GetString(7),
+                    Ort = reader.GetString(8),
+                    Zahlweise = reader.GetString(9)
+                });
+            }
+
+            return ServiceResponse.Success(result);
+        }
+
         public async Task<ServiceResponse<Paginated<Adressen>>> GetAllAddressAsync(LoadDataArgs args, AdressenFilter? filter = null)
         {
             var top = args.Top ?? 100;
@@ -54,55 +96,39 @@ namespace CamCare.Services
 
             using var connection = new FbConnection(ConnectionString);
             await connection.OpenAsync();
-            var query = "SELECT FIRST @Top SKIP @Skip LFDNR, NR, ART, VORNAME, NAME, STRASSE, LAND, PLZ, ORT, ZAHLWEISE FROM ADRESSEN WHERE 1=1 ";
-            var countQuery = "SELECT COUNT(*) FROM ADRESSEN WHERE 1=1 ";
+            var query = new StringBuilder("SELECT FIRST @Top SKIP @Skip LFDNR, NR, ART, VORNAME, NAME, STRASSE, LAND, PLZ, ORT, ZAHLWEISE FROM ADRESSEN WHERE 1=1");
+            var countQuery = new StringBuilder("SELECT COUNT(*) FROM ADRESSEN WHERE 1=1");
 
             using var command = new FbCommand();
             using var command2 = new FbCommand();
 
             if (filter?.KdNummer is not null)
             {
-                var kdNummer = $"%{filter.KdNummer}%";
-                command.Parameters.AddWithValue("@KdNummer", kdNummer);
-                command2.Parameters.AddWithValue("@KdNummer", kdNummer);
-                query += " AND UPPER(KDNUMMER) LIKE UPPER(@KdNummer)";
-                countQuery += " AND WHERE UPPER(KDNUMMER) LIKE UPPER(@KdNummer)";
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(KDNUMMER) LIKE UPPER(@KdNummer)", "@KdNummer", $"%{filter.KdNummer}%");
             }
             if (filter?.Name is not null)
             {
-                var name = $"%{filter.Name}%";
-                command.Parameters.AddWithValue("@Name", name);
-                command2.Parameters.AddWithValue("@Name", name);
-                query += " AND UPPER(NAME) LIKE UPPER(@Name)";
-                countQuery += " AND UPPER(NAME) LIKE UPPER(@Name)";
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(NAME) LIKE UPPER(@Name)", "@Name", $"%{filter.Name}%");
             }
             if (filter?.Plz is not null)
             {
-                var plz = $"{filter.Plz}%";
-                command.Parameters.AddWithValue("@Plz", plz);
-                command2.Parameters.AddWithValue("@Plz", plz);
-                query += " AND PLZ LIKE @Plz";
-                countQuery += " AND PLZ LIKE @Plz";
+                AddFilterCondition(command, command2, query, countQuery, "PLZ LIKE @Plz", "@Plz", $"{filter.Plz}%");
             }
             if (filter?.Ort is not null)
             {
-                var ort = $"%{filter.Ort}%";
-                command.Parameters.AddWithValue("@Ort", ort);
-                command2.Parameters.AddWithValue("@Ort", ort);
-                query += " AND UPPER(ORT) LIKE UPPER(@Ort)";
-                countQuery += " AND UPPER(ORT) LIKE UPPER(@Ort)";
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(ORT) LIKE UPPER(@Ort)", "@Ort", $"%{filter.Ort}%");
             }
 
 
-            query += $" ORDER BY LFDNR";
+            query.Append(" ORDER BY LFDNR");
 
 
             command.Parameters.AddWithValue("@Top", top);
             command.Parameters.AddWithValue("@Skip", skip);
 
-            logger.LogDebug(query);
+            logger.LogDebug(query.ToString());
             command.Connection = connection;
-            command.CommandText = query;
+            command.CommandText = query.ToString();
 
             using var reader = await command.ExecuteReaderAsync();
 
@@ -125,7 +151,7 @@ namespace CamCare.Services
             }
 
             command2.Connection = connection;
-            command2.CommandText = countQuery;
+            command2.CommandText = countQuery.ToString();
             var countReader = await command2.ExecuteScalarAsync();
             var totalCount = Convert.ToInt32(countReader);
 
@@ -145,15 +171,15 @@ namespace CamCare.Services
 
             using var connection = new FbConnection(ConnectionString);
             await connection.OpenAsync();
-            var query = "SELECT FIRST @Top SKIP @Skip a.LFDNR, NR, ART, VORNAME, NAME, STRASSE, LAND, PLZ, ORT, ZAHLWEISE" +
+            var query = new StringBuilder("SELECT FIRST @Top SKIP @Skip a.LFDNR, NR, ART, VORNAME, NAME, STRASSE, LAND, PLZ, ORT, ZAHLWEISE" +
                 " FROM ADRESSEN a" +
                 " LEFT JOIN ARTSERNR ser ON a.LFDNR = ser.KUNDENLFDNR" +
-                " WHERE ser.SERIENNR = @Serialnumber ";
+                " WHERE ser.SERIENNR = @Serialnumber");
 
-            var countQuery = "SELECT COUNT(*)" +
+            var countQuery = new StringBuilder("SELECT COUNT(*)" +
                 " FROM ADRESSEN" +
                 " LEFT JOIN ARTSERNR ser ON ADRESSEN.LFDNR = ser.KUNDENLFDNR" +
-                " WHERE ser.SERIENNR = @Serialnumber ";
+                " WHERE ser.SERIENNR = @Serialnumber");
 
             using var command = new FbCommand();
             using var command2 = new FbCommand();
@@ -162,47 +188,31 @@ namespace CamCare.Services
 
             if (filter?.KdNummer is not null)
             {
-                var kdNummer = $"%{filter.KdNummer}%";
-                command.Parameters.AddWithValue("@KdNummer", kdNummer);
-                command2.Parameters.AddWithValue("@KdNummer", kdNummer);
-                query += " AND UPPER(KDNUMMER) LIKE UPPER(@KdNummer)";
-                countQuery += " AND WHERE UPPER(KDNUMMER) LIKE UPPER(@KdNummer)";
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(KDNUMMER) LIKE UPPER(@KdNummer)", "@KdNummer", $"%{filter.KdNummer}%");
             }
             if (filter?.Name is not null)
             {
-                var name = $"%{filter.Name}%";
-                command.Parameters.AddWithValue("@Name", name);
-                command2.Parameters.AddWithValue("@Name", name);
-                query += " AND UPPER(NAME) LIKE UPPER(@Name)";
-                countQuery += " AND UPPER(NAME) LIKE UPPER(@Name)";
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(NAME) LIKE UPPER(@Name)", "@Name", $"%{filter.Name}%");
             }
             if (filter?.Plz is not null)
             {
-                var plz = $"{filter.Plz}%";
-                command.Parameters.AddWithValue("@Plz", plz);
-                command2.Parameters.AddWithValue("@Plz", plz);
-                query += " AND PLZ LIKE @Plz";
-                countQuery += " AND PLZ LIKE @Plz";
+                AddFilterCondition(command, command2, query, countQuery, "PLZ LIKE @Plz", "@Plz", $"{filter.Plz}%");
             }
             if (filter?.Ort is not null)
             {
-                var ort = $"%{filter.Ort}%";
-                command.Parameters.AddWithValue("@Ort", ort);
-                command2.Parameters.AddWithValue("@Ort", ort);
-                query += " AND UPPER(ORT) LIKE UPPER(@Ort)";
-                countQuery += " AND UPPER(ORT) LIKE UPPER(@Ort)";
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(ORT) LIKE UPPER(@Ort)", "@Ort", $"%{filter.Ort}%");
             }
 
 
-            query += $" ORDER BY LFDNR";
+            query.Append(" ORDER BY LFDNR");
 
 
             command.Parameters.AddWithValue("@Top", top);
             command.Parameters.AddWithValue("@Skip", skip);
 
-            logger.LogDebug(query);
+            logger.LogDebug(query.ToString());
             command.Connection = connection;
-            command.CommandText = query;
+            command.CommandText = query.ToString();
 
             using var reader = await command.ExecuteReaderAsync();
 
@@ -225,7 +235,7 @@ namespace CamCare.Services
             }
 
             command2.Connection = connection;
-            command2.CommandText = countQuery;
+            command2.CommandText = countQuery.ToString();
             var countReader = await command2.ExecuteScalarAsync();
             var totalCount = Convert.ToInt32(countReader);
 
@@ -332,16 +342,16 @@ namespace CamCare.Services
 
             using var connection = new FbConnection(ConnectionString);
             await connection.OpenAsync();
-            var query = "SELECT FIRST @Top SKIP @Skip ser.LFDNR, ser.SERIENNR, a.BEZEICHNUNG, ad.NR, ad.NAME, ad.PLZ" +
+            var query = new StringBuilder("SELECT FIRST @Top SKIP @Skip ser.LFDNR, ser.SERIENNR, a.BEZEICHNUNG, ad.NR, ad.NAME, ad.PLZ" +
                 " FROM ARTSERNR ser " +
                 " LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
                 " LEFT JOIN ADRESSEN ad ON ser.KUNDENLFDNR = ad.LFDNR " +
-                " WHERE 1=1";
-            var countQuery = "SELECT COUNT(*)" +
+                " WHERE 1=1");
+            var countQuery = new StringBuilder("SELECT COUNT(*)" +
                 " FROM ARTSERNR ser" +
                 " LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
                 " LEFT JOIN ADRESSEN ad ON ser.KUNDENLFDNR = ad.LFDNR " +
-                " WHERE 1=1";
+                " WHERE 1=1");
 
             using var command = new FbCommand();
             using var command2 = new FbCommand();
@@ -353,47 +363,31 @@ namespace CamCare.Services
             }
             if (filter?.SerialNumber is not null)
             {
-                var serialNumber = $"%{filter.SerialNumber}%";
-                command.Parameters.AddWithValue("@Serialnumber", serialNumber);
-                command2.Parameters.AddWithValue("@Serialnumber", serialNumber);
-                query += " AND UPPER(ser.SERIENNR) LIKE UPPER(@Serialnumber)";
-                countQuery += " AND UPPER(ser.SERIENNR) LIKE UPPER(@Serialnumber)";
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(ser.SERIENNR) LIKE UPPER(@Serialnumber)", "@Serialnumber", $"%{filter.SerialNumber}%");
             }
             if (filter?.ArticleName is not null)
             {
-                var articleName = $"%{filter.ArticleName}%";
-                command.Parameters.AddWithValue("@Article", articleName);
-                command2.Parameters.AddWithValue("@Article", articleName);
-                query += " AND UPPER(a.BEZEICHNUNG) LIKE UPPER(@Article)";
-                countQuery += " AND UPPER(a.BEZEICHNUNG) LIKE UPPER(@Article)";
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(a.BEZEICHNUNG) LIKE UPPER(@Article)", "@Article", $"%{filter.ArticleName}%");
             }
             if (filter?.CustomerName is not null)
             {
-                var customerName = $"%{filter.CustomerName}%";
-                command.Parameters.AddWithValue("@CustomerName", customerName);
-                command2.Parameters.AddWithValue("@CustomerName", customerName);
-                query += " AND UPPER(ad.NAME) LIKE UPPER(@CustomerName)";
-                countQuery += " AND UPPER(ad.NAME) LIKE UPPER(@CustomerName)";
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(ad.NAME) LIKE UPPER(@CustomerName)", "@CustomerName", $"%{filter.CustomerName}%");
             }
             if (filter?.CustomerNumber is not null)
             {
-                var customerNumber = $"%{filter.CustomerNumber}%";
-                command.Parameters.AddWithValue("@CustomerNumber", customerNumber);
-                command2.Parameters.AddWithValue("@CustomerNumber", customerNumber);
-                query += " AND UPPER(ad.NR) LIKE UPPER(@CustomerNumber)";
-                countQuery += " AND UPPER(ad.NR) LIKE UPPER(@CustomerNumber)";
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(ad.NR) LIKE UPPER(@CustomerNumber)", "@CustomerNumber", $"%{filter.CustomerNumber}%");
             }
 
-            query += $" ORDER BY ser.LFDNR";
+            query.Append(" ORDER BY ser.LFDNR");
 
-            logger.LogDebug(query);
+            logger.LogDebug(query.ToString());
 
             command.Parameters.AddWithValue("@Top", top);
             command.Parameters.AddWithValue("@Skip", skip);
 
-            logger.LogDebug(query);
+            logger.LogDebug(query.ToString());
             command.Connection = connection;
-            command.CommandText = query;
+            command.CommandText = query.ToString();
             using var reader = await command.ExecuteReaderAsync();
 
             while (await reader.ReadAsync())
@@ -409,9 +403,9 @@ namespace CamCare.Services
                 });
             }
 
-            logger.LogDebug(countQuery);
+            logger.LogDebug(countQuery.ToString());
             command2.Connection = connection;
-            command2.CommandText = countQuery;
+            command2.CommandText = countQuery.ToString();
             var countReader = await command2.ExecuteScalarAsync();
             var totalCount = Convert.ToInt32(countReader);
 
@@ -432,38 +426,30 @@ namespace CamCare.Services
 
             using var connection = new FbConnection(ConnectionString);
             await connection.OpenAsync();
-            var query = "SELECT FIRST @Top SKIP @Skip LFDNR, ARTIKELNR, BEZEICHNUNG, BESTAND, BESTANDMINDEST, MENGENEINHEIT, BILD FROM ARTIKEL WHERE 1=1 ";
-            var countQuery = "SELECT COUNT(*) FROM ARTIKEL WHERE 1=1 ";
+            var query = new StringBuilder("SELECT FIRST @Top SKIP @Skip LFDNR, ARTIKELNR, BEZEICHNUNG, BESTAND, BESTANDMINDEST, MENGENEINHEIT, BILD FROM ARTIKEL WHERE 1=1");
+            var countQuery = new StringBuilder("SELECT COUNT(*) FROM ARTIKEL WHERE 1=1");
 
             using var command = new FbCommand();
             using var command2 = new FbCommand();
 
             if (filter?.Artikelnummer is not null)
             {
-                var artikelNummer = $"%{filter.Artikelnummer}%";
-                command.Parameters.AddWithValue("@Artikelnummer", artikelNummer);
-                command2.Parameters.AddWithValue("@Artikelnummer", artikelNummer);
-                query += " AND UPPER(ARTIKELNR) LIKE UPPER(@Artikelnummer)";
-                countQuery += " AND UPPER(ARTIKELNR) LIKE UPPER(@Artikelnummer)";
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(ARTIKELNR) LIKE UPPER(@Artikelnummer)", "@Artikelnummer", $"%{filter.Artikelnummer}%");
             }
             if (filter?.Description is not null)
             {
-                var description = $"%{filter.Description}%";
-                command.Parameters.AddWithValue("@Bezeichnung", description);
-                command2.Parameters.AddWithValue("@Bezeichnung", description);
-                query += " AND UPPER(BEZEICHNUNG) LIKE UPPER(@Bezeichnung)";
-                countQuery += " AND UPPER(BEZEICHNUNG) LIKE UPPER(@Bezeichnung)";
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(BEZEICHNUNG) LIKE UPPER(@Bezeichnung)", "@Bezeichnung", $"%{filter.Description}%");
             }
 
-            query += $" ORDER BY LFDNR";
+            query.Append(" ORDER BY LFDNR");
 
 
             command.Parameters.AddWithValue("@Top", top);
             command.Parameters.AddWithValue("@Skip", skip);
 
-            logger.LogDebug(query);
+            logger.LogDebug(query.ToString());
             command.Connection = connection;
-            command.CommandText = query;
+            command.CommandText = query.ToString();
 
             using var reader = await command.ExecuteReaderAsync();
 
@@ -491,9 +477,9 @@ namespace CamCare.Services
                 result.Add(artikel);
 
             }
-            logger.LogDebug(countQuery);
+            logger.LogDebug(countQuery.ToString());
             command2.Connection = connection;
-            command2.CommandText = countQuery;
+            command2.CommandText = countQuery.ToString();
             var countReader = await command2.ExecuteScalarAsync();
             var totalCount = Convert.ToInt32(countReader);
 
@@ -502,6 +488,21 @@ namespace CamCare.Services
                 Items = result,
                 TotalCount = totalCount
             });
+        }
+
+        private static void AddFilterCondition(
+            FbCommand dataCommand,
+            FbCommand countCommand,
+            StringBuilder dataQuery,
+            StringBuilder countQuery,
+            string sqlCondition,
+            string parameterName,
+            object parameterValue)
+        {
+            dataCommand.Parameters.AddWithValue(parameterName, parameterValue);
+            countCommand.Parameters.AddWithValue(parameterName, parameterValue);
+            dataQuery.Append(" AND ").Append(sqlCondition);
+            countQuery.Append(" AND ").Append(sqlCondition);
         }
     }
 }

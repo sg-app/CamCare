@@ -58,16 +58,29 @@ namespace CamCare.Services
 
             var vms = items.Select(_mapper.Map<RepairOrder, RepairOrderVm>).ToList();
 
-            foreach (var vm in vms)
+            var customerIds = vms
+                .Where(vm => vm.CustomerId.HasValue)
+                .Select(vm => vm.CustomerId!.Value)
+                .Distinct()
+                .ToList();
+
+            if (customerIds.Count > 0)
             {
-                if (!vm.CustomerId.HasValue)
-                    continue;
+                var customersResponse = await _amicronDataService.GetAddressesByCustomerIdsAsync(customerIds);
+                if (customersResponse.Success && customersResponse.Data != null)
+                {
+                    var customersById = customersResponse.Data.ToDictionary(customer => customer.LfdNr);
+                    foreach (var vm in vms)
+                    {
+                        if (!vm.CustomerId.HasValue)
+                            continue;
 
-                var customerResponse = await _amicronDataService.GetAddressByCustomerIdAsync(vm.CustomerId.Value);
-                if (!customerResponse.Success)
-                    continue;
-
-                vm.Customer = customerResponse.Data;
+                        if (customersById.TryGetValue(vm.CustomerId.Value, out var customer))
+                        {
+                            vm.Customer = customer;
+                        }
+                    }
+                }
             }
 
             var paginated = new Paginated<RepairOrderVm>
@@ -209,7 +222,7 @@ namespace CamCare.Services
                     newDefectives.Add(defective);
                 }
             }
-            // Entfernte Defectives löschen
+            // Entfernte Defectives lï¿½schen
             entity.Defectives.Clear();
             foreach (var d in newDefectives)
                 entity.Defectives.Add(d);
@@ -232,7 +245,7 @@ namespace CamCare.Services
                     newIncludeComponents.Add(includedComponent);
                 }
             }
-            // Entfernte Included Components löschen
+            // Entfernte Included Components lï¿½schen
             entity.IncludedComponents.Clear();
             foreach (var d in newIncludeComponents)
                 entity.IncludedComponents.Add(d);
@@ -240,7 +253,7 @@ namespace CamCare.Services
 
 
             // --- RepairPositions synchronisieren ---
-            // Entfernte Positionen löschen
+            // Entfernte Positionen lï¿½schen
             var vmPositions = vm.RepairPositions ?? new List<RepairPositionVm>();
             var toRemove = entity.RepairOrderRepairPositions
                 .Where(rp => !vmPositions.Any(vp => vp.Description == rp.RepairPosition.Description))
@@ -248,7 +261,7 @@ namespace CamCare.Services
             foreach (var rp in toRemove)
                 entity.RepairOrderRepairPositions.Remove(rp);
 
-            // Hinzufügen/Aktualisieren
+            // Hinzufï¿½gen/Aktualisieren
             foreach (var posVm in vmPositions)
             {
                 var repairPosition = await context.RepairPositions.FirstOrDefaultAsync(rp => rp.Description == posVm.Description);
