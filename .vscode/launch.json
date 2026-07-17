@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch CamCare (.NET 10)",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/CamCare/CamCare.csproj",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      }
+    },
+    {
+      "name": "Attach to .NET Process",
+      "type": "coreclr",
+      "request": "attach"
+    }
+  ]
+}
