@@ -94,52 +94,266 @@ namespace CamCare.Services
         public override async Task<ServiceResponse<RepairOrderVm>> CreateAsync(RepairOrderVm vm)
         {
             using var context = _contextFactory.CreateDbContext();
+            await using var transaction = await context.Database.BeginTransactionAsync();
 
-            var entity = new RepairOrder();
-            _mapper.Map(vm, entity);
-
-            // Defectives zuordnen oder anlegen
-            entity.Defectives = new List<Defective>();
-            if (vm.Defectives != null)
+            try
             {
-                foreach (var defVm in vm.Defectives)
+                var entity = new RepairOrder();
+                _mapper.Map(vm, entity);
+
+                entity.Defectives = new List<Defective>();
+                entity.IncludedComponents = new List<IncludedComponent>();
+                entity.Employees = new List<Employee>();
+                entity.RepairOrderRepairPositions = new List<RepairOrderRepairPosition>();
+
+                // Defectives zuordnen oder anlegen
+                if (vm.Defectives != null)
                 {
-                    var defective = await context.Defectives.FirstOrDefaultAsync(d => d.Description == defVm.Description);
-                    if (defective == null)
+                    var descriptions = vm.Defectives
+                        .Select(d => d.Description)
+                        .Where(d => !string.IsNullOrWhiteSpace(d))
+                        .Distinct()
+                        .ToList();
+
+                    var defectivesByDescription = await context.Defectives
+                        .Where(d => descriptions.Contains(d.Description))
+                        .ToDictionaryAsync(d => d.Description, d => d);
+
+                    foreach (var defVm in vm.Defectives)
+                    {
+                        if (string.IsNullOrWhiteSpace(defVm.Description))
+                            continue;
+
+                        if (!defectivesByDescription.TryGetValue(defVm.Description, out var defective))
+                        {
+                            defective = new Defective { Description = defVm.Description, CreatedAt = DateTime.UtcNow };
+                            context.Defectives.Add(defective);
+                            defectivesByDescription[defVm.Description] = defective;
+                        }
+
+                        entity.Defectives.Add(defective);
+                    }
+                }
+
+                // Included Components zuordnen oder anlegen
+                if (vm.IncludedComponents != null)
+                {
+                    var descriptions = vm.IncludedComponents
+                        .Select(i => i.Description)
+                        .Where(d => !string.IsNullOrWhiteSpace(d))
+                        .Distinct()
+                        .ToList();
+
+                    var includedComponentsByDescription = await context.IncludedComponents
+                        .Where(ic => descriptions.Contains(ic.Description))
+                        .ToDictionaryAsync(ic => ic.Description, ic => ic);
+
+                    foreach (var incVm in vm.IncludedComponents)
+                    {
+                        if (string.IsNullOrWhiteSpace(incVm.Description))
+                            continue;
+
+                        if (!includedComponentsByDescription.TryGetValue(incVm.Description, out var includedComponent))
+                        {
+                            includedComponent = new IncludedComponent { Description = incVm.Description, CreatedAt = DateTime.UtcNow };
+                            context.IncludedComponents.Add(includedComponent);
+                            includedComponentsByDescription[incVm.Description] = includedComponent;
+                        }
+
+                        entity.IncludedComponents.Add(includedComponent);
+                    }
+                }
+
+                // RepairPositions zuordnen oder anlegen
+                if (vm.RepairPositions != null)
+                {
+                    var descriptions = vm.RepairPositions
+                        .Select(rp => rp.Description)
+                        .Where(d => !string.IsNullOrWhiteSpace(d))
+                        .Distinct()
+                        .ToList();
+
+                    var repairPositionsByDescription = await context.RepairPositions
+                        .Where(rp => descriptions.Contains(rp.Description))
+                        .ToDictionaryAsync(rp => rp.Description, rp => rp);
+
+                    foreach (var posVm in vm.RepairPositions)
+                    {
+                        if (string.IsNullOrWhiteSpace(posVm.Description))
+                            continue;
+
+                        if (!repairPositionsByDescription.TryGetValue(posVm.Description, out var repairPosition))
+                        {
+                            repairPosition = new RepairPosition
+                            {
+                                Description = posVm.Description,
+                                Artikelnummer = posVm.Artikelnummer,
+                                SortOrder = posVm.SortOrder,
+                                CreatedAt = DateTime.UtcNow
+                            };
+                            context.RepairPositions.Add(repairPosition);
+                            repairPositionsByDescription[posVm.Description] = repairPosition;
+                        }
+
+                        entity.RepairOrderRepairPositions.Add(new RepairOrderRepairPosition
+                        {
+                            RepairOrder = entity,
+                            RepairPosition = repairPosition,
+                            Quantity = posVm.Quantity
+                        });
+                    }
+                }
+
+                // Employees zuordnen
+                if (vm.Employees != null)
+                {
+                    var employeeIds = vm.Employees.Select(e => e.Id).Distinct().ToList();
+                    var employees = await context.Set<Employee>()
+                        .Where(e => employeeIds.Contains(e.Id))
+                        .ToListAsync();
+
+                    foreach (var employee in employees)
+                    {
+                        entity.Employees.Add(employee);
+                    }
+                }
+
+                context.RepairOrders.Add(entity);
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                var resultVm = _mapper.Map<RepairOrder, RepairOrderVm>(entity);
+                return ServiceResponse.Success(resultVm);
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public override async Task<ServiceResponse<RepairOrderVm>> UpdateAsync(object id, RepairOrderVm vm)
+        {
+            using var context = _contextFactory.CreateDbContext();
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var entity = await context.RepairOrders
+                    .Include(r => r.Defectives)
+                    .Include(r => r.IncludedComponents)
+                    .Include(r => r.RepairOrderRepairPositions)
+                        .ThenInclude(rp => rp.RepairPosition)
+                    .Include(r => r.Employees)
+                    .FirstOrDefaultAsync(r => r.Id == (int)id);
+
+                if (entity == null)
+                    return ServiceResponse.Failure<RepairOrderVm>("Nicht gefunden");
+
+                // --- Statushistorie aktualisieren ---
+                if (entity.RepairOrderStatusId != vm.RepairOrderStatusId)
+                {
+                    context.RepairOrderStatusHistories.Add(new RepairOrderStatusHistory
+                    {
+                        RepairOrderId = entity.Id,
+                        RepairOrderStatusId = vm.RepairOrderStatusId,
+                        ChangedAt = DateTime.UtcNow
+                    });
+                }
+
+                // Update Haupt-Entity
+                _mapper.Map(vm, entity);
+                entity.UpdatedAt = DateTime.UtcNow;
+
+                // --- Defectives synchronisieren ---
+                var vmDefectives = vm.Defectives ?? new List<DefectiveVm>();
+                var defectiveDescriptions = vmDefectives
+                    .Select(d => d.Description)
+                    .Where(d => !string.IsNullOrWhiteSpace(d))
+                    .Distinct()
+                    .ToList();
+
+                var defectivesByDescription = await context.Defectives
+                    .Where(d => defectiveDescriptions.Contains(d.Description))
+                    .ToDictionaryAsync(d => d.Description, d => d);
+
+                var newDefectives = new List<Defective>();
+                foreach (var defVm in vmDefectives)
+                {
+                    if (string.IsNullOrWhiteSpace(defVm.Description))
+                        continue;
+
+                    if (!defectivesByDescription.TryGetValue(defVm.Description, out var defective))
                     {
                         defective = new Defective { Description = defVm.Description, CreatedAt = DateTime.UtcNow };
                         context.Defectives.Add(defective);
-                        await context.SaveChangesAsync();
+                        defectivesByDescription[defVm.Description] = defective;
                     }
-                    entity.Defectives.Add(defective);
-                }
-            }
 
-            // Included Components zuordnen oder anlegen
-            entity.IncludedComponents = new List<IncludedComponent>();
-            if (vm.IncludedComponents != null)
-            {
-                foreach (var incVm in vm.IncludedComponents)
+                    newDefectives.Add(defective);
+                }
+
+                entity.Defectives.Clear();
+                foreach (var defective in newDefectives)
+                    entity.Defectives.Add(defective);
+
+                // --- Included Components synchronisieren ---
+                var vmIncludedComponents = vm.IncludedComponents ?? new List<IncludedComponentVm>();
+                var includedDescriptions = vmIncludedComponents
+                    .Select(i => i.Description)
+                    .Where(d => !string.IsNullOrWhiteSpace(d))
+                    .Distinct()
+                    .ToList();
+
+                var includedByDescription = await context.IncludedComponents
+                    .Where(ic => includedDescriptions.Contains(ic.Description))
+                    .ToDictionaryAsync(ic => ic.Description, ic => ic);
+
+                var newIncludedComponents = new List<IncludedComponent>();
+                foreach (var incVm in vmIncludedComponents)
                 {
-                    var includedComponent = await context.IncludedComponents.FirstOrDefaultAsync(ic => ic.Description == incVm.Description);
-                    if (includedComponent == null)
+                    if (string.IsNullOrWhiteSpace(incVm.Description))
+                        continue;
+
+                    if (!includedByDescription.TryGetValue(incVm.Description, out var includedComponent))
                     {
                         includedComponent = new IncludedComponent { Description = incVm.Description, CreatedAt = DateTime.UtcNow };
                         context.IncludedComponents.Add(includedComponent);
-                        await context.SaveChangesAsync();
+                        includedByDescription[incVm.Description] = includedComponent;
                     }
-                    entity.IncludedComponents.Add(includedComponent);
-                }
-            }
 
-            // RepairPositions zuordnen oder anlegen
-            entity.RepairPositions = new List<RepairPosition>();
-            if (vm.RepairPositions != null)
-            {
-                foreach (var posVm in vm.RepairPositions)
+                    newIncludedComponents.Add(includedComponent);
+                }
+
+                entity.IncludedComponents.Clear();
+                foreach (var includedComponent in newIncludedComponents)
+                    entity.IncludedComponents.Add(includedComponent);
+
+                // --- RepairPositions synchronisieren ---
+                var vmPositions = vm.RepairPositions ?? new List<RepairPositionVm>();
+                var positionDescriptions = vmPositions
+                    .Select(p => p.Description)
+                    .Where(d => !string.IsNullOrWhiteSpace(d))
+                    .Distinct()
+                    .ToList();
+
+                var repairPositionsByDescription = await context.RepairPositions
+                    .Where(rp => positionDescriptions.Contains(rp.Description))
+                    .ToDictionaryAsync(rp => rp.Description, rp => rp);
+
+                var toRemove = entity.RepairOrderRepairPositions
+                    .Where(rp => !vmPositions.Any(vp => vp.Description == rp.RepairPosition.Description))
+                    .ToList();
+
+                foreach (var rp in toRemove)
+                    entity.RepairOrderRepairPositions.Remove(rp);
+
+                foreach (var posVm in vmPositions)
                 {
-                    var repairPosition = await context.RepairPositions.FirstOrDefaultAsync(rp => rp.Description == posVm.Description);
-                    if (repairPosition == null)
+                    if (string.IsNullOrWhiteSpace(posVm.Description))
+                        continue;
+
+                    if (!repairPositionsByDescription.TryGetValue(posVm.Description, out var repairPosition))
                     {
                         repairPosition = new RepairPosition
                         {
@@ -149,176 +363,52 @@ namespace CamCare.Services
                             CreatedAt = DateTime.UtcNow
                         };
                         context.RepairPositions.Add(repairPosition);
-                        await context.SaveChangesAsync();
+                        repairPositionsByDescription[posVm.Description] = repairPosition;
                     }
-                    entity.RepairOrderRepairPositions.Add(new RepairOrderRepairPosition { RepairOrder = entity, RepairPosition = repairPosition, Quantity = posVm.Quantity });
-                }
-            }
 
-            // Employees zuordnen
-            entity.Employees = new List<Employee>();
-            if (vm.Employees != null)
-            {
-                foreach (var empVm in vm.Employees)
-                {
-                    var employee = await context.Set<Employee>().FirstOrDefaultAsync(e => e.Id == empVm.Id);
-                    if (employee != null)
+                    var existing = entity.RepairOrderRepairPositions
+                        .FirstOrDefault(rp => rp.RepairPosition.Description == posVm.Description);
+
+                    if (existing == null)
                     {
-                        entity.Employees.Add(employee);
+                        entity.RepairOrderRepairPositions.Add(new RepairOrderRepairPosition
+                        {
+                            RepairOrder = entity,
+                            RepairPosition = repairPosition,
+                            Quantity = posVm.Quantity
+                        });
                     }
-                }
-            }
-
-            context.RepairOrders.Add(entity);
-            await context.SaveChangesAsync();
-
-            var resultVm = _mapper.Map<RepairOrder, RepairOrderVm>(entity);
-            return ServiceResponse.Success(resultVm);
-        }
-
-        public override async Task<ServiceResponse<RepairOrderVm>> UpdateAsync(object id, RepairOrderVm vm)
-        {
-            using var context = _contextFactory.CreateDbContext();
-
-            var entity = await context.RepairOrders
-                .Include(r => r.Defectives)
-                .Include(r => r.IncludedComponents)
-                .Include(r => r.RepairOrderRepairPositions)
-                    .ThenInclude(rp => rp.RepairPosition)
-                .Include(r => r.Employees)
-                .FirstOrDefaultAsync(r => r.Id == (int)id);
-
-            if (entity == null)
-                return ServiceResponse.Failure<RepairOrderVm>("Nicht gefunden");
-
-            // --- Statushistorie aktualisieren ---
-            if (entity.RepairOrderStatusId != vm.RepairOrderStatusId)
-            {
-                context.RepairOrderStatusHistories.Add(new RepairOrderStatusHistory
-                {
-                    RepairOrderId = entity.Id,
-                    RepairOrderStatusId = vm.RepairOrderStatusId,
-                    ChangedAt = DateTime.UtcNow
-                });
-            }
-
-            // Update Haupt-Entity
-            _mapper.Map(vm, entity);
-            entity.UpdatedAt = DateTime.UtcNow;
-
-            // --- Defectives synchronisieren ---
-            var newDefectives = new List<Defective>();
-            if (vm.Defectives != null)
-            {
-                foreach (var defVm in vm.Defectives)
-                {
-                    var defective = await context.Defectives.FirstOrDefaultAsync(d => d.Description == defVm.Description);
-                    if (defective == null)
+                    else
                     {
-                        defective = new Defective { Description = defVm.Description, CreatedAt = DateTime.UtcNow };
-                        context.Defectives.Add(defective);
-                        await context.SaveChangesAsync();
-                    }
-                    newDefectives.Add(defective);
-                }
-            }
-            // Entfernte Defectives l�schen
-            entity.Defectives.Clear();
-            foreach (var d in newDefectives)
-                entity.Defectives.Add(d);
-
-
-
-            // --- Included Components synchronisieren ---
-            var newIncludeComponents = new List<IncludedComponent>();
-            if (vm.IncludedComponents != null)
-            {
-                foreach (var incVm in vm.IncludedComponents)
-                {
-                    var includedComponent = await context.IncludedComponents.FirstOrDefaultAsync(ic => ic.Description == incVm.Description);
-                    if (includedComponent == null)
-                    {
-                        includedComponent = new IncludedComponent { Description = incVm.Description, CreatedAt = DateTime.UtcNow };
-                        context.IncludedComponents.Add(includedComponent);
-                        await context.SaveChangesAsync();
-                    }
-                    newIncludeComponents.Add(includedComponent);
-                }
-            }
-            // Entfernte Included Components l�schen
-            entity.IncludedComponents.Clear();
-            foreach (var d in newIncludeComponents)
-                entity.IncludedComponents.Add(d);
-
-
-
-            // --- RepairPositions synchronisieren ---
-            // Entfernte Positionen l�schen
-            var vmPositions = vm.RepairPositions ?? new List<RepairPositionVm>();
-            var toRemove = entity.RepairOrderRepairPositions
-                .Where(rp => !vmPositions.Any(vp => vp.Description == rp.RepairPosition.Description))
-                .ToList();
-            foreach (var rp in toRemove)
-                entity.RepairOrderRepairPositions.Remove(rp);
-
-            // Hinzuf�gen/Aktualisieren
-            foreach (var posVm in vmPositions)
-            {
-                var repairPosition = await context.RepairPositions.FirstOrDefaultAsync(rp => rp.Description == posVm.Description);
-                if (repairPosition == null)
-                {
-                    repairPosition = new RepairPosition
-                    {
-                        Description = posVm.Description,
-                        Artikelnummer = posVm.Artikelnummer,
-                        SortOrder = posVm.SortOrder,
-                        CreatedAt = DateTime.UtcNow
-                    };
-                    context.RepairPositions.Add(repairPosition);
-                    await context.SaveChangesAsync();
-                }
-
-                var existing = entity.RepairOrderRepairPositions
-                    .FirstOrDefault(rp => rp.RepairPosition.Description == posVm.Description);
-
-                if (existing == null)
-                {
-                    entity.RepairOrderRepairPositions.Add(new RepairOrderRepairPosition
-                    {
-                        RepairOrder = entity,
-                        RepairPosition = repairPosition,
-                        Quantity = posVm.Quantity
-                    });
-                }
-                else
-                {
-                    existing.Quantity = posVm.Quantity;
-                }
-            }
-
-            // --- Employees synchronisieren ---
-            var newEmployees = new List<Employee>();
-            if (vm.Employees != null)
-            {
-                foreach (var empVm in vm.Employees)
-                {
-                    var employee = await context.Set<Employee>().FirstOrDefaultAsync(e => e.Id == empVm.Id);
-                    if (employee != null)
-                    {
-                        newEmployees.Add(employee);
+                        existing.Quantity = posVm.Quantity;
                     }
                 }
+
+                // --- Employees synchronisieren ---
+                var employeeIds = (vm.Employees ?? new List<EmployeeVm>())
+                    .Select(e => e.Id)
+                    .Distinct()
+                    .ToList();
+
+                var newEmployees = await context.Set<Employee>()
+                    .Where(e => employeeIds.Contains(e.Id))
+                    .ToListAsync();
+
+                entity.Employees.Clear();
+                foreach (var employee in newEmployees)
+                    entity.Employees.Add(employee);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                var resultVm = _mapper.Map<RepairOrder, RepairOrderVm>(entity);
+                return ServiceResponse.Success(resultVm);
             }
-            entity.Employees.Clear();
-            foreach (var e in newEmployees)
-                entity.Employees.Add(e);
-
-
-
-            await context.SaveChangesAsync();
-
-            var resultVm = _mapper.Map<RepairOrder, RepairOrderVm>(entity);
-            return ServiceResponse.Success(resultVm);
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public override async Task<ServiceResponse<RepairOrderVm>> GetByIdAsync(object id)

@@ -29,6 +29,7 @@ builder.Services.AddFluxor(options =>
 
 
 builder.Services.AddRadzenComponents();
+builder.Services.AddMemoryCache();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddSingleton<IMapper, Mapper>();

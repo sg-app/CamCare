@@ -8,8 +8,13 @@ namespace CamCare.Services
 {
     public class EmployeeService : DbService<Employee, EmployeeVm>, IEmployeeService
     {
-        public EmployeeService(IAppDbContextFactory contextFactory, IMapper mapper, ILogger<EmployeeService> logger, NotificationService notificationService)
-            : base(contextFactory, mapper, logger, notificationService)
+        public EmployeeService(
+            IAppDbContextFactory contextFactory,
+            IMapper mapper,
+            ILogger<EmployeeService> logger,
+            NotificationService notificationService,
+            IMasterdataService masterdataService)
+            : base(contextFactory, mapper, logger, notificationService, masterdataService)
         {
         }
     }

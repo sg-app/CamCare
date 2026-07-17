@@ -8,8 +8,13 @@ namespace CamCare.Services
 {
     public class RepairOrderStatusService : DbService<RepairOrderStatus, RepairOrderStatusVm>, IRepairOrderStatusService
     {
-        public RepairOrderStatusService(IAppDbContextFactory contextFactory, IMapper mapper, ILogger<RepairOrderStatusService> logger, NotificationService notificationService)
-            : base(contextFactory, mapper, logger, notificationService)
+        public RepairOrderStatusService(
+            IAppDbContextFactory contextFactory,
+            IMapper mapper,
+            ILogger<RepairOrderStatusService> logger,
+            NotificationService notificationService,
+            IMasterdataService masterdataService)
+            : base(contextFactory, mapper, logger, notificationService, masterdataService)
         {
         }
 
@@ -35,6 +40,7 @@ namespace CamCare.Services
                     }
                 }
                 await context.SaveChangesAsync();
+                await InvalidateMasterdataCacheAsync();
                 return ServiceResponse.Success(true);
             }
             catch (Exception ex)

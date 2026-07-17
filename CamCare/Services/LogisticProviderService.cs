@@ -10,8 +10,13 @@ namespace CamCare.Services
 {
     public class LogisticProviderService : DbService<LogisticProvider, LogisticProviderVm>, ILogisticProviderService
     {
-        public LogisticProviderService(IAppDbContextFactory contextFactory, IMapper mapper, ILogger<LogisticProviderService> logger, NotificationService notificationService)
-            : base(contextFactory, mapper, logger, notificationService)
+        public LogisticProviderService(
+            IAppDbContextFactory contextFactory,
+            IMapper mapper,
+            ILogger<LogisticProviderService> logger,
+            NotificationService notificationService,
+            IMasterdataService masterdataService)
+            : base(contextFactory, mapper, logger, notificationService, masterdataService)
         {
         }
 
