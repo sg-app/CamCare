@@ -126,6 +126,32 @@ namespace CamCare.Services
             return memory;
         }
 
+        public async Task<bool> ExistsAsync(string objectKey, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(objectKey))
+                return false;
+
+            await EnsureBucketExistsAsync(cancellationToken);
+
+            try
+            {
+                await _s3Client.GetObjectMetadataAsync(new GetObjectMetadataRequest
+                {
+                    BucketName = _options.BucketName,
+                    Key = objectKey
+                }, cancellationToken);
+
+                return true;
+            }
+            catch (AmazonS3Exception ex) when (
+                ex.StatusCode == System.Net.HttpStatusCode.NotFound
+                || string.Equals(ex.ErrorCode, "NoSuchKey", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(ex.ErrorCode, "NotFound", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
         public async Task<string> GetReadUrlAsync(string objectKey, TimeSpan expiresIn)
         {
             if (string.IsNullOrWhiteSpace(objectKey))

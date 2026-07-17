@@ -3,6 +3,7 @@ using CamCare.Interfaces.Persistence;
 using CamCare.Interfaces.Services;
 using CamCare.Models;
 using CamCare.Options;
+using Amazon.S3.Model;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -86,9 +87,39 @@ namespace CamCare.Services
                 using var context = _contextFactory.CreateDbContext();
 
                 var items = await context.DataStores
-                    .AsNoTracking()
                     .Where(ds => ds.RepairOrderId == repairOrderId)
                     .ToListAsync();
+
+                if (items.Count > 0)
+                {
+                    var orphanedItems = new List<DataStore>();
+
+                    foreach (var item in items)
+                    {
+                        if (string.IsNullOrWhiteSpace(item.ObjectKey))
+                            continue;
+
+                        var exists = await _objectStorageService.ExistsAsync(item.ObjectKey);
+                        if (!exists)
+                        {
+                            orphanedItems.Add(item);
+                        }
+                    }
+
+                    if (orphanedItems.Count > 0)
+                    {
+                        context.DataStores.RemoveRange(orphanedItems);
+                        await context.SaveChangesAsync();
+
+                        var orphanedIds = orphanedItems.Select(x => x.Id).ToHashSet();
+                        items = items.Where(x => !orphanedIds.Contains(x.Id)).ToList();
+
+                        _logger.LogInformation(
+                            "{Count} verwaiste DataStore-Datensätze für RepairOrder {RepairOrderId} wurden beim Laden entfernt.",
+                            orphanedItems.Count,
+                            repairOrderId);
+                    }
+                }
 
                 var vms = items.Select(_mapper.Map<DataStore, DataStoreVm>).ToList();
 
@@ -162,11 +193,12 @@ namespace CamCare.Services
 
         public async Task<ServiceResponse<DataStoreFileVm>> GetFileAsync(int dataStoreId)
         {
+            using var context = _contextFactory.CreateDbContext();
+            DataStore? item = null;
+
             try
             {
-                using var context = _contextFactory.CreateDbContext();
-                var item = await context.DataStores
-                    .AsNoTracking()
+                item = await context.DataStores
                     .FirstOrDefaultAsync(ds => ds.Id == dataStoreId);
 
                 if (item is null)
@@ -195,6 +227,19 @@ namespace CamCare.Services
                     ContentType = string.IsNullOrWhiteSpace(item.Type) ? "application/octet-stream" : item.Type,
                     Content = content
                 });
+            }
+            catch (NoSuchKeyException ex)
+            {
+                _logger.LogWarning(ex, "Objekt mit Key {ObjectKey} für DataStore ID {Id} wurde im ObjectStorage nicht gefunden. Entferne verwaisten Datensatz.", item?.ObjectKey, dataStoreId);
+
+                if (item is not null)
+                {
+                    context.DataStores.Remove(item);
+                    await context.SaveChangesAsync();
+                    _logger.LogInformation("Verwaister DataStore-Datensatz mit ID {Id} wurde gelöscht.", dataStoreId);
+                }
+
+                return ServiceResponse.Failure<DataStoreFileVm>("Datei wurde im ObjectStorage nicht gefunden. Der verwaiste Datenbankeintrag wurde entfernt.");
             }
             catch (Exception ex)
             {
