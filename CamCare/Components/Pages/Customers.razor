@@ -43,9 +43,9 @@
         <RadzenDataGridColumn TItem="Adressen" Property="@nameof(Adressen.Ort)" Title="Ort" MinWidth="200px" FilterPlaceholder="Filter" />
         <RadzenDataGridColumn Width="50px">
             <Template Context="customer">
-                <RadzenButton Click="@(() => OnSerialSelected(customer, null))" 
-                    Icon="add_task" Size="ButtonSize.ExtraSmall" 
-                    ButtonStyle="ButtonStyle.Info" 
+                <RadzenButton Click="@(() => OnSerialSelected(customer, null))"
+                    Icon="add_task" Size="ButtonSize.ExtraSmall"
+                    ButtonStyle="ButtonStyle.Info"
                     MouseEnter="@(args => ShowTooltip(args, "Auftrag ohne Seriennummer erstellen."))" />
             </Template>
         </RadzenDataGridColumn>
@@ -67,10 +67,10 @@
                 <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.Artikelbezeichnung)" Title="Artikel" MinWidth="200px" FilterPlaceholder="Filter" />
                 <RadzenDataGridColumn Width="50px">
                     <Template Context="serial">
-                            <RadzenButton Click="@(() => OnSerialSelected(customer, serial))" 
-                                Icon="add_task" 
-                                Size="ButtonSize.ExtraSmall" 
-                                ButtonStyle="ButtonStyle.Info" 
+                            <RadzenButton Click="@(() => OnSerialSelected(customer, serial))"
+                                Icon="add_task"
+                                Size="ButtonSize.ExtraSmall"
+                                ButtonStyle="ButtonStyle.Info"
                                 MouseEnter="@(args => ShowTooltip(args, "Auftrag mit Seriennummer erstellen."))" />
                     </Template>
                 </RadzenDataGridColumn>

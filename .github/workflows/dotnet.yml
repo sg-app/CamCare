@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -59,10 +59,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          
+
       - name: Install dependencies
         run: npm install -g semantic-release semantic-release-dotnet @semantic-release/git @semantic-release/changelog @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/github
-      
+
       - name: Run Semantic Release
         id: semantic-release
         env:

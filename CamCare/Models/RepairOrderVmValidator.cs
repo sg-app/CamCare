@@ -26,14 +26,14 @@ namespace CamCare.Models
                 .GreaterThan(0)
                 .WithMessage("Kartonhöhe muss größer als 0 sein, wenn ein neuer Karton verwendet wird.")
                 .When(r => r.PackagingType == PackagingType.NewBox);
-            
+
             RuleFor(r => r.PackagingLength)
                 .NotNull()
                 .WithMessage("Kartonlänge muss angegeben sein, wenn ein neuer Karton verwendet wird.")
                 .GreaterThan(0)
                 .WithMessage("Kartonlänge muss größer als 0 sein, wenn ein neuer Karton verwendet wird.")
                 .When(r => r.PackagingType == PackagingType.NewBox);
-            
+
             RuleFor(r => r.PackagingWidth)
                 .NotNull()
                 .WithMessage("Kartonbreite muss angegeben sein, wenn ein neuer Karton verwendet wird.")
