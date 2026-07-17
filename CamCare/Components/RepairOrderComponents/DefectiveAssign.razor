@@ -1,11 +1,5 @@
-﻿<RadzenDataGrid class="mt-2"
-                @ref="_grid"
-                Data="@RepairOrder.Defectives"
-                TItem="DefectiveVm"
-                RowUpdate="OnRowUpdate"
-                RowCreate="OnRowCreate"
-                Density="Density.Compact"
-                EmptyText="Keine Positionen eingetragen">
+﻿<RadzenDataGrid class="mt-2" @ref="_grid" Data="@RepairOrder.Defectives" TItem="DefectiveVm" RowUpdate="OnRowUpdate"
+                RowCreate="OnRowCreate" Density="Density.Compact" EmptyText="Keine Positionen eingetragen">
     <HeaderTemplate>
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
 
@@ -20,17 +14,14 @@
             </Template>
             <EditTemplate Context="item">
 
-                <RadzenAutoComplete Value="@item.Description"
-                                    Change="OnDescriptionChanged"
-                                    Data=@_defectives
-                                    LoadData="OnLoadDefectiveCatalog"
-                                    OpenOnFocus="true"
-                                    TextProperty="@nameof(DefectiveVm.Description)"
+                <RadzenAutoComplete Value="@item.Description" Change="OnDescriptionChanged" Data=@_defectives
+                                    LoadData="OnLoadDefectiveCatalog" OpenOnFocus="true" TextProperty="@nameof(DefectiveVm.Description)"
                                     Style="width: 100%"
                                     InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Artikel Katalog" }, { "onkeydown", "if(event.key==='Enter'){event.stopPropagation();event.preventDefault();}" } })" />
             </EditTemplate>
         </RadzenDataGridColumn>
-        <RadzenDataGridInlineEditColumn TItem="DefectiveVm" DeleteRow="OnDeleteRow" SaveRow="OnSaveRow" CancelEditRow="OnCancelEditRow" EditRow="OnEditRow" />
+        <RadzenDataGridInlineEditColumn TItem="DefectiveVm" DeleteRow="OnDeleteRow" SaveRow="OnSaveRow"
+                                        CancelEditRow="OnCancelEditRow" EditRow="OnEditRow" />
     </Columns>
 </RadzenDataGrid>
 
@@ -44,9 +35,6 @@
     private RadzenDataGrid<DefectiveVm> _grid = default!;
     private DefectiveVm? _toEdit;
     private DefectiveVm? _toCreate;
-
-    private CancellationTokenSource? _defectiveChangedCts;
-    private object? _lastDefectiveChangedValue;
 
 
     protected override Task OnParametersSetAsync()

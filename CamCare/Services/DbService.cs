@@ -59,7 +59,7 @@ namespace CamCare.Services
             {
                 Severity = severity,
                 Summary = summary,
-                Detail = message,
+                Detail = message ?? string.Empty,
                 Duration = duration
             });
         }

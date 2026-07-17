@@ -48,7 +48,8 @@
         if (RepairOrder is null)
             return;
 
-        RepairOrder.RepairOrderStatusId = MasterdataService.Get<RepairOrderStatusVm>().FirstOrDefault(f => f.IsDefault)?.Id ?? 0;
+        RepairOrder.RepairOrderStatusId = MasterdataService.Get<RepairOrderStatusVm>().FirstOrDefault(f => f.IsDefault)?.Id ??
+0;
         RepairOrder.ShippingMethod = ShippingMethod.SentByCustomer;
         RepairOrder.PackagingType = PackagingType.CustomersBox;
         RepairOrder.ArrivedAt = DateTime.Now;
@@ -57,7 +58,8 @@
     private void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
     {
         var sb = new System.Text.StringBuilder();
-        foreach (var message in args.Errors)
+        var errors = args.Errors?.ToList() ?? [];
+        foreach (var message in errors)
         {
             sb.AppendLine(message);
         }
@@ -76,7 +78,7 @@
                 builder.CloseElement(); // strong
 
                 builder.OpenElement(seq++, "ul");
-                foreach (var message in args.Errors)
+                foreach (var message in errors)
                 {
                     builder.OpenElement(seq++, "li");
                     builder.AddContent(seq++, message);

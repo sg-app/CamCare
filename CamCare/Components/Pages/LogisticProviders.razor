@@ -2,30 +2,19 @@
 
 
 <InsertButton InsertClick="OnInsertClicked" />
-<RadzenDataGrid @ref="_grid"
-                TItem="LogisticProviderVm"
-                Data="_data"
-                LoadData="OnLoadData"
-                IsLoading="_isLoading"
-                Count="_totalCount"
-                AllowPaging="true"
-                PageSize="20"
-                AllowFiltering="true"
-                FilterMode="FilterMode.Simple"
-                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                RowUpdate="OnRowUpdate"
-                RowCreate="OnRowCreate"
-                Density="Density.Compact"
-                AllowColumnResize="true"
-                ShowEmptyMessage="false"
-                Style="width:800px">
+<RadzenDataGrid @ref="_grid" TItem="LogisticProviderVm" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
+                Count="_totalCount" AllowPaging="true" PageSize="20" AllowFiltering="true" FilterMode="FilterMode.Simple"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" RowUpdate="OnRowUpdate" RowCreate="OnRowCreate"
+                Density="Density.Compact" AllowColumnResize="true" ShowEmptyMessage="false" Style="width:800px">
     <Columns>
-        <RadzenDataGridColumn TItem="LogisticProviderVm" Property="@nameof(LogisticProviderVm.Name)" Title="Name" MinWidth="200px">
+        <RadzenDataGridColumn TItem="LogisticProviderVm" Property="@nameof(LogisticProviderVm.Name)" Title="Name"
+                              MinWidth="200px">
             <EditTemplate Context="item">
                 <RadzenTextBox @bind-Value="item.Name" Style="width:100%" />
             </EditTemplate>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LogisticProviderVm" Property="@nameof(LogisticProviderVm.IsDefault)" Title="Standard" Width="80px" Filterable="false">
+        <RadzenDataGridColumn TItem="LogisticProviderVm" Property="@nameof(LogisticProviderVm.IsDefault)"
+                              Title="Standard" Width="80px" Filterable="false">
             <Template Context="item">
                 <RadzenIcon Icon="@(item.IsDefault ? "check_circle" : "circle")" />
             </Template>
@@ -33,7 +22,8 @@
                 <RadzenCheckBox @bind-Value="item.IsDefault" />
             </EditTemplate>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="LogisticProviderVm" Property="@nameof(LogisticProviderVm.IsActive)" Title="Aktiv" Width="80px" Filterable="false">
+        <RadzenDataGridColumn TItem="LogisticProviderVm" Property="@nameof(LogisticProviderVm.IsActive)" Title="Aktiv"
+                              Width="80px" Filterable="false">
             <Template Context="item">
                 <RadzenIcon Icon="@(item.IsActive ? "check_circle" : "circle")" />
             </Template>
@@ -41,7 +31,8 @@
                 <RadzenCheckBox @bind-Value="item.IsActive" />
             </EditTemplate>
         </RadzenDataGridColumn>
-        <RadzenDataGridInlineEditColumn TItem="LogisticProviderVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
+        <RadzenDataGridInlineEditColumn TItem="LogisticProviderVm" EditRow="OnEditRowClicked"
+                                        DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
     </Columns>
 </RadzenDataGrid>
 
@@ -54,7 +45,7 @@
     private IList<LogisticProviderVm>? _data;
     private int _totalCount;
     private bool _isLoading;
-    private LogisticProviderVm? draggedItem;
+
     private async Task OnLoadData(LoadDataArgs args)
     {
         _isLoading = true;
@@ -94,7 +85,9 @@
 
     private async Task OnDeleteRowClicked(LogisticProviderVm item)
     {
-        var dialogResult = await DialogService.Confirm("Soll der Datensatz wirklich gelöscht werden?", "Datensatz löschen", new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
+        var dialogResult = await DialogService.Confirm("Soll der Datensatz wirklich gelöscht werden?", "Datensatz löschen", new
+ConfirmOptions
+        { OkButtonText = "Ja", CancelButtonText = "Nein" });
         if (dialogResult != true) return;
 
         await LogisticProviderService.DeleteAsync(item.Id, false);
