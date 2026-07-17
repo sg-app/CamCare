@@ -9,6 +9,7 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" Version="4.0.101" />
     <PackageReference Include="Blazilla" Version="2.4.0" />
     <PackageReference Include="FirebirdSql.Data.FirebirdClient" Version="10.3.4" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />

@@ -26,7 +26,7 @@
             <span class="rz-fileupload-choose rz-button">
                 <text>
                     <InputFile @key="@_inputFieldKey" class="form-control" id="inputGroupFile01" @ref="inputFile"
-                               multiple="true" accept="image/*,video/*,application/pdf" OnChange="@OnChange" />
+                               multiple="true" accept="image/*,application/pdf" OnChange="@OnChange" />
                     <span class="rz-button-text">Drag and drop here or click to choose files</span>
                 </text>
             </span>
@@ -37,23 +37,31 @@
         <Template Context="item">
             <div class="d-flex flex-column justify-content-center">
                 <div class="align-self-center">
-                    @if (item.Type.StartsWith("image"))
+                    @if (!string.IsNullOrWhiteSpace(item.DownloadUrl) && item.Type.StartsWith("image", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <RadzenImage class="m-2" Path="@item.DownloadUrl"
+                                     Style="width: 15rem;" />
+                    }
+                    else if (!string.IsNullOrWhiteSpace(item.DownloadUrl) && item.Type.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <iframe class="m-2" style="width: 15rem; height: 20rem; border: 1px solid #ccc;"
+                                src="@item.DownloadUrl"
+                                title="PDF Preview"></iframe>
+                    }
+                    else if (item.Data is not null && item.Type.StartsWith("image", StringComparison.OrdinalIgnoreCase))
                     {
                         <RadzenImage class="m-2" Path="@($"data:{item.Type};base64,{Convert.ToBase64String(item.Data)}")"
                                      Style="width: 15rem;" />
                     }
-                    else if (item.Type == "application/pdf")
+                    else if (item.Data is not null && item.Type.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
                     {
                         <iframe class="m-2" style="width: 15rem; height: 20rem; border: 1px solid #ccc;"
                                 src="@($"data:application/pdf;base64,{Convert.ToBase64String(item.Data)}")"
                                 title="PDF Preview"></iframe>
                     }
-                    else if (item.Type.StartsWith("video"))
+                    else
                     {
-                        <video class="m-2" style="width: 15rem; border: 1px solid #ccc;" controls
-                               src="@($"data:{item.Type};base64,{Convert.ToBase64String(item.Data)}")">
-                            Ihr Browser unterstützt das Video-Tag nicht.
-                        </video>
+                        <RadzenText class="m-2">Keine Vorschau verfügbar</RadzenText>
                     }
                 </div>
                 <div class="align-self-center">
@@ -71,6 +79,8 @@
 
 
 @code {
+    private const long MaxFileSizeBytes = 10 * 1024 * 1024;
+
     [Inject] protected ILogger<DataAssign> Logger { get; set; } = default!;
     [Inject] protected DialogService DialogService { get; set; } = default!;
     [Inject] protected IDataStoreService DataStoreService { get; set; } = default!;
@@ -117,31 +127,67 @@ ConfirmOptions
         var files = args.GetMultipleFiles();
         foreach (var file in files)
         {
-            var maxAllowedSize = 10 * 1024 * 1024; // 10 MB
-            var stream = file.OpenReadStream(maxAllowedSize);
-            if (stream == null) continue;
-            using var mStream = new MemoryStream();
-            await stream.CopyToAsync(mStream);
-            var data = mStream.ToArray();
-            var item = new DataStoreVm
+            try
             {
-                RepairOrderId = RepairOrder.Id,
-                Type = file.ContentType,
-                Filename = file.Name,
-                Data = data
-            };
+                if (!IsSupportedContentType(file.ContentType))
+                {
+                    await DialogService.Alert("Nur PDF- und Bilddateien sind erlaubt.", "Ungültiger Dateityp");
+                    continue;
+                }
 
-            var response = await DataStoreService.CreateAsync(item);
-            if (response.Success && response.Data is not null)
-                RepairOrder.DataStores.Add(response.Data);
+                await using var stream = file.OpenReadStream(MaxFileSizeBytes);
+                using var mStream = new MemoryStream();
+                await stream.CopyToAsync(mStream);
+                var data = mStream.ToArray();
 
-            Logger.LogDebug($"Uploaded: {file.Name} / {file.Size} bytes");
+                var item = new DataStoreVm
+                {
+                    RepairOrderId = RepairOrder.Id,
+                    Type = file.ContentType,
+                    Filename = file.Name,
+                    Data = data,
+                    SizeBytes = data.LongLength
+                };
+
+                var response = await DataStoreService.CreateAsync(item);
+                if (response.Success && response.Data is not null)
+                    RepairOrder.DataStores.Add(response.Data);
+
+                Logger.LogDebug("Uploaded: {FileName} / {Size} bytes", file.Name, file.Size);
+            }
+            catch (IOException)
+            {
+                await DialogService.Alert("Datei ist größer als 10MB und konnte nicht hochgeladen werden.", "Datei zu groß");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Fehler beim Upload von {FileName}", file.Name);
+                await DialogService.Alert("Datei konnte nicht hochgeladen werden.", "Upload fehlgeschlagen");
+            }
         }
+    }
+
+    private bool IsSupportedContentType(string contentType)
+    {
+        if (string.IsNullOrWhiteSpace(contentType))
+            return false;
+
+        return contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)
+               || contentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task OnDownloadClicked(DataStoreVm item)
     {
-        // All OK. Download file!
-        await JS.InvokeVoidAsync("downloadFileFromByteArray", item.Filename, item.Data);
+        if (!string.IsNullOrWhiteSpace(item.DownloadUrl))
+        {
+            var separator = item.DownloadUrl.Contains('?') ? "&" : "?";
+            await JS.InvokeVoidAsync("open", $"{item.DownloadUrl}{separator}download=true", "_blank");
+            return;
+        }
+
+        if (item.Data is not null)
+        {
+            await JS.InvokeVoidAsync("downloadFileFromByteArray", item.Filename, item.Data);
+        }
     }
 }
