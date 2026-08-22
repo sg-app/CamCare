@@ -50,7 +50,6 @@ jobs:
   semantic-version:
     name: Semantic Versioning
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
