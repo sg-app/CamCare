@@ -71,7 +71,7 @@ jobs:
           node-version: 24
 
       - name: Install dependencies
-        run: npm install -g semantic-release semantic-release-dotnet @semantic-release/git @semantic-release/changelog @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/github
+        run: npm install -g semantic-release semantic-release-dotnet @semantic-release/git @semantic-release/changelog @semantic-release/release-notes-generator @semantic-release/github
 
       - name: Get current latest tag
         id: before
@@ -122,25 +122,26 @@ jobs:
         id: determine-tags
         run: |
           NEW_VERSION="${{ needs.semantic-version.outputs.new_version }}"
-          if [[ -n "$NEW_VERSION" ]]; then
-            if [[ "$NEW_VERSION" == *"beta"* ]]; then
-              CHANNEL="pre"
-            else
-              CHANNEL="latest"
-            fi
-            {
-              echo "tags<<EOF"
+          {
+            echo "tags<<EOF"
+            if [[ -n "$NEW_VERSION" ]]; then
+              if [[ "$NEW_VERSION" == *"beta"* ]]; then
+                CHANNEL="pre"
+              else
+                CHANNEL="latest"
+              fi
               echo "type=raw,value=$CHANNEL"
               echo "type=semver,pattern={{version}},value=$NEW_VERSION"
               echo "type=semver,pattern={{major}}.{{minor}},value=$NEW_VERSION"
               echo "type=semver,pattern={{major}},value=$NEW_VERSION"
-              echo "EOF"
-            } >> $GITHUB_ENV
-          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            echo "tags=type=raw,value=develop" >> $GITHUB_ENV
-          else
-            echo "tags=type=raw,value=latest" >> $GITHUB_ENV
-          fi
+            fi
+            if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+              echo "type=raw,value=develop"
+            elif [[ -z "$NEW_VERSION" ]]; then
+              echo "type=raw,value=latest"
+            fi
+            echo "EOF"
+          } >> $GITHUB_ENV
           echo "Version: $NEW_VERSION"
 
       - name: Docker meta
