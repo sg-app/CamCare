@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.Extensions.Options
+@using CamCare.Options
 <RadzenComponents @rendermode="InteractiveServer" />
 <RadzenLayout>
     <RadzenHeader>
@@ -32,10 +34,16 @@
         </div>
     </RadzenBody>
     <RadzenFooter>
-        Copyright © 2026 SGApp
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="8">
+            <RadzenLabel Text="Copyright © 2026 SGApp" />
+            <RadzenLabel Text="@($"Version: {AppVersionOptions.Value.FullSemVer}")" />
+        </RadzenStack>
     </RadzenFooter>
 </RadzenLayout>
 
 @code {
     bool sidebar1Expanded = true;
+
+    [Inject]
+    private IOptions<AppVersionOptions> AppVersionOptions { get; set; } = default!;
 }

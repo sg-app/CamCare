@@ -47,6 +47,7 @@ services:
         condition: service_healthy
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
+      - AppVersion__FullSemVer=${FULL_SEMVER:-dev}
       - ConnectionStrings__Default="Server=camcare-sql;Database=CamCare;User Id=sa;Password=${SA_PASSWORD}"
       - ConnectionStrings__AmicronDatabase=PathToFireBirdDb
       - ConnectionStrings__DefaultKrd="Server=camcare-sql;Database=Krd;User Id=sa;Password=${SA_PASSWORD}"

@@ -35,6 +35,7 @@ builder.Services.AddHealthChecks();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.Configure<ObjectStorageOptions>(builder.Configuration.GetSection(ObjectStorageOptions.SectionName));
+builder.Services.Configure<AppVersionOptions>(builder.Configuration.GetSection(AppVersionOptions.SectionName));
 builder.Services.AddSingleton<IObjectStorageService, MinioObjectStorageService>();
 builder.Services.AddSingleton<IMapper, Mapper>();
 builder.Services.AddSingleton<IMasterdataService, MasterdataService>();
