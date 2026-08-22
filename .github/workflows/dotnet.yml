@@ -1,4 +1,4 @@
-name: Build and Publish image to Github container repository
+name: CI / CD
 
 on:
   workflow_dispatch:
