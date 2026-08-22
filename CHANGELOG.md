@@ -1,3 +1,17 @@
+# [1.1.0-beta.3](https://github.com/sg-app/CamCare/compare/v1.1.0-beta.2...v1.1.0-beta.3) (2026-08-22)
+
+
+### Bug Fixes
+
+* pre-commit fixes ([a507c99](https://github.com/sg-app/CamCare/commit/a507c9996909b62793bc1f80a2737838dca53cbf))
+
+
+### Features
+
+* add launch configuration for .NET 10 ([e94511b](https://github.com/sg-app/CamCare/commit/e94511b07d6345a2d9881065a12743493fdb197a))
+* change objectstore from db to minio ([3dac572](https://github.com/sg-app/CamCare/commit/3dac57286c8ace3c6461b756e91191c648154c7b))
+* upgrade to NET10 ([f57ab7b](https://github.com/sg-app/CamCare/commit/f57ab7b4c758c93eb587a605ebb8d9895863d9e4))
+
 # [1.1.0-beta.2](https://github.com/sg-app/CamCare/compare/v1.1.0-beta.1...v1.1.0-beta.2) (2026-01-15)
 
 
