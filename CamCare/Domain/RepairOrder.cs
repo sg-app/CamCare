@@ -11,6 +11,11 @@ namespace CamCare.Domain
         public string? PiceOfEquipment { get; set; }
         public int RepairOrderStatusId { get; set; }
         public ShippingMethod ShippingMethod { get; set; }
+        public PackagingType PackagingType { get; set; }
+        public int? PackagingLength { get; set; }
+        public int? PackagingWidth { get; set; }
+        public int? PackagingHeight { get; set; }
+        public string? PackagingComment { get; set; }
         public int? LogisticProviderId { get; set; }
         public string? OrderNumber { get; set; }
         public string? QuoteNumber { get; set; }

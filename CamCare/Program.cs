@@ -1,6 +1,7 @@
 using CamCare.Components;
 using CamCare.Interfaces.Persistence;
 using CamCare.Interfaces.Services;
+using CamCare.Options;
 using CamCare.Persistence;
 using CamCare.Services;
 using FluentValidation;
@@ -29,8 +30,12 @@ builder.Services.AddFluxor(options =>
 
 
 builder.Services.AddRadzenComponents();
+builder.Services.AddMemoryCache();
+builder.Services.AddHealthChecks();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddPersistence(builder.Configuration);
+builder.Services.Configure<ObjectStorageOptions>(builder.Configuration.GetSection(ObjectStorageOptions.SectionName));
+builder.Services.AddSingleton<IObjectStorageService, MinioObjectStorageService>();
 builder.Services.AddSingleton<IMapper, Mapper>();
 builder.Services.AddSingleton<IMasterdataService, MasterdataService>();
 builder.Services.AddScoped<IRepairOrderStatusService, RepairOrderStatusService>();
@@ -75,7 +80,22 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
+app.MapHealthChecks("/health");
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapGet("/api/datastores/{id:int}/file", async (int id, bool? download, IDataStoreService dataStoreService) =>
+{
+    var response = await dataStoreService.GetFileAsync(id);
+    if (!response.Success || response.Data is null)
+        return Results.NotFound();
+
+    return Results.File(
+        response.Data.Content,
+        response.Data.ContentType,
+        (download ?? false) ? response.Data.Filename : null,
+        enableRangeProcessing: true);
+});
 
 app.Run();

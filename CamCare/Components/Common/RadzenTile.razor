@@ -3,9 +3,8 @@
 @if (Visible)
 {
     <button @ref="@Element" style="@Style" disabled="@IsDisabled" tabindex="@(Disabled ? -1 : TabIndex)"
-            type="@Enum.GetName(typeof(ButtonType), ButtonType).ToLower()"
-            @attributes="Attributes" class="@GetCssClass()" id="@GetId()"
-            @onclick="@OnClick">
+            type="@(Enum.GetName(typeof(ButtonType), ButtonType)?.ToLowerInvariant() ?? "button")" @attributes="Attributes"
+            class="@GetCssClass()" id="@GetId()" @onclick="@OnClick">
         <span class="rz-tile-box">
             @if (ChildContent != null)
             {
@@ -15,7 +14,8 @@
             {
                 @if (!string.IsNullOrEmpty(@Icon))
                 {
-                    <i class="notranslate rz-button-icon-left rzi" style="@(!string.IsNullOrEmpty(IconColor) ? $"color:{IconColor}" : null)">@Icon</i>
+                    <i class="notranslate rz-button-icon-left rzi"
+                       style="@(!string.IsNullOrEmpty(IconColor) ? $"color:{IconColor}" : null)">@Icon</i>
                 }
                 @if (!string.IsNullOrEmpty(Image))
                 {

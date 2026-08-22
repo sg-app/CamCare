@@ -17,7 +17,7 @@ namespace CamCare.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.8")
+                .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -37,7 +37,6 @@ namespace CamCare.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<byte[]>("Data")
-                        .IsRequired()
                         .HasColumnType("varbinary(max)");
 
                     b.Property<string>("Description")
@@ -47,8 +46,14 @@ namespace CamCare.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ObjectKey")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("RepairOrderId")
                         .HasColumnType("int");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -234,6 +239,21 @@ namespace CamCare.Migrations
 
                     b.Property<string>("OrderNumber")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PackagingComment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("PackagingHeight")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PackagingLength")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PackagingType")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PackagingWidth")
+                        .HasColumnType("int");
 
                     b.Property<string>("PiceOfEquipment")
                         .HasColumnType("nvarchar(max)");

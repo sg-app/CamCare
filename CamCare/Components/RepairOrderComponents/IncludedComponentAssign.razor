@@ -1,11 +1,5 @@
-﻿<RadzenDataGrid class="mt-2"
-                @ref="_grid"
-                Data="@RepairOrder.IncludedComponents"
-                TItem="IncludedComponentVm"
-                RowUpdate="OnRowUpdate"
-                RowCreate="OnRowCreate"
-                Density="Density.Compact"
-                EmptyText="Keine Positionen eingetragen">
+﻿<RadzenDataGrid class="mt-2" @ref="_grid" Data="@RepairOrder.IncludedComponents" TItem="IncludedComponentVm"
+                RowUpdate="OnRowUpdate" RowCreate="OnRowCreate" Density="Density.Compact" EmptyText="Keine Positionen eingetragen">
     <HeaderTemplate>
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
 
@@ -20,17 +14,14 @@
             </Template>
             <EditTemplate Context="item">
 
-                <RadzenAutoComplete Value="@item.Description"
-                                    Change="OnDescriptionChanged"
-                                    Data=@_includedComponents
-                                    LoadData="OnLoadDefectiveCatalog"
-                                    OpenOnFocus="true"
-                                    TextProperty="@nameof(IncludedComponentVm.Description)"
-                                    Style="width: 100%"
+                <RadzenAutoComplete Value="@item.Description" Change="OnDescriptionChanged" Data=@_includedComponents
+                                    LoadData="OnLoadDefectiveCatalog" OpenOnFocus="true"
+                                    TextProperty="@nameof(IncludedComponentVm.Description)" Style="width: 100%"
                                     InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Artikel Katalog" }, { "onkeydown", "if(event.key==='Enter'){event.stopPropagation();event.preventDefault();}" } })" />
             </EditTemplate>
         </RadzenDataGridColumn>
-        <RadzenDataGridInlineEditColumn TItem="IncludedComponentVm" DeleteRow="OnDeleteRow" SaveRow="OnSaveRow" CancelEditRow="OnCancelEditRow" EditRow="OnEditRow" />
+        <RadzenDataGridInlineEditColumn TItem="IncludedComponentVm" DeleteRow="OnDeleteRow" SaveRow="OnSaveRow"
+                                        CancelEditRow="OnCancelEditRow" EditRow="OnEditRow" />
     </Columns>
 </RadzenDataGrid>
 
@@ -44,9 +35,6 @@
     private RadzenDataGrid<IncludedComponentVm> _grid = default!;
     private IncludedComponentVm? _toEdit;
 
-    private CancellationTokenSource? _defectiveChangedCts;
-    private object? _lastDefectiveChangedValue;
-
 
     protected override Task OnParametersSetAsync()
     {
@@ -54,7 +42,7 @@
             throw new ArgumentNullException(nameof(RepairOrder), "RepairOrder cannot be null");
 
         Logger.LogInformation("RepairOrder set to: {repairOrder}", RepairOrder);
-        RepairOrder.Defectives ??= [];
+        RepairOrder.IncludedComponents ??= [];
         return base.OnParametersSetAsync();
     }
 
@@ -64,7 +52,8 @@
 
         ServiceResponse<Paginated<IncludedComponentVm>> response;
         if (!string.IsNullOrEmpty(args.Filter))
-            response = await IncludedComponentService.GetAllAsync(args, rp => rp.Description.ToLower().Contains(args.Filter.ToLower()));
+            response = await IncludedComponentService.GetAllAsync(args, rp =>
+rp.Description.ToLower().Contains(args.Filter.ToLower()));
         else
             response = await IncludedComponentService.GetAllAsync(args);
 
@@ -122,26 +111,11 @@
 
     private async Task OnDescriptionChanged(dynamic item)
     {
-        _defectiveChangedCts?.Cancel();
-        _defectiveChangedCts = new CancellationTokenSource();
-        var token = _defectiveChangedCts.Token;
-        _lastDefectiveChangedValue = item;
-        Logger.LogDebug("Description changed to {item}.", _lastDefectiveChangedValue);
-        try
-        {
-            await Task.Delay(200, token); // 200 ms warten
-            if (!token.IsCancellationRequested)
-            {
-                var savedDefective = _includedComponents?.FirstOrDefault(d => d.Description == item?.ToString());
-                _toEdit!.Id = savedDefective?.Id ?? 0;
-                _toEdit!.Description = savedDefective?.Description ?? item.ToString();
-                await _grid.UpdateRow(_toEdit);
-            }
-        }
-        catch (TaskCanceledException)
-        {
-            // Ignorieren, weil ein neuer Wert kam
-        }
+        Logger.LogDebug("Description changed to {item}.", item as string);
+        var savedComponent = _includedComponents?.FirstOrDefault(d => d.Description == item?.ToString());
+        _toEdit!.Id = savedComponent?.Id ?? 0;
+        _toEdit!.Description = savedComponent?.Description ?? item.ToString();
+        await _grid.UpdateRow(_toEdit);
     }
 
 }

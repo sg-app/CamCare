@@ -11,7 +11,7 @@ namespace CamCare.Components.Common
         /// </summary>
         /// <value>The child content.</value>
         [Parameter]
-        public RenderFragment ChildContent { get; set; }
+        public RenderFragment? ChildContent { get; set; }
 
         /// <summary>
         /// Gets or sets the index of the tab.
@@ -39,21 +39,21 @@ namespace CamCare.Components.Common
         /// </summary>
         /// <value>The icon.</value>
         [Parameter]
-        public string Icon { get; set; }
+        public string? Icon { get; set; }
 
         /// <summary>
         /// Gets or sets the icon color.
         /// </summary>
         /// <value>The icon color.</value>
         [Parameter]
-        public string IconColor { get; set; }
+        public string? IconColor { get; set; }
 
         /// <summary>
         /// Gets or sets the image.
         /// </summary>
         /// <value>The image.</value>
         [Parameter]
-        public string Image { get; set; }
+        public string? Image { get; set; }
 
         /// <summary>
         /// Gets or sets the button style.

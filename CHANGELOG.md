@@ -1,3 +1,44 @@
+# [1.1.0-beta.5](https://github.com/sg-app/CamCare/compare/v1.1.0-beta.4...v1.1.0-beta.5) (2026-08-22)
+
+# [1.1.0-beta.4](https://github.com/sg-app/CamCare/compare/v1.1.0-beta.3...v1.1.0-beta.4) (2026-08-22)
+
+# [1.1.0-beta.3](https://github.com/sg-app/CamCare/compare/v1.1.0-beta.2...v1.1.0-beta.3) (2026-08-22)
+
+
+### Bug Fixes
+
+* pre-commit fixes ([a507c99](https://github.com/sg-app/CamCare/commit/a507c9996909b62793bc1f80a2737838dca53cbf))
+
+
+### Features
+
+* add launch configuration for .NET 10 ([e94511b](https://github.com/sg-app/CamCare/commit/e94511b07d6345a2d9881065a12743493fdb197a))
+* change objectstore from db to minio ([3dac572](https://github.com/sg-app/CamCare/commit/3dac57286c8ace3c6461b756e91191c648154c7b))
+* upgrade to NET10 ([f57ab7b](https://github.com/sg-app/CamCare/commit/f57ab7b4c758c93eb587a605ebb8d9895863d9e4))
+
+# [1.1.0-beta.2](https://github.com/sg-app/CamCare/compare/v1.1.0-beta.1...v1.1.0-beta.2) (2026-01-15)
+
+
+### Features
+
+* **layout:** update footer copyright to 2026 ([2fcc6c1](https://github.com/sg-app/CamCare/commit/2fcc6c1231d3bd846e29f80e11533855b30f13a9))
+* **ui:** format ArrivedAt column with date and time ([f506932](https://github.com/sg-app/CamCare/commit/f50693235c5147ab73abe30a57fec5cca48fdba3))
+
+# [1.1.0-beta.1](https://github.com/sg-app/CamCare/compare/v1.0.1-beta.1...v1.1.0-beta.1) (2026-01-15)
+
+
+### Features
+
+* **forms:** migrate to Blazilla, improve validation UX ([8cd87c8](https://github.com/sg-app/CamCare/commit/8cd87c850ac0d8b98dffc859b84829f3f787490e))
+* **repair-order:** add packaging type and dimensions ([dd6aaf1](https://github.com/sg-app/CamCare/commit/dd6aaf1e00511039188244ca83e8649081473d16))
+
+## [1.0.1-beta.1](https://github.com/sg-app/CamCare/compare/v1.0.0...v1.0.1-beta.1) (2025-12-10)
+
+
+### Bug Fixes
+
+* remove debounce from OnDescriptionChanged methods ([c70b9d7](https://github.com/sg-app/CamCare/commit/c70b9d7647b38dda16fd56ba70eaa00dbe0b1bcd))
+
 # 1.0.0 (2025-11-20)
 
 

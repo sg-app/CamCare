@@ -1,5 +1,5 @@
 {
-    "branches": [
+  "branches": [
     {
       "name": "main",
       "channel": "latest",
@@ -13,26 +13,34 @@
       "prerelease": "beta"
     }
   ],
-    "plugins": [
-      "@semantic-release/commit-analyzer",
-      "@semantic-release/release-notes-generator",
-      ["@semantic-release/changelog", {
+  "plugins": [
+    "./.github/plugins/always-release.js",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/changelog",
+      {
         "changelogFile": "CHANGELOG.md"
-      }],
-      [
-        "semantic-release-dotnet",
-        {
-          "paths": ["CamCare/CamCare.csproj"],
-          "debug": true
-        }
-      ],
-      ["@semantic-release/github", {
+      }
+    ],
+    [
+      "semantic-release-dotnet",
+      {
+        "paths": ["CamCare/CamCare.csproj"],
+        "debug": true
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
         "assets": []
-      }],
-      ["@semantic-release/git", {
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
         "assets": ["CHANGELOG.md", "CamCare/CamCare.csproj"],
         "message": "chore(release): ${nextRelease.version} [skip ci]"
-      }]
+      }
     ]
-  }
-  
+  ]
+}

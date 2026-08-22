@@ -17,13 +17,35 @@ namespace CamCare.Services
         protected readonly IMapper _mapper;
         protected readonly ILogger _logger;
         protected readonly NotificationService _notificationService;
+        protected readonly IMasterdataService? _masterdataService;
 
-        protected DbService(IAppDbContextFactory contextFactory, IMapper mapper, ILogger logger, NotificationService notificationService)
+        protected DbService(
+            IAppDbContextFactory contextFactory,
+            IMapper mapper,
+            ILogger logger,
+            NotificationService notificationService,
+            IMasterdataService? masterdataService = null)
         {
             _contextFactory = contextFactory;
             _mapper = mapper;
             _logger = logger;
             _notificationService = notificationService;
+            _masterdataService = masterdataService;
+        }
+
+        protected virtual async Task InvalidateMasterdataCacheAsync()
+        {
+            if (_masterdataService is null)
+                return;
+
+            try
+            {
+                await _masterdataService.TryReloadAsync<TVm>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Masterdata-Cache konnte fÃ¼r {ViewModelType} nicht invalidiert werden.", typeof(TVm).Name);
+            }
         }
 
         protected void NotifyError(string summary, int duration = 5000, NotificationSeverity severity = NotificationSeverity.Error)
@@ -37,7 +59,7 @@ namespace CamCare.Services
             {
                 Severity = severity,
                 Summary = summary,
-                Detail = message,
+                Detail = message ?? string.Empty,
                 Duration = duration
             });
         }
@@ -118,7 +140,7 @@ namespace CamCare.Services
 
                 if (typeof(IAuditableEntity).IsAssignableFrom(typeof(TEntity)))
                 {
-                    // Optional: Filter für archivierte Einträge
+                    // Optional: Filter fï¿½r archivierte Eintrï¿½ge
                     query = query.Where(e => !((IAuditableEntity)e).ArchivedAt.HasValue);
                 }
 
@@ -134,7 +156,7 @@ namespace CamCare.Services
                 // Filtering
                 if (!string.IsNullOrEmpty(args.Filter))
                 {
-                    // Hinweis: Für produktiven Einsatz sollte ein dynamischer Filterbuilder verwendet werden
+                    // Hinweis: Fï¿½r produktiven Einsatz sollte ein dynamischer Filterbuilder verwendet werden
                 }
 
                 // Sorting
@@ -178,6 +200,7 @@ namespace CamCare.Services
                 _mapper.Map(vm, entity);
                 context.Set<TEntity>().Add(entity);
                 await context.SaveChangesAsync();
+                await InvalidateMasterdataCacheAsync();
                 var resultVm = _mapper.Map<TEntity, TVm>(entity);
                 return ServiceResponse.Success(resultVm);
             }
@@ -199,6 +222,7 @@ namespace CamCare.Services
                     return ServiceResponse.Failure<TVm>("Nicht gefunden");
                 _mapper.Map(vm, entity);
                 await context.SaveChangesAsync();
+                await InvalidateMasterdataCacheAsync();
                 var resultVm = _mapper.Map<TEntity, TVm>(entity);
                 return ServiceResponse.Success(resultVm);
             }
@@ -229,16 +253,17 @@ namespace CamCare.Services
                     context.Set<TEntity>().Remove(entity);
                 }
                 await context.SaveChangesAsync();
+                await InvalidateMasterdataCacheAsync();
                 return ServiceResponse.Success(true);
             }
             catch (DbUpdateException updateException)
             {
-                string errorMessage = "Fehler beim Löschen des Datensatzes";
+                string errorMessage = "Fehler beim Lï¿½schen des Datensatzes";
                 if (updateException.InnerException is not null)
                 {
                     if (updateException.InnerException.Message.Contains("conflicted with the REFERENCE constraint"))
                     {
-                        errorMessage = "Löschen nicht möglich, da noch verknüpfte Daten existieren.";
+                        errorMessage = "Lï¿½schen nicht mï¿½glich, da noch verknï¿½pfte Daten existieren.";
                     }
                 }
                 _logger.LogError(updateException, "Fehler in DeleteAsync");
@@ -248,8 +273,8 @@ namespace CamCare.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Fehler in DeleteAsync");
-                NotifyError("Fehler beim Löschen des Datensatzes");
-                return ServiceResponse.Failure<bool>("Fehler beim Löschen des Datensatzes", ex);
+                NotifyError("Fehler beim Lï¿½schen des Datensatzes");
+                return ServiceResponse.Failure<bool>("Fehler beim Lï¿½schen des Datensatzes", ex);
             }
         }
     }
