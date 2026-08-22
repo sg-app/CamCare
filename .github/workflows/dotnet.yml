@@ -33,9 +33,10 @@ jobs:
 
       - name: Download shared GitVersion config
         run: |
-          curl -sSfL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          curl -sSfL -H "Authorization: Bearer ${{ secrets.SHAREDREPOTOKEN }}" \
+            -H "Accept: application/vnd.github.v3.raw" \
             -o GitVersion.yml \
-            "https://raw.githubusercontent.com/sg-app/Shared/main/GitVersion.yml"
+            "https://api.github.com/repos/sg-app/Shared/contents/GitVersion.yml?ref=main"
 
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
@@ -168,9 +169,10 @@ jobs:
 
       - name: Download shared GitVersion config
         run: |
-          curl -sSfL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          curl -sSfL -H "Authorization: Bearer ${{ secrets.SHAREDREPOTOKEN }}" \
+            -H "Accept: application/vnd.github.v3.raw" \
             -o GitVersion.yml \
-            "https://raw.githubusercontent.com/sg-app/Shared/main/GitVersion.yml"
+            "https://api.github.com/repos/sg-app/Shared/contents/GitVersion.yml?ref=main"
 
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@51d325634925d7d9ce0a7efc2c586c0bc2b9eee6 # v3.2.1
@@ -226,9 +228,10 @@ jobs:
       - name: Download shared git-cliff config
         if: steps.check-tag.outputs.exists == 'false'
         run: |
-          curl -sSfL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          curl -sSfL -H "Authorization: Bearer ${{ secrets.SHAREDREPOTOKEN }}" \
+            -H "Accept: application/vnd.github.v3.raw" \
             -o cliff.toml \
-            "https://raw.githubusercontent.com/sg-app/Shared/main/cliff.toml"
+            "https://api.github.com/repos/sg-app/Shared/contents/cliff.toml?ref=main"
 
       - name: Generate Changelog
         if: steps.check-tag.outputs.exists == 'false'
