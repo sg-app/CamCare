@@ -71,7 +71,7 @@ namespace CamCare.Services
                     ro.ArrivedAt = rovm.ArrivedAt.ToUniversalTime();
                     ro.CreatedAt = rovm.CreatedAt;
                     ro.UpdatedAt = rovm.UpdatedAt;
-                    if(rovm.PackagingType == PackagingType.CustomersBox)
+                    if (rovm.PackagingType == PackagingType.CustomersBox)
                     {
                         ro.PackagingLength = null;
                         ro.PackagingWidth = null;
@@ -142,6 +142,8 @@ namespace CamCare.Services
                     dsvm.Filename = ds.Filename;
                     dsvm.Description = ds.Description;
                     dsvm.Data = ds.Data;
+                    dsvm.ObjectKey = ds.ObjectKey;
+                    dsvm.SizeBytes = ds.SizeBytes;
                     dsvm.Type = ds.Type;
                     break;
                 case DataStoreVm dsvm when destination is DataStore ds:
@@ -150,6 +152,8 @@ namespace CamCare.Services
                     ds.Filename = dsvm.Filename;
                     ds.Description = dsvm.Description;
                     ds.Data = dsvm.Data;
+                    ds.ObjectKey = dsvm.ObjectKey;
+                    ds.SizeBytes = dsvm.SizeBytes;
                     ds.Type = dsvm.Type;
                     break;
                 case RepairOrderStatus ros when destination is RepairOrderStatusVm rosvm:

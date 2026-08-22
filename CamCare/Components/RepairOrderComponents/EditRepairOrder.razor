@@ -10,7 +10,8 @@
             <RadzenText>@RepairOrder.Customer?.Plz @RepairOrder.Customer?.Ort</RadzenText>
         </RadzenFieldset>
 
-        <RadzenFieldset Text="@(string.IsNullOrEmpty(RepairOrder.CameraSerialNumber) ? "Einzelteil" : "Kamera")" class="w-50">
+        <RadzenFieldset Text="@(string.IsNullOrEmpty(RepairOrder.CameraSerialNumber) ? "Einzelteil" : "Kamera")"
+                        class="w-50">
             @if (string.IsNullOrEmpty(RepairOrder.CameraSerialNumber))
             {
                 <RadzenFormField class="d-block" Text="Einzelteil Beschreibung">
@@ -48,7 +49,6 @@
     private RepairOrderVm RepairOrder => RepairOrderState.Value.CurrentRepairOrder!;
     private bool _entryWithoutCamera;
     private bool _cameraNotFound;
-    private bool _isEditMode = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -59,7 +59,8 @@
     private void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
     {
         var sb = new System.Text.StringBuilder();
-        foreach (var message in args.Errors)
+        var errors = args.Errors?.ToList() ?? [];
+        foreach (var message in errors)
         {
             sb.AppendLine(message);
         }
@@ -78,7 +79,7 @@
                 builder.CloseElement(); // strong
 
                 builder.OpenElement(seq++, "ul");
-                foreach (var message in args.Errors)
+                foreach (var message in errors)
                 {
                     builder.OpenElement(seq++, "li");
                     builder.AddContent(seq++, message);

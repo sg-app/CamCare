@@ -20,7 +20,7 @@ namespace CamCare.Persistence
 
             var krdConnectionString = configuration.GetConnectionString("DefaultKrd");
             if (string.IsNullOrEmpty(krdConnectionString))
-                throw new InvalidOperationException("Connection string 'Default' is not configured.");
+                throw new InvalidOperationException("Connection string 'DefaultKrd' is not configured.");
 
             services.AddDbContextFactory<KrdDbContext>(options =>
             {
