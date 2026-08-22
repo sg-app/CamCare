@@ -50,7 +50,7 @@
 | UI                  | Radzen.Blazor                                |
 | State Management    | Fluxor (inkl. Redux DevTools im Debug-Modus) |
 | Datenbank           | SQL Server (Entity Framework Core)           |
-| Altsystem-Anbindung | Firebird (Amicron, KRD)                      |
+| Altsystem-Anbindung | Amicron (Firebird), KRD (MSSQL)              |
 | Object Storage      | MinIO (S3-kompatibel, AWSSDK.S3)             |
 | Validierung         | FluentValidation                             |
 | Logging             | NLog                                         |
