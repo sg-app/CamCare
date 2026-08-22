@@ -1,3 +1,5 @@
+# [1.1.0-beta.5](https://github.com/sg-app/CamCare/compare/v1.1.0-beta.4...v1.1.0-beta.5) (2026-08-22)
+
 # [1.1.0-beta.4](https://github.com/sg-app/CamCare/compare/v1.1.0-beta.3...v1.1.0-beta.4) (2026-08-22)
 
 # [1.1.0-beta.3](https://github.com/sg-app/CamCare/compare/v1.1.0-beta.2...v1.1.0-beta.3) (2026-08-22)
