@@ -124,21 +124,23 @@ jobs:
           NEW_VERSION="${{ needs.semantic-version.outputs.new_version }}"
           {
             echo "tags<<EOF"
-            if [[ -n "$NEW_VERSION" ]]; then
-              if [[ "$NEW_VERSION" == *"beta"* ]]; then
-                CHANNEL="pre"
-              else
-                CHANNEL="latest"
-              fi
-              echo "type=raw,value=$CHANNEL"
-              echo "type=semver,pattern={{version}},value=$NEW_VERSION"
-              echo "type=semver,pattern={{major}}.{{minor}},value=$NEW_VERSION"
-              echo "type=semver,pattern={{major}},value=$NEW_VERSION"
-            fi
             if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+              # Develop: nur Beta-Version, pre-Channel und develop-Tag
+              if [[ -n "$NEW_VERSION" ]]; then
+                echo "type=raw,value=pre"
+                echo "type=semver,pattern={{version}},value=$NEW_VERSION"
+              fi
               echo "type=raw,value=develop"
-            elif [[ -z "$NEW_VERSION" ]]; then
-              echo "type=raw,value=latest"
+            else
+              # Main: latest-Channel und vollständige SemVer-Tags
+              if [[ -n "$NEW_VERSION" ]]; then
+                echo "type=raw,value=latest"
+                echo "type=semver,pattern={{version}},value=$NEW_VERSION"
+                echo "type=semver,pattern={{major}}.{{minor}},value=$NEW_VERSION"
+                echo "type=semver,pattern={{major}},value=$NEW_VERSION"
+              else
+                echo "type=raw,value=latest"
+              fi
             fi
             echo "EOF"
           } >> $GITHUB_ENV
