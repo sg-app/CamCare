@@ -71,7 +71,7 @@ jobs:
           node-version: 24
 
       - name: Install dependencies
-        run: npm install -g semantic-release semantic-release-dotnet @semantic-release/git @semantic-release/changelog @semantic-release/release-notes-generator @semantic-release/github
+        run: npm install -g semantic-release @semantic-release/release-notes-generator @semantic-release/github
 
       - name: Get current latest tag
         id: before
