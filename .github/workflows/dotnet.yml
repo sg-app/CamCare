@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       semVer: ${{ steps.gitversion.outputs.semVer }}
+      fullSemVer: ${{ steps.gitversion.outputs.fullSemVer }}
       majorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}
       major: ${{ steps.gitversion.outputs.major }}
       minor: ${{ steps.gitversion.outputs.minor }}
@@ -50,6 +51,7 @@ jobs:
       - name: Output Version
         run: |
           echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
+          echo "FullSemVer: ${{ steps.gitversion.outputs.fullSemVer }}"
           echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}"
           echo "Major: ${{ steps.gitversion.outputs.major }}"
           echo "Minor: ${{ steps.gitversion.outputs.minor }}"
@@ -162,6 +164,8 @@ jobs:
           push: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            FULL_SEMVER=${{ needs.gitversion.outputs.fullSemVer }}
 
   release:
     name: Create Release
