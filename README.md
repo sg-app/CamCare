@@ -1,4 +1,21 @@
-# CamCare
+<p align="center">
+  <img src="CamCare/wwwroot/CamCare.png" alt="CamCare Logo" width="200"/>
+</p>
+
+<h1 align="center">CamCare</h1>
+
+<p align="center">
+  <a href="https://github.com/sg-app/CamCare/releases">
+    <img alt="GitHub Release" src="https://img.shields.io/github/v/release/sg-app/CamCare?include_prereleases&label=Release&style=for-the-badge"/>
+  </a>
+  <a href="https://github.com/sg-app/CamCare/blob/main/LICENSE.txt">
+    <img alt="License" src="https://img.shields.io/github/license/sg-app/CamCare?style=for-the-badge"/>
+  </a>
+  <a href="https://github.com/sg-app/CamCare/commits/main">
+    <img alt="Last Commit" src="https://img.shields.io/github/last-commit/sg-app/CamCare?style=for-the-badge"/>
+  </a>
+  <img alt=".NET 10" src="https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge"/>
+</p>
 
 **CamCare** ist eine webbasierte Anwendung zur Verwaltung von Kamera-Reparaturaufträgen. Sie unterstützt den gesamten Prozess von der Erfassung eingehender Geräte über die Reparaturdurchführung bis hin zur Auslieferung – inklusive Stammdatenverwaltung, Statusverfolgung, Logistik und Dokumentenablage.
 
