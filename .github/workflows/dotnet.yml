@@ -101,6 +101,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      tags: ''
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -142,7 +144,7 @@ jobs:
           tags: ${{ env.tags }}
 
       - name: Login to GitHub Container Registry
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
@@ -161,86 +163,33 @@ jobs:
           platforms: linux/amd64
           context: .
           file: "./CamCare/Dockerfile"
-          push: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') }}
+          push: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')  && github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+          sbom: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')  && github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+          provenance: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')  && github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
-            FULL_SEMVER=${{ needs.gitversion.outputs.fullSemVer }}
+            FULL_SEMVER=${{ needs.gitversion.outputs.semVer }}
 
   release:
     name: Create Release
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' }}
     needs: [gitversion, build, docker]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: write
+    env:
+      SEMVER: ${{ needs.gitversion.outputs.semVer }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
-      - name: Download shared GitVersion config
-        run: |
-          curl -sSfL -H "Authorization: Bearer ${{ secrets.SHAREDREPOTOKEN }}" \
-            -H "Accept: application/vnd.github.v3.raw" \
-            -o GitVersion.yml \
-            "https://api.github.com/repos/sg-app/Shared/contents/GitVersion.yml?ref=main"
-
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@51d325634925d7d9ce0a7efc2c586c0bc2b9eee6 # v3.2.1
-        with:
-          versionSpec: '6.x'
-
-      - name: Determine Version
-        id: gitversion
-        uses: gittools/actions/gitversion/execute@51d325634925d7d9ce0a7efc2c586c0bc2b9eee6 # v3.2.1
-        with:
-          useConfigFile: true
-
-      - name: Check if tag already exists
-        id: check-tag
-        run: |
-          if git rev-parse "${{ steps.gitversion.outputs.semVer }}" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag ${{ steps.gitversion.outputs.semVer }} already exists - skipping release"
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Creating release for ${{ steps.gitversion.outputs.semVer }}"
-          fi
-
-      - name: Create Git Tag
-        if: steps.check-tag.outputs.exists == 'false'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ steps.gitversion.outputs.semVer }}"
-          git push origin "${{ steps.gitversion.outputs.semVer }}"
-
-      - name: Determine changelog args
-        id: changelog-args
-        if: steps.check-tag.outputs.exists == 'false'
-        run: |
-          VERSION="${{ steps.gitversion.outputs.semVer }}"
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            # Release: Changelog vom letzten stabilen Release bis HEAD
-            LAST_STABLE=$(git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "")
-            if [[ -n "$LAST_STABLE" ]]; then
-              echo "args=$LAST_STABLE..HEAD --tag $VERSION" >> $GITHUB_OUTPUT
-              echo "Changelog range: $LAST_STABLE..HEAD"
-            else
-              echo "args=--unreleased --tag $VERSION" >> $GITHUB_OUTPUT
-              echo "Changelog range: unreleased (no stable tag found)"
-            fi
-          else
-            # Pre-Release: Changelog vom letzten Pre-Release/Release bis HEAD
-            echo "args=--unreleased --tag $VERSION" >> $GITHUB_OUTPUT
-            echo "Changelog range: unreleased"
-          fi
-
       - name: Download shared git-cliff config
-        if: steps.check-tag.outputs.exists == 'false'
         run: |
           curl -sSfL -H "Authorization: Bearer ${{ secrets.SHAREDREPOTOKEN }}" \
             -H "Accept: application/vnd.github.v3.raw" \
@@ -248,18 +197,14 @@ jobs:
             "https://api.github.com/repos/sg-app/Shared/contents/cliff.toml?ref=main"
 
       - name: Generate Changelog
-        if: steps.check-tag.outputs.exists == 'false'
         uses: orhun/git-cliff-action@f50e11560dce63f7c33227798f90b924471a88b5 # v4.8.0
-        with:
-          config: cliff.toml
-          args: ${{ steps.changelog-args.outputs.args }}
         env:
           OUTPUT: CHANGELOG.md
 
       - name: Create GitHub Release
-        if: steps.check-tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.2.0
         with:
-          tag_name: ${{ steps.gitversion.outputs.semVer }}
+          tag_name: ${{ env.SEMVER }}
+          name: Release ${{ env.SEMVER }}
           body_path: CHANGELOG.md
-          prerelease: ${{ github.ref == 'refs/heads/develop' }}
+          prerelease: ${{ github.ref != 'refs/heads/main' }}
