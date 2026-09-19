@@ -1,5 +1,6 @@
 ﻿@page "/RepairOrders"
 @using CamCare.Store.RepairOrderFeature
+@implements IDisposable
 
 <div class="pe-2">
     <RadzenCheckBox TValue="bool" Value="_archiveOrders" ValueChanged="@((val) => { _archiveOrders = val; _grid.Reload(); })" Name="_archiveOrders" />
@@ -141,6 +142,8 @@
     [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
     [Inject] protected IDispatcher Dispatcher { get; set; } = default!;
+    [Inject] protected IRepairOrderChangeSubscriber RepairOrderChangeSubscriber { get; set; } = default!;
+    [Inject] protected ILogger<RepairOrders> Logger { get; set; } = default!;
 
     private RadzenDataGrid<RepairOrderVm> _grid = default!;
     private IList<RepairOrderVm>? _data;
@@ -169,5 +172,34 @@
     {
         Dispatcher.Dispatch(new SetCurrentRepairOrderAction(item));
         NavigationManager.NavigateTo($"/EditRepairOrder");
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        RepairOrderChangeSubscriber.Changed += OnRepairOrdersChanged;
+    }
+
+    public void Dispose()
+    {
+        RepairOrderChangeSubscriber.Changed -= OnRepairOrdersChanged;
+    }
+
+    private async void OnRepairOrdersChanged(object? sender, RepairOrderChangedEvent changeEvent)
+    {
+        try
+        {
+            if (_grid is null)
+                return;
+
+            // Auf den Synchronisationskontext des eigenen Circuits marshallen und das Grid neu laden.
+            await InvokeAsync(() => _grid.Reload());
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex,
+                "Fehler beim Aktualisieren der RepairOrder-Liste nach Änderung (Auftrag {RepairOrderId}).",
+                changeEvent.RepairOrderId);
+        }
     }
 }

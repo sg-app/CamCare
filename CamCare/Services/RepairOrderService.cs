@@ -11,11 +11,13 @@ namespace CamCare.Services
     public class RepairOrderService : DbService<RepairOrder, RepairOrderVm>, IRepairOrderService
     {
         private readonly IAmicronDataService _amicronDataService;
+        private readonly IRepairOrderChangeBroadcaster _changeBroadcaster;
 
-        public RepairOrderService(IAppDbContextFactory contextFactory, IMapper mapper, ILogger<RepairOrderService> logger, NotificationService notificationService, IAmicronDataService amicronDataService)
+        public RepairOrderService(IAppDbContextFactory contextFactory, IMapper mapper, ILogger<RepairOrderService> logger, NotificationService notificationService, IAmicronDataService amicronDataService, IRepairOrderChangeBroadcaster changeBroadcaster)
             : base(contextFactory, mapper, logger, notificationService)
         {
             _amicronDataService = amicronDataService;
+            _changeBroadcaster = changeBroadcaster;
         }
 
         public async Task<ServiceResponse<Paginated<RepairOrderVm>>> GetAllAsync(LoadDataArgs args, bool viewCurrentOrders)
@@ -222,6 +224,8 @@ namespace CamCare.Services
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
+                await _changeBroadcaster.PublishAsync(new RepairOrderChangedEvent(entity.Id, RepairOrderChangeType.Created));
+
                 var resultVm = _mapper.Map<RepairOrder, RepairOrderVm>(entity);
                 return ServiceResponse.Success(resultVm);
             }
@@ -400,6 +404,8 @@ namespace CamCare.Services
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                await _changeBroadcaster.PublishAsync(new RepairOrderChangedEvent(entity.Id, RepairOrderChangeType.Updated));
 
                 var resultVm = _mapper.Map<RepairOrder, RepairOrderVm>(entity);
                 return ServiceResponse.Success(resultVm);

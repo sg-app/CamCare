@@ -46,6 +46,8 @@ builder.Services.AddScoped<IRepairPositionService, RepairPositionService>();
 builder.Services.AddScoped<IDefectiveService, DefectiveService>();
 builder.Services.AddScoped<IIncludedComponentService, IncludedComponentService>();
 builder.Services.AddScoped<IRepairOrderService, RepairOrderService>();
+builder.Services.AddSingleton<IRepairOrderChangeBroadcaster, RepairOrderChangeBroadcaster>();
+builder.Services.AddScoped<IRepairOrderChangeSubscriber, RepairOrderChangeSubscriber>();
 builder.Services.AddScoped<IDataStoreService, DataStoreService>();
 builder.Services.AddScoped<IAmicronDataService, AmicronDataService>();
 
