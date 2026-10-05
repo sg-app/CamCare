@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace CamCare.Domain
 {
@@ -7,7 +7,9 @@ namespace CamCare.Domain
         [Key]
         public int Id { get; set; }
         public int CustomerId { get; set; }
+        public bool? IsCamera { get; set; }
         public string? SerialNumber { get; set; }
+        public bool SerialNumberNeedsMaintenance { get; set; }
         public string? PiceOfEquipment { get; set; }
         public int RepairOrderStatusId { get; set; }
         public ShippingMethod ShippingMethod { get; set; }

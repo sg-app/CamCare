@@ -1,5 +1,6 @@
 ﻿@page "/EditRepairOrder"
 @inherits FluxorComponent
+@using CamCare.Models.Amicron
 @using CamCare.Store.RepairOrderFeature
 <RadzenTemplateForm Data="@RepairOrder" TItem="RepairOrderVm" Submit="OnSaveClicked" InvalidSubmit="OnInvalidSubmit">
     <FluentValidator />
@@ -10,17 +11,59 @@
             <RadzenText>@RepairOrder.Customer?.Plz @RepairOrder.Customer?.Ort</RadzenText>
         </RadzenFieldset>
 
-        <RadzenFieldset Text="@(string.IsNullOrEmpty(RepairOrder.CameraSerialNumber) ? "Einzelteil" : "Kamera")"
-                        class="w-50">
-            @if (string.IsNullOrEmpty(RepairOrder.CameraSerialNumber))
+        <RadzenFieldset Text="Reparaturgegenstand" class="w-50">
+            <RadzenRadioButtonList TValue="bool?" Orientation="Orientation.Horizontal" Value="@RepairOrder.IsCamera"
+                                   ValueChanged="@(args => OnItemTypeChanged(args))">
+                <Items>
+                    <RadzenRadioButtonListItem Text="Mit Seriennummer" Value="true" />
+                    <RadzenRadioButtonListItem Text="Einzelteil" Value="false" />
+                </Items>
+            </RadzenRadioButtonList>
+
+            @if (RepairOrder.IsCamera == true)
             {
-                <RadzenFormField class="d-block" Text="Einzelteil Beschreibung">
-                    <RadzenTextBox @bind-Value="RepairOrder.PiceOfEquipment" Style="width:600px" />
+                <RadzenFormField class="d-block pt-2" Text="Seriennummer">
+                    @if (_serialNotListed)
+                    {
+                        <RadzenTextBox @bind-Value="RepairOrder.CameraSerialNumber" Style="width:100%"
+                                       Placeholder="Seriennummer manuell erfassen" />
+                    }
+                    else
+                    {
+                        <RadzenDropDown TValue="string" Value="@RepairOrder.CameraSerialNumber"
+                                        ValueChanged="@(args => OnCameraSerialChanged(args))" Data="@_customerSerials"
+                                        TextProperty="@nameof(Serials.DisplayName)" ValueProperty="@nameof(Serials.Seriennummer)"
+                                        AllowClear="true" AllowFiltering="true"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        FilterOperator="StringFilterOperator.Contains" AllowVirtualization="true"
+                                        EmptyText="Keine Seriennummern für diesen Kunden gefunden" Style="width:100%" />
+                    }
+                </RadzenFormField>
+
+                @if (RepairOrder.SerialNumberNeedsMaintenance == true)
+                {
+                    <RadzenText class="d-block text-danger pt-2">
+                        Die Seriennummer ist nicht für den Kunden hinterlegt und muss von einem Mitarbeiter nachgepflegt werden.
+                    </RadzenText>
+                }
+                <div class="pt-2">
+                    <RadzenCheckBox TValue="bool" Value="@_serialNotListed"
+                                    ValueChanged="@(args => OnSerialNotListedChanged(args))" Name="_serialNotListed" />
+                    <RadzenLabel Text="Seriennummer nicht gelistet – Seriennummer manuell erfassen"
+                                 Component="_serialNotListed" class="rz-ms-2" />
+                </div>
+            }
+            else if (RepairOrder.IsCamera == false)
+            {
+                <RadzenFormField class="d-block pt-2" Text="Einzelteil Beschreibung" Style="width:100%">
+                    <RadzenTextBox @bind-Value="RepairOrder.PiceOfEquipment" Style="width:100%" />
                 </RadzenFormField>
             }
             else
             {
-                <RadzenText>@RepairOrder.CameraSerialNumber</RadzenText>
+                <RadzenText class="d-block pt-2 text-secondary">
+                    Bitte legen Sie fest, ob es sich um ein Gerät mit Seriennummer oder ein Einzelteil handelt.
+                </RadzenText>
             }
         </RadzenFieldset>
     </RadzenStack>
@@ -47,13 +90,62 @@
     [Parameter] public int RepairOrderId { get; set; }
 
     private RepairOrderVm RepairOrder => RepairOrderState.Value.CurrentRepairOrder!;
-    private bool _entryWithoutCamera;
-    private bool _cameraNotFound;
+    private IList<Serials> _customerSerials = new List<Serials>();
+    private bool _serialNotListed;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
         ArgumentNullException.ThrowIfNull(RepairOrderState);
+
+        await LoadCustomerSerialsAsync();
+        _serialNotListed = RepairOrder.SerialNumberNeedsMaintenance == true
+            || (!string.IsNullOrEmpty(RepairOrder.CameraSerialNumber)
+                && _customerSerials.All(s => s.Seriennummer != RepairOrder.CameraSerialNumber));
+    }
+
+    private async Task LoadCustomerSerialsAsync()
+    {
+        if (RepairOrder.CustomerId is not int customerId)
+            return;
+
+        var response = await AmicronDataService.GetSerialsFromCustomerIdAsync(customerId);
+        if (response.Success)
+        {
+            _customerSerials = response.Data ?? new List<Serials>();
+        }
+    }
+
+    private void OnItemTypeChanged(bool? isCamera)
+    {
+        if (RepairOrder.IsCamera == isCamera)
+            return;
+
+        RepairOrder.IsCamera = isCamera;
+        RepairOrder.CameraSerialNumber = null;
+        RepairOrder.Serials = null;
+        RepairOrder.PiceOfEquipment = null;
+        RepairOrder.SerialNumberNeedsMaintenance = false;
+        _serialNotListed = false;
+    }
+
+    private void OnCameraSerialChanged(string? serialNumber)
+    {
+        RepairOrder.CameraSerialNumber = serialNumber;
+        RepairOrder.Serials = _customerSerials.FirstOrDefault(s => s.Seriennummer == serialNumber);
+        if (!string.IsNullOrEmpty(serialNumber))
+        {
+            RepairOrder.SerialNumberNeedsMaintenance = false;
+            _serialNotListed = false;
+        }
+    }
+
+    private void OnSerialNotListedChanged(bool isNotListed)
+    {
+        _serialNotListed = isNotListed;
+        RepairOrder.CameraSerialNumber = null;
+        RepairOrder.Serials = null;
+        RepairOrder.SerialNumberNeedsMaintenance = isNotListed;
     }
 
     private void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
@@ -102,25 +194,5 @@
     private void OnCancelClicked(MouseEventArgs args)
     {
         NavigationManager.NavigateTo("/RepairOrders");
-    }
-
-    private void OnWithoutCameraSelected(bool args)
-    {
-        _entryWithoutCamera = args;
-        if (args)
-        {
-            _cameraNotFound = false;
-            RepairOrder.CameraSerialNumber = null;
-        }
-    }
-
-    private void OnCameraNotFountSelected(bool args)
-    {
-        _cameraNotFound = args;
-        RepairOrder.CameraSerialNumber = null;
-        if (args)
-        {
-            _entryWithoutCamera = false;
-        }
     }
 }

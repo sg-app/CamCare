@@ -6,7 +6,9 @@ namespace CamCare.Models
     {
         public int Id { get; set; }
         public int? CustomerId { get; set; }
+        public bool? IsCamera { get; set; }
         public string? CameraSerialNumber { get; set; }
+        public bool SerialNumberNeedsMaintenance { get; set; }
         public string? PiceOfEquipment { get; set; }
         public int RepairOrderStatusId { get; set; }
         public ShippingMethod ShippingMethod { get; set; }
