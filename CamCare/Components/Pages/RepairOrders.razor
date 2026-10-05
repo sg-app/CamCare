@@ -1,22 +1,16 @@
 ﻿@page "/RepairOrders"
 @using CamCare.Store.RepairOrderFeature
+@implements IDisposable
 
 <div class="pe-2">
-    <RadzenCheckBox TValue="bool" Value="_archiveOrders" ValueChanged="@((val) => { _archiveOrders = val; _grid.Reload(); })" Name="_archiveOrders" />
+    <RadzenCheckBox TValue="bool" Value="_archiveOrders"
+                    ValueChanged="@((val) => { _archiveOrders = val; _grid.Reload(); })" Name="_archiveOrders" />
     <RadzenLabel Text="Archivierte Aufträge" Component="_archiveOrders" class="rz-ms-2" />
 </div>
 <InsertButton InsertClick="OnInsertClicked" />
 
-<RadzenDataGrid @ref="_grid"
-                TItem="RepairOrderVm"
-                Data="_data"
-                LoadData="OnLoadData"
-                IsLoading="_isLoading"
-                Count="_totalCount"
-                AllowPaging="true"
-                PageSize="20"
-                Density="Density.Compact"
-                AllowColumnResize="true"
+<RadzenDataGrid @ref="_grid" TItem="RepairOrderVm" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
+                Count="_totalCount" AllowPaging="true" PageSize="20" Density="Density.Compact" AllowColumnResize="true"
                 ShowEmptyMessage="false">
     <Columns>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status" Width="180px">
@@ -29,15 +23,26 @@
                 @item.Customer?.DisplayName
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Kamera" Width="180px">
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Seriennummer" Width="220px">
             <Template Context="item">
-                @item.CameraSerialNumber
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                    @if (item.SerialNumberNeedsMaintenance || item.IsCamera is null)
+                    {
+                        <RadzenIcon Icon="warning" IconColor="@Colors.Warning" />
+                        @item.CameraSerialNumber
+                    }
+                    else
+                    {
+                        @item.CameraSerialNumber
+                    }
+                </RadzenStack>
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eigenversand" Width="100px">
             <Template Context="item">
                 @{
-                    var icon = item.ShippingMethod == ShippingMethod.SentByCustomer ? "check_box" : "check_box_outline_blank";
+                    var icon = item.ShippingMethod == ShippingMethod.SentByCustomer ? "check_box" :
+                "check_box_outline_blank";
                 }
                 <RadzenIcon Icon="@icon" />
             </Template>
@@ -47,7 +52,8 @@
                 @item.LogisticProvider?.Name
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eingetroffen" Property="@nameof(RepairOrderVm.ArrivedAt)" Width="150px" SortOrder="SortOrder.Descending">
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eingetroffen" Property="@nameof(RepairOrderVm.ArrivedAt)"
+                              Width="150px" SortOrder="SortOrder.Descending">
             <Template Context="item">
                 @item.ArrivedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
             </Template>
@@ -141,6 +147,8 @@
     [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
     [Inject] protected IDispatcher Dispatcher { get; set; } = default!;
+    [Inject] protected IRepairOrderChangeSubscriber RepairOrderChangeSubscriber { get; set; } = default!;
+    [Inject] protected ILogger<RepairOrders> Logger { get; set; } = default!;
 
     private RadzenDataGrid<RepairOrderVm> _grid = default!;
     private IList<RepairOrderVm>? _data;
@@ -162,12 +170,41 @@
 
     private void OnInsertClicked(MouseEventArgs args)
     {
-        NavigationManager.NavigateTo("/CreateRepairOrder");
+        NavigationManager.NavigateTo("/Customers");
     }
 
     private void OnEditRowClicked(RepairOrderVm item)
     {
         Dispatcher.Dispatch(new SetCurrentRepairOrderAction(item));
         NavigationManager.NavigateTo($"/EditRepairOrder");
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        RepairOrderChangeSubscriber.Changed += OnRepairOrdersChanged;
+    }
+
+    public void Dispose()
+    {
+        RepairOrderChangeSubscriber.Changed -= OnRepairOrdersChanged;
+    }
+
+    private async void OnRepairOrdersChanged(object? sender, RepairOrderChangedEvent changeEvent)
+    {
+        try
+        {
+            if (_grid is null)
+                return;
+
+            // Auf den Synchronisationskontext des eigenen Circuits marshallen und das Grid neu laden.
+            await InvokeAsync(() => _grid.Reload());
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex,
+                "Fehler beim Aktualisieren der RepairOrder-Liste nach Änderung (Auftrag {RepairOrderId}).",
+                changeEvent.RepairOrderId);
+        }
     }
 }

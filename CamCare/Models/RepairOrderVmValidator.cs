@@ -14,6 +14,21 @@ namespace CamCare.Models
                 .GreaterThan(0)
                 .WithMessage("Bearbeitungsstatus muss ausgewählt sein.");
 
+            RuleFor(r => r.IsCamera)
+                .NotNull()
+                .WithMessage("Reparaturgegenstand muss ausgewählt sein.")
+                .When(r => r.Id > 0);
+
+            RuleFor(r => r.CameraSerialNumber)
+                .NotEmpty()
+                .WithMessage("Seriennummer muss angegeben werden.")
+                .When(r => r.IsCamera == true);
+
+            RuleFor(r => r.PiceOfEquipment)
+                .NotEmpty()
+                .WithMessage("Einzelteil Beschreibung darf nicht leer sein.")
+                .When(r => r.IsCamera == false);
+
             RuleFor(r => r.LogisticProviderId)
                 .NotNull()
                 .GreaterThan(0)

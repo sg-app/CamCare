@@ -21,7 +21,9 @@ namespace CamCare.Services
                 case RepairOrder ro when destination is RepairOrderVm rovm:
                     rovm.Id = ro.Id;
                     rovm.CustomerId = ro.CustomerId;
+                    rovm.IsCamera = ro.IsCamera ?? (string.IsNullOrEmpty(ro.SerialNumber) ? (bool?)null : true);
                     rovm.CameraSerialNumber = ro.SerialNumber;
+                    rovm.SerialNumberNeedsMaintenance = ro.SerialNumberNeedsMaintenance;
                     rovm.PiceOfEquipment = ro.PiceOfEquipment;
                     rovm.RepairOrderStatusId = ro.RepairOrderStatusId;
                     rovm.ShippingMethod = ro.ShippingMethod;
@@ -55,7 +57,9 @@ namespace CamCare.Services
                 case RepairOrderVm rovm when destination is RepairOrder ro:
                     ro.Id = rovm.Id;
                     ro.CustomerId = rovm.CustomerId ?? 0;
+                    ro.IsCamera = rovm.IsCamera;
                     ro.SerialNumber = rovm.CameraSerialNumber;
+                    ro.SerialNumberNeedsMaintenance = rovm.SerialNumberNeedsMaintenance;
                     ro.PiceOfEquipment = rovm.PiceOfEquipment;
                     ro.RepairOrderStatusId = rovm.RepairOrderStatusId;
                     ro.ShippingMethod = rovm.ShippingMethod;
