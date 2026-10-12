@@ -42,10 +42,13 @@ namespace CamCare.Services
                     return ServiceResponse.Failure<DataStoreVm>("Keine Datei zum Speichern vorhanden.");
 
                 if (vm.Data.LongLength > _objectStorageOptions.MaxFileSizeBytes)
-                    return ServiceResponse.Failure<DataStoreVm>("Datei ist zu groß. Maximal 10MB erlaubt.");
+                {
+                    var maxSizeMb = _objectStorageOptions.MaxFileSizeBytes / (1024 * 1024);
+                    return ServiceResponse.Failure<DataStoreVm>($"Datei ist zu groß. Maximal {maxSizeMb}MB erlaubt.");
+                }
 
                 if (!IsSupportedContentType(vm.Type))
-                    return ServiceResponse.Failure<DataStoreVm>("Nur PDF- und Bilddateien sind erlaubt.");
+                    return ServiceResponse.Failure<DataStoreVm>("Nur Bild-, PDF- und Videodateien sind erlaubt.");
 
                 var objectKey = BuildObjectKey(vm.RepairOrderId, vm.Filename);
                 var metadata = BuildObjectMetadata(vm.RepairOrderId, vm.Filename);
@@ -254,6 +257,7 @@ namespace CamCare.Services
                 return false;
 
             return contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)
+                   || contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase)
                    || SupportedContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase);
         }
 
