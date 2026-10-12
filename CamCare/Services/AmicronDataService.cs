@@ -250,10 +250,11 @@ namespace CamCare.Services
         {
             using var connection = new FbConnection(ConnectionString);
             await connection.OpenAsync();
-            var query = "SELECT ser.SERIENNR, a.BEZEICHNUNG " +
+            var query = "SELECT ser.SERIENNR, MIN(a.BEZEICHNUNG) " +
                 "FROM ARTSERNR ser " +
                 "LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
-                "WHERE ser.KUNDENLFDNR = @CustomerId";
+                "WHERE ser.KUNDENLFDNR = @CustomerId " +
+                "GROUP BY ser.SERIENNR";
 
             using var command = new FbCommand(query, connection);
             command.Parameters.AddWithValue("@CustomerId", customerId);
@@ -284,18 +285,18 @@ namespace CamCare.Services
 
             using var connection = new FbConnection(ConnectionString);
             await connection.OpenAsync();
-            var query = "SELECT FIRST @Top SKIP @Skip ser.LFDNR, ser.ARTIKELLFDNR, ser.SERIENNR, ser.KUNDENLFDNR, a.BEZEICHNUNG " +
+            var query = "SELECT FIRST @Top SKIP @Skip MIN(ser.LFDNR), MIN(ser.ARTIKELLFDNR), ser.SERIENNR, MIN(ser.KUNDENLFDNR), MIN(a.BEZEICHNUNG) " +
                 "FROM ARTSERNR ser " +
                 "LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
                 "WHERE ser.KUNDENLFDNR = @CustomerId";
-            var countQuery = "SELECT COUNT(*) FROM ARTSERNR WHERE KUNDENLFDNR = @CustomerId";
+            var countQuery = "SELECT COUNT(DISTINCT SERIENNR) FROM ARTSERNR WHERE KUNDENLFDNR = @CustomerId";
 
             if (filter is not null)
             {
                 query += " AND UPPER(ser.SERIENNR) LIKE UPPER(@Filter)";
                 countQuery += " AND UPPER(SERIENNR) LIKE UPPER(@Filter)";
             }
-            query += $" ORDER BY ser.LFDNR";
+            query += " GROUP BY ser.SERIENNR ORDER BY MIN(ser.LFDNR)";
 
             logger.LogDebug(query);
             logger.LogDebug(countQuery);
@@ -342,12 +343,12 @@ namespace CamCare.Services
 
             using var connection = new FbConnection(ConnectionString);
             await connection.OpenAsync();
-            var query = new StringBuilder("SELECT FIRST @Top SKIP @Skip ser.LFDNR, ser.SERIENNR, a.BEZEICHNUNG, ad.NR, ad.NAME, ad.PLZ" +
+            var query = new StringBuilder("SELECT FIRST @Top SKIP @Skip MIN(ser.LFDNR), ser.SERIENNR, MIN(a.BEZEICHNUNG), MIN(ad.NR), MIN(ad.NAME), MIN(ad.PLZ)" +
                 " FROM ARTSERNR ser " +
                 " LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
                 " LEFT JOIN ADRESSEN ad ON ser.KUNDENLFDNR = ad.LFDNR " +
                 " WHERE 1=1");
-            var countQuery = new StringBuilder("SELECT COUNT(*)" +
+            var countQuery = new StringBuilder("SELECT COUNT(DISTINCT ser.SERIENNR)" +
                 " FROM ARTSERNR ser" +
                 " LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
                 " LEFT JOIN ADRESSEN ad ON ser.KUNDENLFDNR = ad.LFDNR " +
@@ -378,7 +379,7 @@ namespace CamCare.Services
                 AddFilterCondition(command, command2, query, countQuery, "UPPER(ad.NR) LIKE UPPER(@CustomerNumber)", "@CustomerNumber", $"%{filter.CustomerNumber}%");
             }
 
-            query.Append(" ORDER BY ser.LFDNR");
+            query.Append(" GROUP BY ser.SERIENNR ORDER BY MIN(ser.LFDNR)");
 
             logger.LogDebug(query.ToString());
 
