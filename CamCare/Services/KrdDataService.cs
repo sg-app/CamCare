@@ -48,5 +48,29 @@ namespace CamCare.Services
                 return ServiceResponse.Failure<Paginated<Krd_DataVm>>("Fehler beim Abrufen der Daten", ex);
             }
         }
+
+        /// <summary>
+        /// Liefert alle KRD-Altdaten (historische Aufträge) zu einer Seriennummer für das Logbuch.
+        /// </summary>
+        public async Task<ServiceResponse<List<Krd_DataVm>>> GetBySerialNumberAsync(string serialNumber)
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+                var items = await context
+                    .KrdData
+                    .AsNoTracking()
+                    .Where(k => k.CameraSerial == serialNumber)
+                    .ToListAsync();
+
+                var vms = items.Select(e => _mapper.Map<Krd_Data, Krd_DataVm>(e)).ToList();
+                return ServiceResponse.Success(vms);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler beim Abrufen der KRD-Altdaten für Seriennummer {SerialNumber}", serialNumber);
+                return ServiceResponse.Failure<List<Krd_DataVm>>("Fehler beim Abrufen der KRD-Altdaten", ex);
+            }
+        }
     }
 }

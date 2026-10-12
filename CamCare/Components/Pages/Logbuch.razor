@@ -1,0 +1,326 @@
+@page "/Logbuch"
+@attribute [Authorize]
+@using CamCare.Models.Amicron
+@using CamCare.Store.RepairOrderFeature
+@implements IDisposable
+
+<RadzenText TextStyle="TextStyle.H4">Logbuch</RadzenText>
+<RadzenText TextStyle="TextStyle.Body1" class="mb-2">
+    Anhand einer Seriennummer werden alle zugehörigen Aufträge als Historie angezeigt.
+</RadzenText>
+
+<RadzenFormField Text="Seriennummer" class="py-2">
+    <RadzenDropDown TValue="string" Value="_selectedSerial" ValueChanged="OnValueChanged" Data="_serialnumbers"
+                    LoadData="OnLoadSerialsData" Count="_totalCountSerials" TextProperty="@nameof(Serials.DisplayName)"
+                    ValueProperty="@nameof(Serials.Seriennummer)" AllowVirtualization="true" AllowClear="true" AllowFiltering="true"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.Contains"
+                    Placeholder="Seriennummer auswählen oder filtern…" Style="width:500px" />
+</RadzenFormField>
+
+@if (string.IsNullOrEmpty(_selectedSerial))
+{
+    <RadzenText TextStyle="TextStyle.Subtitle1">
+        Bitte eine Seriennummer auswählen, um die Auftragshistorie anzuzeigen.
+    </RadzenText>
+}
+else
+{
+    @if (_selectedSerialInfo is not null)
+    {
+        <RadzenFieldset Text="Gerät">
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="2rem">
+                <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
+                    <RadzenLabel Text="Seriennummer" />
+                    <RadzenText>@_selectedSerialInfo.Seriennummer</RadzenText>
+                </RadzenStack>
+                <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
+                    <RadzenLabel Text="Artikel" />
+                    <RadzenText>@_selectedSerialInfo.Artikelbezeichnung</RadzenText>
+                </RadzenStack>
+            </RadzenStack>
+        </RadzenFieldset>
+    }
+
+    <RadzenText TextStyle="TextStyle.H5" class="mt-3">
+        Reparaturaufträge (@((_data?.Count ?? 0)))
+    </RadzenText>
+    @if (_data is null)
+    {
+        <RadzenProgressBar Indeterminate="true" Style="height:6px;margin-top:0.5rem" />
+    }
+    else if (_data.Count == 0)
+    {
+        <RadzenText TextStyle="TextStyle.Subtitle1">Keine Reparaturaufträge für diese Seriennummer gefunden.</RadzenText>
+    }
+    else
+    {
+        <RadzenDataGrid TItem="RepairOrderVm" Data="_data" AllowPaging="true" PageSize="20" AllowFiltering="true"
+                        FilterMode="FilterMode.Simple" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                        Density="Density.Compact" AllowColumnResize="true" ShowEmptyMessage="false">
+            <Columns>
+                <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status" Width="180px">
+                    <Template Context="item">
+                        <RadzenBadge Style="@item.RepairOrderStatus?.BadageStyle">@item.RepairOrderStatus?.Name</RadzenBadge>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="RepairOrderVm" Title="Kunde">
+                    <Template Context="item">
+                        @item.Customer?.DisplayName
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="RepairOrderVm" Title="Seriennummer" Width="220px">
+                    <Template Context="item">
+                        @item.CameraSerialNumber
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eigenversand" Width="110px">
+                    <Template Context="item">
+                        @{
+                            var icon = item.ShippingMethod == ShippingMethod.SentByCustomer ? "check_box" : "check_box_outline_blank";
+                        }
+                        <RadzenIcon Icon="@icon" />
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="RepairOrderVm" Title="Versandunternehmen" Width="160px">
+                    <Template Context="item">
+                        @item.LogisticProvider?.Name
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eingetroffen" Width="170px" SortOrder="SortOrder.Descending">
+                    <Template Context="item">
+                        @item.ArrivedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="RepairOrderVm" Title="Zuletzt geändert" Width="170px">
+                    <Template Context="item">
+                        @(item.UpdatedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss"))
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn Width="60px">
+                    <Template Context="item">
+                        <RadzenButton ButtonStyle="ButtonStyle.Info" Size="ButtonSize.ExtraSmall" Icon="edit"
+                                      Click="() => OnEditClicked(item)"
+                                      MouseEnter="@(args => ShowTooltip(args, "Auftrag bearbeiten."))" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+            <Template Context="item">
+                @if (item.IncludedComponents?.Any() == true)
+                {
+                    <RadzenText TextStyle="TextStyle.H5" class="d-block">Mitgelieferte Komponenten</RadzenText>
+                    @foreach (var component in item.IncludedComponents)
+                    {
+                        <RadzenText class="d-block">@component.Description</RadzenText>
+                    }
+                }
+                <RadzenText TextStyle="TextStyle.H5" class="d-block">Defekte</RadzenText>
+                @foreach (var defective in item.Defectives ?? [])
+                {
+                    <RadzenText class="d-block">@defective.Description</RadzenText>
+                }
+                <RadzenFieldset Text="Reparaturpositionen">
+                    @if (item.RepairPositions?.Any() == true)
+                    {
+                        <RadzenTable AllowAlternatingRows="true">
+                            <RadzenTableHeader>
+                                <RadzenTableHeaderRow>
+                                    <RadzenTableHeaderCell Style="width:150px">Artikelnummer</RadzenTableHeaderCell>
+                                    <RadzenTableHeaderCell Style="width:100px">Anzahl</RadzenTableHeaderCell>
+                                    <RadzenTableHeaderCell>Beschreibung</RadzenTableHeaderCell>
+                                </RadzenTableHeaderRow>
+                            </RadzenTableHeader>
+                            <RadzenTableBody>
+                                @foreach (var repair in item.RepairPositions ?? [])
+                                {
+                                    <RadzenTableRow>
+                                        <RadzenTableCell>@repair.Artikelnummer</RadzenTableCell>
+                                        <RadzenTableCell>@repair.Quantity</RadzenTableCell>
+                                        <RadzenTableCell>@repair.Description</RadzenTableCell>
+                                    </RadzenTableRow>
+                                }
+                            </RadzenTableBody>
+                        </RadzenTable>
+                    }
+                    else
+                    {
+                        <RadzenText TextStyle="TextStyle.H6">Keine Reparaturen durchgeführt.</RadzenText>
+                    }
+                </RadzenFieldset>
+                <RadzenFieldset Text="Techniker">
+                    @if (item.Employees?.Any() == true)
+                    {
+                        <RadzenText>@string.Join(", ", item.Employees.Select(e => e.DisplayName))</RadzenText>
+                    }
+                    else
+                    {
+                        <RadzenText TextStyle="TextStyle.H6">Keine Techniker zugeordnet.</RadzenText>
+                    }
+                </RadzenFieldset>
+                <RadzenFieldset Text="Status Historie">
+                    @if (item.RepairOrderStatusHistories?.Any() == true)
+                    {
+                        <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
+                            @foreach (var history in item.RepairOrderStatusHistories)
+                            {
+                                <RadzenStack Orientation="Orientation.Horizontal">
+                                    <RadzenText>@history.ChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</RadzenText>
+                                    <RadzenBadge Style="@history.RepairOrderStatus?.BadageStyle">@history.RepairOrderStatus?.Name</RadzenBadge>
+                                </RadzenStack>
+                            }
+                        </RadzenStack>
+                    }
+                </RadzenFieldset>
+            </Template>
+        </RadzenDataGrid>
+    }
+<RadzenText TextStyle="TextStyle.H5" class="mt-4">
+        KRD-Altdaten (@((_krdData?.Count ?? 0)))
+    </RadzenText>
+    @if (_krdLoadFailed)
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Warning" class="mb-2">
+            Die KRD-Altdaten konnten nicht geladen werden.
+        </RadzenAlert>
+    }
+    else if (_krdData is null)
+    {
+        <RadzenProgressBar Indeterminate="true" Style="height:6px;margin-top:0.5rem" />
+    }
+    else if (_krdData.Count == 0)
+    {
+        <RadzenText TextStyle="TextStyle.Subtitle1">Keine KRD-Altdaten für diese Seriennummer gefunden.</RadzenText>
+    }
+    else
+    {
+        <RadzenDataGrid TItem="Krd_DataVm" Data="_krdData" AllowPaging="true" PageSize="20" AllowFiltering="true"
+                        FilterMode="FilterMode.Simple" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                        Density="Density.Compact" AllowColumnResize="true" ShowEmptyMessage="false">
+            <Columns>
+                <RadzenDataGridColumn TItem="Krd_DataVm" Property="@nameof(Krd_DataVm.Kunde)" Title="Kunde" MinWidth="200px"
+                                      FilterPlaceholder="Filter" />
+                <RadzenDataGridColumn TItem="Krd_DataVm" Property="@nameof(Krd_DataVm.CameraSerial)" Title="Seriennummer" Width="130px"
+                                      FilterPlaceholder="Filter" />
+                <RadzenDataGridColumn TItem="Krd_DataVm" Property="@nameof(Krd_DataVm.Description)" Title="Beschreibung" MinWidth="160px"
+                                      FilterPlaceholder="Filter" />
+                <RadzenDataGridColumn TItem="Krd_DataVm" Property="@nameof(Krd_DataVm.CameraType)" Title="Typ" Width="110px"
+                                      Filterable="false" />
+                <RadzenDataGridColumn TItem="Krd_DataVm" Property="@nameof(Krd_DataVm.AdditionalComponents)" Title="Mitgeliefert" MinWidth="160px"
+                                      Filterable="false" />
+                <RadzenDataGridColumn TItem="Krd_DataVm" Property="@nameof(Krd_DataVm.AmicronNumbers)" Title="Amicron" Width="100px"
+                                      FilterPlaceholder="Filter" />
+                <RadzenDataGridColumn TItem="Krd_DataVm" Property="@nameof(Krd_DataVm.ArrivedAt)" Title="Eingetroffen" Width="180px"
+                                      FormatString="{0:dd.MM.yyyy HH:mm:ss}" SortOrder="SortOrder.Descending" />
+                <RadzenDataGridColumn TItem="Krd_DataVm" Property="@nameof(Krd_DataVm.Techniker)" Title="Techniker" MinWidth="160px"
+                                      FilterPlaceholder="Filter" />
+            </Columns>
+        </RadzenDataGrid>
+    }
+}
+@code {
+    [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
+    [Inject] protected IKrdDataService KrdDataService { get; set; } = default!;
+    [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
+    [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] protected IDispatcher Dispatcher { get; set; } = default!;
+    [Inject] protected IRepairOrderChangeSubscriber RepairOrderChangeSubscriber { get; set; } = default!;
+    [Inject] protected TooltipService TooltipService { get; set; } = default!;
+    [Inject] protected ILogger<Logbuch> Logger { get; set; } = default!;
+
+    private IEnumerable<Serials>? _serialnumbers;
+    private int _totalCountSerials;
+    private string? _selectedSerial;
+    private Serials? _selectedSerialInfo;
+
+    private IList<RepairOrderVm>? _data;
+    private IList<Krd_DataVm>? _krdData;
+    private bool _krdLoadFailed;
+
+    private async Task OnLoadSerialsData(LoadDataArgs args)
+    {
+        var response = await AmicronDataService.GetAllSerialsAsync(args);
+        if (response.Success)
+        {
+            _serialnumbers = response.Data?.Items;
+            _totalCountSerials = response.Data?.TotalCount ?? 0;
+        }
+    }
+
+    private async Task OnValueChanged(string? serialnumber)
+    {
+        _selectedSerial = serialnumber;
+        _selectedSerialInfo = _serialnumbers?.FirstOrDefault(s => s.Seriennummer == serialnumber);
+
+        if (string.IsNullOrEmpty(serialnumber))
+        {
+            _data = null;
+            _krdData = null;
+            _krdLoadFailed = false;
+            return;
+        }
+
+        await LoadHistoryAsync();
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        if (string.IsNullOrEmpty(_selectedSerial))
+            return;
+
+        _data = null;
+        _krdData = null;
+        _krdLoadFailed = false;
+
+        // Reparaturaufträge (CamCare)
+        var ordersResponse = await RepairOrderService.GetBySerialNumberAsync(_selectedSerial);
+        _data = ordersResponse.Success ? (ordersResponse.Data ?? []).ToList() : [];
+
+        // KRD-Altdaten (historische Aufträge)
+        var krdResponse = await KrdDataService.GetBySerialNumberAsync(_selectedSerial);
+        if (krdResponse.Success)
+        {
+            _krdData = (krdResponse.Data ?? []).ToList();
+        }
+        else
+        {
+            _krdLoadFailed = true;
+            _krdData = [];
+        }
+    }
+
+    private void OnEditClicked(RepairOrderVm item)
+    {
+        Dispatcher.Dispatch(new SetCurrentRepairOrderAction(item));
+        NavigationManager.NavigateTo("/EditRepairOrder");
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        RepairOrderChangeSubscriber.Changed += OnRepairOrdersChanged;
+    }
+
+    public void Dispose()
+    {
+        RepairOrderChangeSubscriber.Changed -= OnRepairOrdersChanged;
+    }
+
+    private async void OnRepairOrdersChanged(object? sender, RepairOrderChangedEvent changeEvent)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(_selectedSerial))
+                return;
+
+            await InvokeAsync(LoadHistoryAsync);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex,
+                "Fehler beim Aktualisieren des Logbuchs nach Änderung (Auftrag {RepairOrderId}).",
+                changeEvent.RepairOrderId);
+        }
+    }
+
+    void ShowTooltip(ElementReference elementReference, string text) => TooltipService.Open(elementReference, text, new TooltipOptions
+    { Duration = 1000 });
+}
