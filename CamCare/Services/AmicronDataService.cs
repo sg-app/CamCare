@@ -104,7 +104,7 @@ namespace CamCare.Services
 
             if (filter?.KdNummer is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(KDNUMMER) LIKE UPPER(@KdNummer)", "@KdNummer", $"%{filter.KdNummer}%");
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(KDNUMMER) LIKE UPPER(@KdNummer)", "@KdNummer", $"%{filter.KdNummer}%", CustomerNumberFilterMaxLength);
             }
             if (filter?.Name is not null)
             {
@@ -112,7 +112,7 @@ namespace CamCare.Services
             }
             if (filter?.Plz is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "PLZ LIKE @Plz", "@Plz", $"{filter.Plz}%");
+                AddFilterCondition(command, command2, query, countQuery, "PLZ LIKE @Plz", "@Plz", $"{filter.Plz}%", PostalCodeFilterMaxLength);
             }
             if (filter?.Ort is not null)
             {
@@ -188,7 +188,7 @@ namespace CamCare.Services
 
             if (filter?.KdNummer is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(KDNUMMER) LIKE UPPER(@KdNummer)", "@KdNummer", $"%{filter.KdNummer}%");
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(KDNUMMER) LIKE UPPER(@KdNummer)", "@KdNummer", $"%{filter.KdNummer}%", CustomerNumberFilterMaxLength);
             }
             if (filter?.Name is not null)
             {
@@ -196,7 +196,7 @@ namespace CamCare.Services
             }
             if (filter?.Plz is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "PLZ LIKE @Plz", "@Plz", $"{filter.Plz}%");
+                AddFilterCondition(command, command2, query, countQuery, "PLZ LIKE @Plz", "@Plz", $"{filter.Plz}%", PostalCodeFilterMaxLength);
             }
             if (filter?.Ort is not null)
             {
@@ -280,7 +280,7 @@ namespace CamCare.Services
         {
             var top = args.Top ?? 100;
             var skip = args.Skip ?? 0;
-            var filter = string.IsNullOrEmpty(args.Filter) ? null : $"%{args.Filter}%";
+            var filter = string.IsNullOrEmpty(args.Filter) ? null : $"%{Truncate(args.Filter, SerialNumberFilterMaxLength)}%";
             var result = new List<Serials>();
 
             using var connection = new FbConnection(ConnectionString);
@@ -336,9 +336,11 @@ namespace CamCare.Services
 
         public async Task<ServiceResponse<Paginated<Serials>>> GetAllSerialsAsync(LoadDataArgs args, SerialsFilter? filter = null)
         {
-            var top = args.Top ?? 100;
-            var skip = args.Skip ?? 0;
-            var result = new List<Serials>();
+            try
+            {
+                var top = args.Top ?? 100;
+                var skip = args.Skip ?? 0;
+                var result = new List<Serials>();
 
 
             using var connection = new FbConnection(ConnectionString);
@@ -364,7 +366,7 @@ namespace CamCare.Services
             }
             if (filter?.SerialNumber is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(ser.SERIENNR) LIKE UPPER(@Serialnumber)", "@Serialnumber", $"%{filter.SerialNumber}%");
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(ser.SERIENNR) LIKE UPPER(@Serialnumber)", "@Serialnumber", $"%{filter.SerialNumber}%", SerialNumberFilterMaxLength);
             }
             if (filter?.ArticleName is not null)
             {
@@ -415,6 +417,12 @@ namespace CamCare.Services
                 Items = result,
                 TotalCount = totalCount
             });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Fehler beim Filtern von Seriennummern (GetAllSerialsAsync)");
+                return ServiceResponse.Failure<Paginated<Serials>>("Fehler beim Abrufen der Seriennummern", ex);
+            }
         }
 
         public async Task<ServiceResponse<Paginated<Artikel>>> GetArticleAsync(LoadDataArgs args, ArtikelFilter? filter = null)
@@ -435,7 +443,7 @@ namespace CamCare.Services
 
             if (filter?.Artikelnummer is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(ARTIKELNR) LIKE UPPER(@Artikelnummer)", "@Artikelnummer", $"%{filter.Artikelnummer}%");
+                AddFilterCondition(command, command2, query, countQuery, "UPPER(ARTIKELNR) LIKE UPPER(@Artikelnummer)", "@Artikelnummer", $"%{filter.Artikelnummer}%", ArticleNumberFilterMaxLength);
             }
             if (filter?.Description is not null)
             {
@@ -491,6 +499,12 @@ namespace CamCare.Services
             });
         }
 
+        private const int DefaultFilterMaxLength = 100;
+        private const int SerialNumberFilterMaxLength = 50;
+        private const int CustomerNumberFilterMaxLength = 20;
+        private const int PostalCodeFilterMaxLength = 12;
+        private const int ArticleNumberFilterMaxLength = 30;
+
         private static void AddFilterCondition(
             FbCommand dataCommand,
             FbCommand countCommand,
@@ -498,12 +512,34 @@ namespace CamCare.Services
             StringBuilder countQuery,
             string sqlCondition,
             string parameterName,
-            object parameterValue)
+            object parameterValue,
+            int maxLength = DefaultFilterMaxLength)
         {
+            parameterValue = TruncateParameter(parameterValue, maxLength);
+
             dataCommand.Parameters.AddWithValue(parameterName, parameterValue);
             countCommand.Parameters.AddWithValue(parameterName, parameterValue);
             dataQuery.Append(" AND ").Append(sqlCondition);
             countQuery.Append(" AND ").Append(sqlCondition);
         }
+
+        /// <summary>
+        /// Kürzt einen String-Parameter auf die angegebene Maximallänge. Copy &amp; Paste von überlangen
+        /// oder unsinnigen Texten in Suchfelder führt sonst bei Firebird zu
+        /// "arithmetic exception, numeric overflow, or string truncation" (string right truncation),
+        /// sobald der Wert länger als die Zielspalte ist.
+        /// </summary>
+        private static object TruncateParameter(object parameterValue, int maxLength)
+        {
+            if (parameterValue is string text)
+            {
+                return Truncate(text, maxLength);
+            }
+
+            return parameterValue;
+        }
+
+        private static string Truncate(string value, int maxLength)
+            => value.Length <= maxLength ? value : value[..maxLength];
     }
 }

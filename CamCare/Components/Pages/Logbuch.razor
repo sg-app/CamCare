@@ -237,11 +237,26 @@ else
 
     private async Task OnLoadSerialsData(LoadDataArgs args)
     {
-        var response = await AmicronDataService.GetAllSerialsAsync(args);
-        if (response.Success)
+        try
         {
-            _serialnumbers = response.Data?.Items;
-            _totalCountSerials = response.Data?.TotalCount ?? 0;
+            var response = await AmicronDataService.GetAllSerialsAsync(args);
+            if (response.Success)
+            {
+                _serialnumbers = response.Data?.Items;
+                _totalCountSerials = response.Data?.TotalCount ?? 0;
+            }
+            else
+            {
+                Logger.LogError("Fehler beim Laden der Seriennummern: {Message}", response.Message);
+                _serialnumbers = [];
+                _totalCountSerials = 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fehler beim Laden der Seriennummern im Logbuch.");
+            _serialnumbers = [];
+            _totalCountSerials = 0;
         }
     }
 
