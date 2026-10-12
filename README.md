@@ -134,6 +134,18 @@ Die Anwendung ist anschließend unter `https://localhost:5001` (bzw. dem in `lau
 
 Beim Start werden offene EF-Core-Migrationen automatisch angewendet und Stammdaten initialisiert.
 
+## Anmeldung & Benutzergruppen
+
+Die Anwendung nutzt eine einfache Gruppenanmeldung (ohne einzelne Benutzerkonten). Beim ersten Start werden die drei Benutzergruppen mit folgenden Standard-Passwörtern angelegt:
+
+| Benutzergruppe | Standard-Passwort | Rechte |
+|---|---|---|
+| `admin` | `admin` | Volle Sicht; kann Passwörter aller Gruppen unter **Stammdaten → Benutzergruppen** ändern |
+| `buero` | `buero` | Kann neue Aufträge anlegen („Auftrag erstellen") |
+| `werkstatt` | `werk` | Zugriff auf Aufträge und Stammdaten, keine Auftragserstellung |
+
+Die Anmeldung erfolgt über einen Anmeldedialog (Benutzergruppe + Passwort). Eine Benutzergruppe bleibt angemeldet, bis über „Abmelden" abgemeldet wird. Nach dem ersten Anmelden sollten die Standard-Passwörter über **Stammdaten → Benutzergruppen** (nur `admin`) geändert werden. Die Passwörter werden gesalzen und gehasht (PBKDF2) gespeichert.
+
 ## Docker-Deployment
 
 Die `docker-compose.yml` startet die vollständige Umgebung:

@@ -1,12 +1,20 @@
+using System.Security.Claims;
 using CamCare.Components;
 using CamCare.Interfaces.Persistence;
 using CamCare.Interfaces.Services;
 using CamCare.Options;
 using CamCare.Persistence;
+using CamCare.Security;
 using CamCare.Services;
 using FluentValidation;
 using Fluxor;
 using Fluxor.Blazor.Web.ReduxDevTools;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NLog.Extensions.Logging;
 using Radzen;
@@ -33,6 +41,26 @@ builder.Services.AddRadzenComponents();
 builder.Services.AddMemoryCache();
 builder.Services.AddHealthChecks();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+// Authentifizierung & Autorisierung
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "CamCare.Auth";
+        options.LoginPath = "/Login";
+        options.AccessDeniedPath = "/Login";
+        options.ExpireTimeSpan = TimeSpan.FromDays(30);
+        options.SlidingExpiration = true;
+    });
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(AuthPolicies.AdminOnly, policy =>
+        policy.RequireClaim(ClaimTypes.Role, UserGroupRoles.Admin));
+    options.AddPolicy(AuthPolicies.CanCreateOrders, policy =>
+        policy.RequireClaim(ClaimTypes.Role, UserGroupRoles.Buero));
+});
+
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.Configure<ObjectStorageOptions>(builder.Configuration.GetSection(ObjectStorageOptions.SectionName));
 builder.Services.Configure<AppVersionOptions>(builder.Configuration.GetSection(AppVersionOptions.SectionName));
@@ -52,6 +80,7 @@ builder.Services.AddScoped<IDataStoreService, DataStoreService>();
 builder.Services.AddScoped<IAmicronDataService, AmicronDataService>();
 
 builder.Services.AddScoped<IKrdDataService, KrdDataService>();
+builder.Services.AddScoped<IUserGroupService, UserGroupService>();
 
 var app = builder.Build();
 
@@ -69,6 +98,9 @@ await dbContext.Database.MigrateAsync();
 var masterdataService = scope.ServiceProvider.GetRequiredService<IMasterdataService>();
 await masterdataService.InitializeAsync();
 
+var userGroupService = scope.ServiceProvider.GetRequiredService<IUserGroupService>();
+await userGroupService.InitializeAsync();
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -81,12 +113,51 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseAntiforgery();
 
 app.MapHealthChecks("/health");
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+// Anmeldung / Abmeldung per Cookie. Der Aufruf erfolgt per fetch() direkt aus dem Browser
+// (siehe wwwroot/js/utils.js), damit der Auth-Cookie zuverlässig im Browser gesetzt wird.
+// Nach Erfolg sorgt ein Full-Reload (Redirect) dafür, dass der frische Blazor-Circuit
+// die neuen Claims aus dem Cookie übernimmt.
+app.MapPost("/api/auth/login", async (HttpContext context, [FromBody] LoginRequest request, IUserGroupService userGroupService) =>
+{
+    var userGroup = await userGroupService.ValidateAsync(request.Group, request.Password);
+    if (userGroup is null)
+        return Results.Unauthorized();
+
+    var identity = new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.Name, userGroup.Name),
+            new Claim(ClaimTypes.Role, userGroup.Name)
+        ],
+        CookieAuthenticationDefaults.AuthenticationScheme);
+    var principal = new ClaimsPrincipal(identity);
+
+    await context.SignInAsync(
+        CookieAuthenticationDefaults.AuthenticationScheme,
+        principal,
+        new AuthenticationProperties
+        {
+            IsPersistent = true,
+            AllowRefresh = true
+        });
+
+    return Results.Json(new AuthResult { Redirect = "/" });
+});
+
+app.MapPost("/api/auth/logout", async (HttpContext context) =>
+{
+    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    return Results.Json(new AuthResult { Redirect = "/Login" });
+});
 
 app.MapGet("/api/datastores/{id:int}/file", async (int id, bool? download, IDataStoreService dataStoreService) =>
 {
@@ -99,6 +170,23 @@ app.MapGet("/api/datastores/{id:int}/file", async (int id, bool? download, IData
         response.Data.ContentType,
         (download ?? false) ? response.Data.Filename : null,
         enableRangeProcessing: true);
-});
+}).RequireAuthorization();
 
 app.Run();
+
+/// <summary>
+/// Anmelde-Daten des Login-Dialogs (POST /api/auth/login, JSON).
+/// </summary>
+internal sealed class LoginRequest
+{
+    public string Group { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Antwort der Auth-Endpunkte: Ziel-URL für den Full-Reload nach Login/Logout.
+/// </summary>
+internal sealed class AuthResult
+{
+    public string Redirect { get; set; } = "/";
+}

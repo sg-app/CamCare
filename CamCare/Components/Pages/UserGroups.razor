@@ -1,0 +1,108 @@
+﻿@page "/UserGroups"
+@attribute [Authorize(Policy = AuthPolicies.AdminOnly)]
+
+<PageTitle>Benutzergruppen - CamCare</PageTitle>
+
+<RadzenText TextStyle="TextStyle.H4">Benutzergruppen</RadzenText>
+<RadzenText class="d-block pb-3">Hier können die Passwörter der einzelnen Benutzergruppen geändert werden.</RadzenText>
+
+<RadzenDataGrid @ref="_grid"
+                TItem="UserGroupVm"
+                Data="_data"
+                IsLoading="_isLoading"
+                AllowColumnResize="true"
+                Density="Density.Compact"
+                ShowEmptyMessage="false"
+                Style="width:900px">
+    <Columns>
+        <RadzenDataGridColumn TItem="UserGroupVm" Property="@nameof(UserGroupVm.Name)" Title="Benutzergruppe" Width="220px" />
+        <RadzenDataGridColumn TItem="UserGroupVm" Title="Neues Passwort" Width="260px">
+            <Template Context="item">
+                <RadzenPassword @bind-Value="item.NewPassword" Placeholder="Neues Passwort" Style="width:100%" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="UserGroupVm" Title="Passwort wiederholen" Width="260px">
+            <Template Context="item">
+                <RadzenPassword @bind-Value="item.ConfirmPassword" Placeholder="Passwort wiederholen" Style="width:100%" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="UserGroupVm" Title="Aktion" Width="160px">
+            <Template Context="item">
+                <RadzenButton Text="Speichern" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Medium"
+                              Click="() => OnSavePassword(item)" />
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    [Inject] protected IUserGroupService UserGroupService { get; set; } = default!;
+    [Inject] protected NotificationService NotificationService { get; set; } = default!;
+
+    private RadzenDataGrid<UserGroupVm> _grid = default!;
+    private IList<UserGroupVm>? _data;
+    private bool _isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+        var response = await UserGroupService.GetAllAsync();
+        if (response.Success)
+        {
+            _data = response.Data;
+        }
+        _isLoading = false;
+    }
+
+    private async Task OnSavePassword(UserGroupVm item)
+    {
+        var password = item.NewPassword ?? string.Empty;
+        var confirm = item.ConfirmPassword ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(confirm))
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Bitte Passwort und Wiederholung eingeben.",
+                Duration = 5000
+            });
+            return;
+        }
+
+        if (!string.Equals(password, confirm, StringComparison.Ordinal))
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Die Passwörter stimmen nicht überein.",
+                Duration = 5000
+            });
+            return;
+        }
+
+        if (password.Length < 4)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Das Passwort muss mindestens 4 Zeichen lang sein.",
+                Duration = 5000
+            });
+            return;
+        }
+
+        var response = await UserGroupService.UpdatePasswordAsync(item.Id, password);
+        if (response.Success)
+        {
+            item.NewPassword = null;
+            item.ConfirmPassword = null;
+            await _grid.Reload();
+        }
+    }
+}

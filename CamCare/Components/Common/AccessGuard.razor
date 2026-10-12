@@ -1,0 +1,19 @@
+﻿@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated != true)
+        {
+            // Nicht angemeldet -> zur Anmeldeseite (Full Reload, damit der Circuit die Claims übernimmt).
+            NavigationManager.NavigateTo("/Login", forceLoad: true);
+        }
+        else
+        {
+            // Angemeldet, aber ohne ausreichende Rechte -> zurück zur Startseite.
+            NavigationManager.NavigateTo("/");
+        }
+    }
+}

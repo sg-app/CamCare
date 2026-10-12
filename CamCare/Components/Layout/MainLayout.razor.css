@@ -16,3 +16,27 @@
         right: 0.75rem;
         top: 0.5rem;
     }
+
+/* Avatar-Kreis mit Initialen des angemeldeten Benutzers im Header */
+.camcare-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background-color: var(--rz-on-primary);
+    color: var(--rz-primary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1;
+    text-transform: uppercase;
+    user-select: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Name des angemeldeten Benutzers neben dem Avatar */
+.camcare-user-name {
+    color: var(--rz-on-primary);
+    white-space: nowrap;
+}
