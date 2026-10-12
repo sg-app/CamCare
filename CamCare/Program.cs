@@ -64,9 +64,11 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.Configure<ObjectStorageOptions>(builder.Configuration.GetSection(ObjectStorageOptions.SectionName));
 builder.Services.Configure<AppVersionOptions>(builder.Configuration.GetSection(AppVersionOptions.SectionName));
+builder.Services.Configure<UploadLinkOptions>(builder.Configuration.GetSection(UploadLinkOptions.SectionName));
 builder.Services.AddSingleton<IObjectStorageService, MinioObjectStorageService>();
 builder.Services.AddSingleton<IMapper, Mapper>();
 builder.Services.AddSingleton<IMasterdataService, MasterdataService>();
+builder.Services.AddSingleton<IUploadTokenService, UploadTokenService>();
 builder.Services.AddScoped<IRepairOrderStatusService, RepairOrderStatusService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<ILogisticProviderService, LogisticProviderService>();
@@ -108,6 +110,24 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 
+}
+
+// Forwarded-Header des Reverse-Proxys (Nginx Proxy Manager) auswerten, damit
+// UseHttpsRedirection und generierte URLs (z. B. Datei-Downloads) hinter dem Proxy
+// das korrekte Schema (https) und den Host verwenden.
+// Vertraut den X-Forwarded-*-Headern aus privaten Docker-Netzwerken (Proxy-Manager,
+// camcare-Netz) – in Produktion ggf. auf das tatsächliche Proxy-Subnetz einschränken.
+{
+    var forwardedHeadersOptions = new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.All
+    };
+    forwardedHeadersOptions.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("10.0.0.0/8"));
+    forwardedHeadersOptions.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("172.16.0.0/12"));
+    forwardedHeadersOptions.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("192.168.0.0/16"));
+    forwardedHeadersOptions.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("127.0.0.0/8"));
+    forwardedHeadersOptions.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("::1/128"));
+    app.UseForwardedHeaders(forwardedHeadersOptions);
 }
 
 app.UseHttpsRedirection();

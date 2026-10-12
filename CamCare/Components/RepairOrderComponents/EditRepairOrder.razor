@@ -34,8 +34,7 @@
                         <RadzenDropDown TValue="string" Value="@RepairOrder.CameraSerialNumber"
                                         ValueChanged="@(args => OnCameraSerialChanged(args))" Data="@_customerSerials"
                                         TextProperty="@nameof(Serials.DisplayName)" ValueProperty="@nameof(Serials.Seriennummer)"
-                                        DisabledProperty="@nameof(Serials.HasOpenOrder)"
-                                        AllowClear="true" AllowFiltering="true"
+                                        DisabledProperty="@nameof(Serials.HasOpenOrder)" AllowClear="true" AllowFiltering="true"
                                         FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                         FilterOperator="StringFilterOperator.Contains" AllowVirtualization="true"
                                         EmptyText="Keine Seriennummern für diesen Kunden gefunden" Style="width:100%" />
@@ -45,7 +44,8 @@
                 @if (_disabledSerialsCount > 0)
                 {
                     <RadzenText class="d-block text-secondary pt-1 pb-2">
-                        @_disabledSerialsCount Seriennummer(n) sind deaktiviert, da für sie bereits ein anderer offener Auftrag existiert.
+                        @_disabledSerialsCount Seriennummer(n) sind deaktiviert, da für sie bereits ein anderer offener Auftrag
+                        existiert.
                     </RadzenText>
                 }
 
@@ -81,7 +81,11 @@
         <RepairOrderDescription RepairOrder="@RepairOrder" />
         <DefectiveAssign RepairOrder="@RepairOrder" />
         <RepairPositionAssign RepairOrder="@RepairOrder" />
-        <DataAssign RepairOrder="@RepairOrder" />
+        <div class="d-flex flex-wrap gap-3">
+            <div class="flex-grow-1" style="min-width: 320px;">
+                <DataAssign RepairOrder="@RepairOrder" />
+            </div>
+        </div>
     </RadzenFieldset>
 
     <FormButtons Class="pt-2" CancelClick="OnCancelClicked" />
@@ -102,6 +106,7 @@
     private IList<Serials> _customerSerials = new List<Serials>();
     private bool _serialNotListed;
     private int _disabledSerialsCount;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -236,4 +241,6 @@
     {
         NavigationManager.NavigateTo("/RepairOrders");
     }
+
+
 }

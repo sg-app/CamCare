@@ -52,6 +52,9 @@ services:
       - ConnectionStrings__AmicronDatabase=PathToFireBirdDb
       - ConnectionStrings__DefaultKrd="Server=camcare-sql;Database=Krd;User Id=sa;Password=${SA_PASSWORD}"
       - ObjectStorage__Endpoint=http://minio:9000
+      - UploadLink__Secret=${UPLOAD_LINK_SECRET:?UploadLink.Secret fehlt - bitte UPLOAD_LINK_SECRET setzen}
+      - UploadLink__TokenLifetimeMinutes=${UPLOAD_LINK_LIFETIME_MINUTES:-120}
+      - UploadLink__PublicBaseUrl=${UPLOAD_LINK_PUBLIC_BASE_URL:?UploadLink.PublicBaseUrl fehlt - bitte UPLOAD_LINK_PUBLIC_BASE_URL setzen}
     ports:
       - 8085:8080
     healthcheck:

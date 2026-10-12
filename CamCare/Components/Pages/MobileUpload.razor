@@ -1,0 +1,184 @@
+@page "/u/{Token}"
+@attribute [AllowAnonymous]
+@layout CamCare.Components.Layout.AnonymousLayout
+
+<PageTitle>Datei-Upload - CamCare</PageTitle>
+
+<div class="container mt-4" style="max-width: 640px;">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 mb-3">
+                <img src="CamCare.png" alt="CamCare" width="32" height="32" class="me-2" />
+                Datei-Upload
+            </h1>
+
+            @if (_isInvalid)
+            {
+                <div class="alert alert-danger" role="alert">
+                    Der Upload-Link ist ungültig oder abgelaufen.
+                    <br />
+                    Bitte fordere einen neuen Link über das CamCare-Büro an.
+                </div>
+            }
+            else if (_uploadSucceeded)
+            {
+                <div class="alert alert-success" role="alert">
+                    Die Datei(en) wurden erfolgreich hochgeladen. Vielen Dank!
+                </div>
+                <button class="btn btn-outline-primary" onclick="@(() => ResetForm())">Weitere Dateien hochladen</button>
+            }
+            else
+            {
+                <p class="text-muted">
+                    Lade Fotos, PDF- oder Videodateien (max. @MaxFileSizeMb MB pro Datei) für den Auftrag
+                    <strong>@($"Auftrag {_repairOrderId}")</strong> hoch.
+                </p>
+
+                <InputFile @key="@_inputFieldKey" class="form-control" id="inputGroupFile01" @ref="_inputFile"
+                           multiple="true" accept="image/*,application/pdf,video/*" OnChange="@OnChange" />
+
+                <div class="mt-3">
+                    <RadzenProgressBar Value="@_progress" ShowValue="true" />
+                </div>
+
+                @if (_errorMessage is not null)
+                {
+                    <div class="alert alert-danger mt-2" role="alert">
+                        @_errorMessage
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject] protected ILogger<MobileUpload> Logger { get; set; } = default!;
+    [Inject] protected IUploadTokenService UploadTokenService { get; set; } = default!;
+    [Inject] protected IDataStoreService DataStoreService { get; set; } = default!;
+    [Inject] protected IOptions<ObjectStorageOptions> ObjectStorageOptions { get; set; } = default!;
+    [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
+
+    [Parameter] public string? Token { get; set; }
+
+    private InputFile _inputFile = default!;
+    private Guid _inputFieldKey = Guid.NewGuid();
+    private bool _isInvalid;
+    private bool _uploadSucceeded;
+    private int _repairOrderId;
+    private int _progress;
+    private string? _errorMessage;
+
+    private long MaxFileSizeBytes => ObjectStorageOptions.Value.MaxFileSizeBytes;
+    private long MaxFileSizeMb => MaxFileSizeBytes / (1024 * 1024);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if (string.IsNullOrWhiteSpace(Token))
+        {
+            _isInvalid = true;
+            return;
+        }
+
+        if (!UploadTokenService.TryValidate(Token!, out var repairOrderId))
+        {
+            _isInvalid = true;
+            return;
+        }
+
+        // Sicherstellen, dass der Auftrag tatsächlich existiert.
+        var orderResponse = await RepairOrderService.GetByIdAsync(repairOrderId);
+        if (!orderResponse.Success || orderResponse.Data is null)
+        {
+            _isInvalid = true;
+            return;
+        }
+
+        _repairOrderId = repairOrderId;
+    }
+
+    private async Task OnChange(InputFileChangeEventArgs args)
+    {
+        _errorMessage = null;
+        var files = args.GetMultipleFiles();
+        if (files is null || files.Count == 0)
+            return;
+
+        _progress = 0;
+        var done = 0;
+
+        foreach (var file in files)
+        {
+            try
+            {
+                if (!IsSupportedContentType(file.ContentType))
+                {
+                    _errorMessage = "Nur Bild-, PDF- und Videodateien sind erlaubt.";
+                    continue;
+                }
+
+                await using var stream = file.OpenReadStream(MaxFileSizeBytes);
+                using var mStream = new MemoryStream();
+                await stream.CopyToAsync(mStream);
+                var data = mStream.ToArray();
+
+                var item = new DataStoreVm
+                {
+                    RepairOrderId = _repairOrderId,
+                    Type = file.ContentType,
+                    Filename = file.Name,
+                    Data = data,
+                    SizeBytes = data.LongLength
+                };
+
+                var response = await DataStoreService.CreateAsync(item);
+                if (response.Success && response.Data is not null)
+                {
+                    Logger.LogDebug("Mobiler Upload: {FileName} / {Size} bytes", file.Name, file.Size);
+                }
+                else
+                {
+                    _errorMessage = $"Datei '{file.Name}' konnte nicht hochgeladen werden.";
+                }
+            }
+            catch (IOException)
+            {
+                _errorMessage = $"Datei ist größer als {MaxFileSizeMb}MB und konnte nicht hochgeladen werden.";
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Fehler beim mobilen Upload von {FileName}", file.Name);
+                _errorMessage = "Datei konnte nicht hochgeladen werden.";
+            }
+
+            done++;
+            _progress = Math.Min(100, (int)(done * 100L / Math.Max(1, files.Count)));
+        }
+
+        // Nach erfolgreichem Upload Feld leeren und Erfolgsrückmeldung anzeigen.
+        _inputFieldKey = Guid.NewGuid();
+        if (_errorMessage is null)
+        {
+            _uploadSucceeded = true;
+        }
+    }
+
+    private void ResetForm()
+    {
+        _uploadSucceeded = false;
+        _errorMessage = null;
+        _inputFieldKey = Guid.NewGuid();
+    }
+
+    private bool IsSupportedContentType(string contentType)
+    {
+        if (string.IsNullOrWhiteSpace(contentType))
+            return false;
+
+        return contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)
+               || contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase)
+               || contentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase);
+    }
+}

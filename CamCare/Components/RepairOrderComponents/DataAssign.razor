@@ -20,35 +20,54 @@
 
 <RadzenCard class="mt-2">
     <RadzenText TextStyle="TextStyle.H6">Dateiupload</RadzenText>
-    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H6">Bilder, PDF- und Videodateien (z. B. MP4) mit maximal @MaxFileSizeMb MB</RadzenText>
-    <div id="uploadWithDragAndDrop" class="rz-fileupload" style="width:100%">
-        <div class="rz-fileupload-buttonbar">
-            <span class="rz-fileupload-choose rz-button">
-                <text>
-                    <InputFile @key="@_inputFieldKey" class="form-control" id="inputGroupFile01" @ref="inputFile"
-                               multiple="true" accept="image/*,application/pdf,video/*" OnChange="@OnChange" />
-                    <span class="rz-button-text">Drag and drop here or click to choose files</span>
-                </text>
-            </span>
-        </div>
-    </div>
+    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H6">Bilder, PDF- und Videodateien (z. B. MP4) mit
+        maximal @MaxFileSizeMb MB oder Mobiler upload durch scannen von QR-Code gültig bis
+        @_qrCodeGenerated?.AddMinutes(UploadLinkLifetimeMinutes).ToShortTimeString()
 
+    </RadzenText>
+    <RadzenStack Orientation="Orientation.Horizontal">
+
+        <div id="uploadWithDragAndDrop" class="rz-fileupload" style="width:100%">
+            <div class="rz-fileupload-buttonbar">
+                <span class="rz-fileupload-choose rz-button">
+                    <text>
+                        <InputFile @key="@_inputFieldKey" class="form-control" id="inputGroupFile01" @ref="inputFile"
+                                   multiple="true" accept="image/*,application/pdf,video/*" OnChange="@OnChange" />
+                        <span class="rz-button-text">Drag and drop here or click to choose files</span>
+                    </text>
+                </span>
+            </div>
+        </div>
+        <div>
+            @if (RepairOrder.Id > 0)
+            {
+                <div>
+                    <div id="uploadQrCode"></div>
+                    <div class="mt-2 d-flex gap-2">
+                        <RadzenButton Text="Erneuern" ButtonStyle="ButtonStyle.Light" Icon="refresh"
+                                      Click="OnGenerateUploadLinkClicked" />
+                    </div>
+                </div>
+            }
+        </div>
+    </RadzenStack>
     <RadzenDataList TItem="DataStoreVm" Data="@RepairOrder.DataStores" WrapItems="true" Density="Density.Compact">
         <Template Context="item">
             <div class="d-flex flex-column justify-content-center">
                 <div class="align-self-center">
-                    @if (!string.IsNullOrWhiteSpace(item.DownloadUrl) && item.Type.StartsWith("image", StringComparison.OrdinalIgnoreCase))
+                    @if (!string.IsNullOrWhiteSpace(item.DownloadUrl) && item.Type.StartsWith("image",
+                    StringComparison.OrdinalIgnoreCase))
                     {
-                        <RadzenImage class="m-2" Path="@item.DownloadUrl"
-                                     Style="width: 15rem;" />
+                        <RadzenImage class="m-2" Path="@item.DownloadUrl" Style="width: 15rem;" />
                     }
-                    else if (!string.IsNullOrWhiteSpace(item.DownloadUrl) && item.Type.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
+                    else if (!string.IsNullOrWhiteSpace(item.DownloadUrl) && item.Type.Equals("application/pdf",
+                    StringComparison.OrdinalIgnoreCase))
                     {
                         <iframe class="m-2" style="width: 15rem; height: 20rem; border: 1px solid #ccc;"
-                                src="@item.DownloadUrl"
-                                title="PDF Preview"></iframe>
+                                src="@item.DownloadUrl" title="PDF Preview"></iframe>
                     }
-                    else if (!string.IsNullOrWhiteSpace(item.DownloadUrl) && item.Type.StartsWith("video/", StringComparison.OrdinalIgnoreCase))
+                    else if (!string.IsNullOrWhiteSpace(item.DownloadUrl) && item.Type.StartsWith("video/",
+                    StringComparison.OrdinalIgnoreCase))
                     {
                         <video class="m-2" style="width: 15rem;" controls preload="metadata" src="@item.DownloadUrl"
                                title="Video Preview"></video>
@@ -58,13 +77,15 @@
                         <RadzenImage class="m-2" Path="@($"data:{item.Type};base64,{Convert.ToBase64String(item.Data)}")"
                                      Style="width: 15rem;" />
                     }
-                    else if (item.Data is not null && item.Type.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
+                    else if (item.Data is not null && item.Type.Equals("application/pdf",
+                    StringComparison.OrdinalIgnoreCase))
                     {
                         <iframe class="m-2" style="width: 15rem; height: 20rem; border: 1px solid #ccc;"
                                 src="@($"data:application/pdf;base64,{Convert.ToBase64String(item.Data)}")"
                                 title="PDF Preview"></iframe>
                     }
-                    else if (item.Data is not null && item.Type.StartsWith("video/", StringComparison.OrdinalIgnoreCase))
+                    else if (item.Data is not null && item.Type.StartsWith("video/",
+                    StringComparison.OrdinalIgnoreCase))
                     {
                         <video class="m-2" style="width: 15rem;" controls preload="metadata"
                                src="@($"data:{item.Type};base64,{Convert.ToBase64String(item.Data)}")"
@@ -95,6 +116,10 @@
     [Inject] protected IDataStoreService DataStoreService { get; set; } = default!;
     [Inject] protected IOptions<ObjectStorageOptions> ObjectStorageOptions { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] protected IOptions<UploadLinkOptions> UploadLinkOptions { get; set; } = default!;
+    [Inject] protected IUploadTokenService UploadTokenService { get; set; } = default!;
+    [Inject] protected NotificationService NotificationService { get; set; } = default!;
+    [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
 
     private long MaxFileSizeBytes => ObjectStorageOptions.Value.MaxFileSizeBytes;
     private long MaxFileSizeMb => MaxFileSizeBytes / (1024 * 1024);
@@ -103,6 +128,9 @@
 
     private InputFile inputFile = default!;
     private Guid _inputFieldKey = Guid.NewGuid();
+    private int UploadLinkLifetimeMinutes => UploadLinkOptions.Value.TokenLifetimeMinutes;
+    private string? _uploadUrl;
+    private DateTime? _qrCodeGenerated;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -113,7 +141,7 @@
         var response = await DataStoreService.GetFromRepairOrderAsync(RepairOrder.Id);
         RepairOrder.DataStores = response.Data;
         RepairOrder.DataStores ??= [];
-
+        await OnGenerateUploadLinkClicked(default!);
         await base.OnParametersSetAsync();
     }
 
@@ -203,5 +231,35 @@ ConfirmOptions
         {
             await JS.InvokeVoidAsync("downloadFileFromByteArray", item.Filename, item.Data);
         }
+    }
+    private async Task OnGenerateUploadLinkClicked(MouseEventArgs args)
+    {
+        if (RepairOrder is null || RepairOrder.Id <= 0)
+            return;
+
+        // Neuen Link erzeugen und QR-Code aktualisieren.
+        _uploadUrl = BuildUploadUrl();
+        StateHasChanged();
+        await Task.Yield();
+        await RenderQrCodeAsync();
+    }
+
+    private string BuildUploadUrl()
+    {
+        if (RepairOrder is null || RepairOrder.Id <= 0)
+            return string.Empty;
+
+        var token = UploadTokenService.CreateToken(RepairOrder.Id);
+        return $"{UploadLinkOptions.Value.PublicBaseUrl}/u/{token}";
+    }
+
+    private async Task RenderQrCodeAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_uploadUrl))
+            return;
+
+        await JS.InvokeVoidAsync("renderQrCode", "uploadQrCode", _uploadUrl);
+        _qrCodeGenerated = DateTime.Now;
+        await InvokeAsync(StateHasChanged);
     }
 }

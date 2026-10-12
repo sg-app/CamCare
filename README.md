@@ -51,6 +51,7 @@
   - Anhängen von Dateien an Reparaturaufträge (z. B. Fotos, Dokumente)
   - Speicherung in einem S3-kompatiblen Object Storage (MinIO)
   - Bereitstellung über einen API-Endpunkt mit Download- und Range-Support
+  - Mobiler Upload per QR-Code/Link direkt aus der Auftragsansicht (ohne Login)
 
 - **Weitere Funktionen**
   - Responsive Blazor-UI mit Radzen-Komponenten
@@ -158,6 +159,12 @@ Die `docker-compose.yml` startet die vollständige Umgebung:
 # SA_PASSWORD als Umgebungsvariable setzen
 export SA_PASSWORD="DeinSicheresPasswort"
 
+# Geheimer Schlüssel für die Upload-Link-Signierung (mindestens 16 Zeichen)
+export UPLOAD_LINK_SECRET="EinSehrLangesGeheimesPasswort"
+
+# Öffentliche Basis-URL, unter der CamCare (bzw. der mobile Upload) erreichbar ist
+export UPLOAD_LINK_PUBLIC_BASE_URL="https://upload.example.com"
+
 # Alle Dienste starten
 docker compose up -d
 ```
@@ -166,13 +173,16 @@ Die Anwendung ist danach unter `http://localhost:8085` erreichbar.
 
 ### Wichtige Umgebungsvariablen
 
-| Variable                             | Beschreibung                                    |
-| ------------------------------------ | ----------------------------------------------- |
-| `ConnectionStrings__Default`         | SQL-Server-Verbindung für die CamCare-Datenbank |
-| `ConnectionStrings__AmicronDatabase` | Firebird-Datenbank (Amicron)                    |
-| `ConnectionStrings__DefaultKrd`      | SQL-Server-Verbindung für die KRD-Altdaten      |
-| `ObjectStorage__Endpoint`            | Endpunkt des MinIO/Object-Storage-Servers       |
-| `ASPNETCORE_ENVIRONMENT`             | ASP.NET-Umgebung (Development/Production)       |
+| Variable                             | Beschreibung                                                       |
+| ------------------------------------ | ------------------------------------------------------------------ |
+| `ConnectionStrings__Default`         | SQL-Server-Verbindung für die CamCare-Datenbank                     |
+| `ConnectionStrings__AmicronDatabase` | Firebird-Datenbank (Amicron)                                        |
+| `ConnectionStrings__DefaultKrd`      | SQL-Server-Verbindung für die KRD-Altdaten                           |
+| `ObjectStorage__Endpoint`            | Endpunkt des MinIO/Object-Storage-Servers                            |
+| `UploadLink__Secret`                 | Geheimer Schlüssel zur Signierung der mobilen Upload-Links           |
+| `UploadLink__TokenLifetimeMinutes`   | Gültigkeitsdauer eines Upload-Links in Minuten (Standard: 120)       |
+| `UploadLink__PublicBaseUrl`          | Öffentliche Basis-URL für QR-Code/Link des mobilen Uploads           |
+| `ASPNETCORE_ENVIRONMENT`             | ASP.NET-Umgebung (Development/Production)                            |
 
 ## API-Endpunkte
 
@@ -181,6 +191,66 @@ Die Anwendung ist danach unter `http://localhost:8085` erreichbar.
 | `GET /health`                                 | Health-Check                                                           |
 | `GET /api/datastores/{id}/file?download=true` | Datei aus dem Object Storage abrufen (mit Download- und Range-Support) |
 
+## Mobiler Datei-Upload per QR-Code
+
+In der Auftragsansicht (**Auftrag bearbeiten**) kann über **„Mobiler Upload"** ein zeitlich
+begrenzter Upload-Link erzeugt werden (QR-Code + kopierbarer Link). Damit können z.&#8201;B.
+Mitarbeiter oder Kunden mit dem Smartphone Fotos, PDF- und Videodateien direkt an den Auftrag
+anhängen – ganz ohne Login in der CamCare-Oberfläche.
+
+- Der Link zeigt auf die anonyme Seite `GET /u/{Token}`.
+- Das Token ist ein HMAC-SHA256-signierter, zeitlich begrenzter Link (Standard: 120 Minuten),
+  signiert mit `UploadLink__Secret`. Ohne gültiges/abgelaufenes Token wird die Seite verweigert.
+- Hochgeladene Dateien landen über den vorhandenen `DataStoreService` im Object Storage (MinIO)
+  und erscheinen sofort in der Dateiablage des Auftrags.
+
+### Freigabe über Nginx Proxy Manager
+
+Die mobile Upload-Seite wird **gezielt** über einen eigenen Reverse-Proxy-Host freigegeben
+(z.&#8201;B. `upload.example.com`), nicht die gesamte CamCare-Oberfläche:
+
+1. **Proxy Host anlegen:** Domain `upload.example.com` → Ziel `http://camcare:8080`
+   (bzw. die IP des Docker-Hosts und den veröffentlichten Port).
+2. **Websockets aktivieren:** Da die Upload-Seite eine **Blazor-Server**-Komponente ist,
+   muss im Nginx Proxy Manager die Option **„Websockets Support"** aktiviert sein.
+3. **Pfad-Allowlist** (Advanced-Config des Locations), damit über diese Domain nur die
+   Upload-Seite und deren Ressourcen erreichbar sind:
+
+   ```nginx
+   # Nur Upload-Seite und benötigte Assets freigeben – alles andere blockieren.
+   location ~ ^/(u/|_framework/|_blazor|js/|css/|_content/|CamCare\.png) {
+       proxy_pass http://camcare:8080;
+       proxy_set_header Host $host;
+       proxy_set_header X-Real-IP $remote_addr;
+       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+       proxy_set_header X-Forwarded-Proto $scheme;
+       proxy_http_version 1.1;
+       proxy_set_header Upgrade $http_upgrade;
+       proxy_set_header Connection "upgrade";
+   }
+   location / {
+       return 403;
+   }
+   ```
+
+4. **Upload-Größe begrenzen:** Passt das Limit an die maximale Dateigröße an
+   (Standard 100&#8201;MB, siehe `ObjectStorage__MaxFileSizeBytes`):
+
+   ```nginx
+   client_max_body_size 110m;
+   ```
+
+5. **`UploadLink__PublicBaseUrl`** muss auf die öffentliche Domain zeigen (z.&#8201;B.
+   `https://upload.example.com`), damit der QR-Code nicht auf die interne Adresse verweist.
+6. CamCare erwartet, dass der Proxy die Header `X-Forwarded-For` und `X-Forwarded-Proto`
+   setzt (im NPM standardmäßig der Fall). Die App vertraut diesen Headern aus privaten
+   IP-Netzwerken (`10/8`, `172.16/12`, `192.168/16`, Loopback) über `UseForwardedHeaders`
+   mit `ForwardedHeadersOptions`.
+
 ## Lizenz
 
 Siehe [LICENSE.txt](LICENSE.txt).
+
+### Eingebundene Drittbibliotheken
+
+- **`wwwroot/js/qrcode.min.js`** – QR-Code-Generator ([`davidshimjs/qrcodejs`](https://github.com/davidshimjs/qrcodejs), MIT-Lizenz).
