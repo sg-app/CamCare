@@ -54,6 +54,7 @@
                     <RadzenAutoComplete Value="@item.Description" Change="OnDescriptionChanged" Data=@_repairPositions
                                         LoadData="OnLoadRepairPositionCatalog" OpenOnFocus="true"
                                         TextProperty="@nameof(RepairPositionVm.Description)" Style="width: 100%"
+                                        ValueChanged="@(value => OnValueChanged(item, value))" SelectedItemChanged="OnSelectedItemChanged"
                                         InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Artikel Katalog" } })" />
                 }
             </EditTemplate>
@@ -183,13 +184,34 @@ rp.Description.ToLower().Contains(args.Filter.ToLower()));
         return Task.CompletedTask;
     }
 
-    private async Task OnDescriptionChanged(dynamic item)
+    private static void OnValueChanged(RepairPositionVm item, string? value)
+        => item.Description = value ?? string.Empty;
+
+    private void OnDescriptionChanged(dynamic item)
     {
         Logger.LogDebug("Description changed to {item}.", item as string);
-        var savedRepairPosition = _repairPositions?.FirstOrDefault(d => d.Description == item?.ToString());
-        _toEdit!.Artikelnummer = savedRepairPosition?.Artikelnummer;
-        _toEdit!.Id = savedRepairPosition?.Id ?? 0;
-        _toEdit!.Description = savedRepairPosition?.Description ?? item.ToString();
+
+        if (_toEdit is null)
+            return;
+
+        // Nur Modell aktualisieren – KEIN `UpdateRow`, damit die Auswahl per Mausklick
+        // (`SelectedItemChanged`) verarbeitet werden kann, bevor die Zelle geschlossen wird.
+        var text = item?.ToString() ?? string.Empty;
+        var savedRepairPosition = _repairPositions?.FirstOrDefault(d => d.Description == text);
+        _toEdit.Artikelnummer = savedRepairPosition?.Artikelnummer;
+        _toEdit.Id = savedRepairPosition?.Id ?? 0;
+        _toEdit.Description = savedRepairPosition?.Description ?? text;
+    }
+
+    private async Task OnSelectedItemChanged(object? selected)
+    {
+        if (selected is not RepairPositionVm selectedRepairPosition || _toEdit is null)
+            return;
+
+        Logger.LogDebug("Repair position '{description}' selected from catalog.", selectedRepairPosition.Description);
+        _toEdit.Artikelnummer = selectedRepairPosition.Artikelnummer;
+        _toEdit.Id = selectedRepairPosition.Id;
+        _toEdit.Description = selectedRepairPosition.Description;
         await _grid.UpdateRow(_toEdit);
     }
 

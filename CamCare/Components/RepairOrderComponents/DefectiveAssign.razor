@@ -16,6 +16,7 @@
 
                 <RadzenAutoComplete Value="@item.Description" Change="OnDescriptionChanged" Data=@_defectives
                                     LoadData="OnLoadDefectiveCatalog" OpenOnFocus="true" TextProperty="@nameof(DefectiveVm.Description)"
+                                    ValueChanged="@(value => OnValueChanged(item, value))" SelectedItemChanged="OnSelectedItemChanged"
                                     Style="width: 100%"
                                     InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Artikel Katalog" }, { "onkeydown", "if(event.key==='Enter'){event.stopPropagation();event.preventDefault();}" } })" />
             </EditTemplate>
@@ -111,12 +112,33 @@
         return Task.CompletedTask;
     }
 
-    private async Task OnDescriptionChanged(dynamic item)
+    private static void OnValueChanged(DefectiveVm item, string? value)
+        => item.Description = value ?? string.Empty;
+
+    private void OnDescriptionChanged(dynamic item)
     {
         Logger.LogDebug("Description changed to {item}.", item as string);
-        var savedDefective = _defectives?.FirstOrDefault(d => d.Description == item?.ToString());
-        _toEdit!.Id = savedDefective?.Id ?? 0;
-        _toEdit!.Description = savedDefective?.Description ?? item.ToString();
+
+        if (_toEdit is null)
+            return;
+
+        // Beim Verlassen des Felds (Enter/Blur) wird hier nur das Modell aktualisiert –
+        // KEIN `UpdateRow`, damit ein anschließendes `click`-Event (Auswahl per Maus)
+        // verarbeitet werden kann, bevor die Zelle geschlossen wird.
+        var text = item?.ToString() ?? string.Empty;
+        var savedDefective = _defectives?.FirstOrDefault(d => d.Description == text);
+        _toEdit.Id = savedDefective?.Id ?? 0;
+        _toEdit.Description = savedDefective?.Description ?? text;
+    }
+
+    private async Task OnSelectedItemChanged(object? selected)
+    {
+        if (selected is not DefectiveVm selectedDefective || _toEdit is null)
+            return;
+
+        Logger.LogDebug("Defective '{description}' selected from catalog.", selectedDefective.Description);
+        _toEdit.Id = selectedDefective.Id;
+        _toEdit.Description = selectedDefective.Description;
         await _grid.UpdateRow(_toEdit);
     }
 
