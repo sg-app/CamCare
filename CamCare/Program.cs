@@ -58,7 +58,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(AuthPolicies.AdminOnly, policy =>
         policy.RequireClaim(ClaimTypes.Role, UserGroupRoles.Admin));
     options.AddPolicy(AuthPolicies.CanCreateOrders, policy =>
-        policy.RequireClaim(ClaimTypes.Role, UserGroupRoles.Buero));
+        policy.RequireClaim(ClaimTypes.Role, UserGroupRoles.Admin, UserGroupRoles.Buero));
 });
 
 builder.Services.AddPersistence(builder.Configuration);
