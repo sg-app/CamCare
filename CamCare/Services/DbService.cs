@@ -140,7 +140,7 @@ namespace CamCare.Services
 
                 if (typeof(IAuditableEntity).IsAssignableFrom(typeof(TEntity)))
                 {
-                    // Optional: Filter f�r archivierte Eintr�ge
+                    // Optional: Filter für archivierte Einträge
                     query = query.Where(e => !((IAuditableEntity)e).ArchivedAt.HasValue);
                 }
 
@@ -156,7 +156,7 @@ namespace CamCare.Services
                 // Filtering
                 if (!string.IsNullOrEmpty(args.Filter))
                 {
-                    // Hinweis: F�r produktiven Einsatz sollte ein dynamischer Filterbuilder verwendet werden
+                    // Hinweis: Für produktiven Einsatz sollte ein dynamischer Filterbuilder verwendet werden
                 }
 
                 // Sorting
@@ -258,12 +258,12 @@ namespace CamCare.Services
             }
             catch (DbUpdateException updateException)
             {
-                string errorMessage = "Fehler beim L�schen des Datensatzes";
+                string errorMessage = "Fehler beim Löschen des Datensatzes";
                 if (updateException.InnerException is not null)
                 {
                     if (updateException.InnerException.Message.Contains("conflicted with the REFERENCE constraint"))
                     {
-                        errorMessage = "L�schen nicht m�glich, da noch verkn�pfte Daten existieren.";
+                        errorMessage = "Löschen nicht möglich, da noch verknüpfte Daten existieren.";
                     }
                 }
                 _logger.LogError(updateException, "Fehler in DeleteAsync");
@@ -273,8 +273,8 @@ namespace CamCare.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Fehler in DeleteAsync");
-                NotifyError("Fehler beim L�schen des Datensatzes");
-                return ServiceResponse.Failure<bool>("Fehler beim L�schen des Datensatzes", ex);
+                NotifyError("Fehler beim Löschen des Datensatzes");
+                return ServiceResponse.Failure<bool>("Fehler beim Löschen des Datensatzes", ex);
             }
         }
     }
