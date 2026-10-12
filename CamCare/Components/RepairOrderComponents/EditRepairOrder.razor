@@ -8,92 +8,93 @@
 @if (RepairOrder is not null)
 {
     <RadzenTemplateForm Data="@RepairOrder" TItem="RepairOrderVm" Submit="OnSaveClicked" InvalidSubmit="OnInvalidSubmit">
-    <FluentValidator />
-    <RadzenStack Orientation="Orientation.Horizontal">
+        <FluentValidator />
+        <RadzenStack Orientation="Orientation.Horizontal">
 
-        <RadzenFieldset Text="Kunde" class="w-50">
-            <RadzenText>@RepairOrder.Customer?.KdNummer - @RepairOrder.Customer?.FullName</RadzenText>
-            <RadzenText>@RepairOrder.Customer?.Plz @RepairOrder.Customer?.Ort</RadzenText>
-        </RadzenFieldset>
+            <RadzenFieldset Text="Kunde" class="w-50">
+                <RadzenText>@RepairOrder.Customer?.KdNummer - @RepairOrder.Customer?.FullName</RadzenText>
+                <RadzenText>@RepairOrder.Customer?.Plz @RepairOrder.Customer?.Ort</RadzenText>
+            </RadzenFieldset>
 
-        <RadzenFieldset Text="Reparaturgegenstand" class="w-50">
-            <RadzenRadioButtonList TValue="bool?" Orientation="Orientation.Horizontal" Value="@RepairOrder.IsCamera"
-                                   ValueChanged="@(args => OnItemTypeChanged(args))">
-                <Items>
-                    <RadzenRadioButtonListItem Text="Mit Seriennummer" Value="true" />
-                    <RadzenRadioButtonListItem Text="Einzelteil" Value="false" />
-                </Items>
-            </RadzenRadioButtonList>
+            <RadzenFieldset Text="Reparaturgegenstand" class="w-50">
+                <RadzenRadioButtonList TValue="bool?" Orientation="Orientation.Horizontal" Value="@RepairOrder.IsCamera"
+                                       ValueChanged="@(args => OnItemTypeChanged(args))">
+                    <Items>
+                        <RadzenRadioButtonListItem Text="Mit Seriennummer" Value="true" />
+                        <RadzenRadioButtonListItem Text="Einzelteil" Value="false" />
+                    </Items>
+                </RadzenRadioButtonList>
 
-            @if (RepairOrder.IsCamera == true)
-            {
-                <RadzenFormField class="d-block pt-2" Text="Seriennummer">
-                    @if (_serialNotListed)
-                    {
-                        <RadzenTextBox @bind-Value="RepairOrder.CameraSerialNumber" Style="width:100%"
-                                       Placeholder="Seriennummer manuell erfassen" />
-                    }
-                    else
-                    {
-                        <RadzenDropDown TValue="string" Value="@RepairOrder.CameraSerialNumber"
-                                        ValueChanged="@(args => OnCameraSerialChanged(args))" Data="@_customerSerials"
-                                        TextProperty="@nameof(Serials.DisplayName)" ValueProperty="@nameof(Serials.Seriennummer)"
-                                        DisabledProperty="@nameof(Serials.HasOpenOrder)" AllowClear="true" AllowFiltering="true"
-                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                        FilterOperator="StringFilterOperator.Contains" AllowVirtualization="true"
-                                        EmptyText="Keine Seriennummern für diesen Kunden gefunden" Style="width:100%" />
-                    }
-                </RadzenFormField>
-
-                @if (_disabledSerialsCount > 0)
+                @if (RepairOrder.IsCamera == true)
                 {
-                    <RadzenText class="d-block text-secondary pt-1 pb-2">
-                        @_disabledSerialsCount Seriennummer(n) sind deaktiviert, da für sie bereits ein anderer offener Auftrag
-                        existiert.
+                    <RadzenFormField class="d-block pt-2" Text="Seriennummer">
+                        @if (_serialNotListed)
+                        {
+                            <RadzenTextBox @bind-Value="RepairOrder.CameraSerialNumber" Style="width:100%"
+                                           Placeholder="Seriennummer manuell erfassen" />
+                        }
+                        else
+                        {
+                            <RadzenDropDown TValue="string" Value="@RepairOrder.CameraSerialNumber"
+                                            ValueChanged="@(args => OnCameraSerialChanged(args))" Data="@_customerSerials"
+                                            TextProperty="@nameof(Serials.DisplayName)" ValueProperty="@nameof(Serials.Seriennummer)"
+                                            DisabledProperty="@nameof(Serials.HasOpenOrder)" AllowClear="true" AllowFiltering="true"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            FilterOperator="StringFilterOperator.Contains" AllowVirtualization="true"
+                                            EmptyText="Keine Seriennummern für diesen Kunden gefunden" Style="width:100%" />
+                        }
+                    </RadzenFormField>
+
+                    @if (_disabledSerialsCount > 0)
+                    {
+                        <RadzenText class="d-block text-secondary pt-1 pb-2">
+                            @_disabledSerialsCount Seriennummer(n) sind deaktiviert, da für sie bereits ein anderer offener Auftrag
+                            existiert.
+                        </RadzenText>
+                    }
+
+                    @if (RepairOrder.SerialNumberNeedsMaintenance == true)
+                    {
+                        <RadzenText class="d-block text-danger pt-2">
+                            Die Seriennummer ist nicht für den Kunden hinterlegt und muss von einem Mitarbeiter nachgepflegt werden.
+                        </RadzenText>
+                    }
+                    <div class="pt-2">
+                        <RadzenCheckBox TValue="bool" Value="@_serialNotListed"
+                                        ValueChanged="@(args => OnSerialNotListedChanged(args))" Name="_serialNotListed" />
+                        <RadzenLabel Text="Seriennummer nicht gelistet – Seriennummer manuell erfassen"
+                                     Component="_serialNotListed" class="rz-ms-2" />
+                    </div>
+                }
+                else if (RepairOrder.IsCamera == false)
+                {
+                    <RadzenFormField class="d-block pt-2" Text="Einzelteil Beschreibung" Style="width:100%">
+                        <RadzenTextBox @bind-Value="RepairOrder.PiceOfEquipment" Style="width:100%" />
+                    </RadzenFormField>
+                }
+                else
+                {
+                    <RadzenText class="d-block pt-2 text-secondary">
+                        Bitte legen Sie fest, ob es sich um ein Gerät mit Seriennummer oder ein Einzelteil handelt.
                     </RadzenText>
                 }
+            </RadzenFieldset>
+        </RadzenStack>
 
-                @if (RepairOrder.SerialNumberNeedsMaintenance == true)
-                {
-                    <RadzenText class="d-block text-danger pt-2">
-                        Die Seriennummer ist nicht für den Kunden hinterlegt und muss von einem Mitarbeiter nachgepflegt werden.
-                    </RadzenText>
-                }
-                <div class="pt-2">
-                    <RadzenCheckBox TValue="bool" Value="@_serialNotListed"
-                                    ValueChanged="@(args => OnSerialNotListedChanged(args))" Name="_serialNotListed" />
-                    <RadzenLabel Text="Seriennummer nicht gelistet – Seriennummer manuell erfassen"
-                                 Component="_serialNotListed" class="rz-ms-2" />
+        <RadzenFieldset Text="Beschreibung" Visible="@(RepairOrder.CustomerId != null)">
+            <RepairOrderDescription RepairOrder="@RepairOrder" />
+            <EmployeeAssign RepairOrder="@RepairOrder" />
+            <DefectiveAssign RepairOrder="@RepairOrder" />
+            <RepairPositionAssign RepairOrder="@RepairOrder" />
+            <div class="d-flex flex-wrap gap-3">
+                <div class="flex-grow-1" style="min-width: 320px;">
+                    <DataAssign RepairOrder="@RepairOrder" />
                 </div>
-            }
-            else if (RepairOrder.IsCamera == false)
-            {
-                <RadzenFormField class="d-block pt-2" Text="Einzelteil Beschreibung" Style="width:100%">
-                    <RadzenTextBox @bind-Value="RepairOrder.PiceOfEquipment" Style="width:100%" />
-                </RadzenFormField>
-            }
-            else
-            {
-                <RadzenText class="d-block pt-2 text-secondary">
-                    Bitte legen Sie fest, ob es sich um ein Gerät mit Seriennummer oder ein Einzelteil handelt.
-                </RadzenText>
-            }
-        </RadzenFieldset>
-    </RadzenStack>
-
-    <RadzenFieldset Text="Beschreibung" Visible="@(RepairOrder.CustomerId != null)">
-        <RepairOrderDescription RepairOrder="@RepairOrder" />
-        <DefectiveAssign RepairOrder="@RepairOrder" />
-        <RepairPositionAssign RepairOrder="@RepairOrder" />
-        <div class="d-flex flex-wrap gap-3">
-            <div class="flex-grow-1" style="min-width: 320px;">
-                <DataAssign RepairOrder="@RepairOrder" />
             </div>
-        </div>
-    </RadzenFieldset>
+        </RadzenFieldset>
 
-    <FormButtons Class="pt-2" CancelClick="OnCancelClicked" />
-</RadzenTemplateForm>
+        <FormButtons Class="pt-2" CancelClick="OnCancelClicked" />
+    </RadzenTemplateForm>
 }
 else
 {

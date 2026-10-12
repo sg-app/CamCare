@@ -1,0 +1,52 @@
+﻿<RadzenFormField class="pt-2" Text="Techniker (Reparatur durchgeführt von)" Style="width:500px">
+    <RadzenDropDown TValue="IEnumerable<int>" Multiple="true"
+                    Value="@_selectedTechnicianIds"
+                    ValueChanged="@(args => OnTechnicianIdsSelected(args))"
+                    Data="@_technicians"
+                    TextProperty="@nameof(EmployeeVm.DisplayName)"
+                    ValueProperty="@nameof(EmployeeVm.Id)"
+                    AllowClear="true" AllowFiltering="true"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    FilterOperator="StringFilterOperator.Contains"
+                    AllowVirtualization="true"
+                    Chips=true
+                    Placeholder="Techniker auswählen" Style="width:100%" />
+</RadzenFormField>
+
+@code {
+    [Inject] protected ILogger<EmployeeAssign> Logger { get; set; } = default!;
+    [Inject] protected IEmployeeService EmployeeService { get; set; } = default!;
+
+    [Parameter] public RepairOrderVm RepairOrder { get; set; } = new();
+
+    private IList<EmployeeVm> _technicians = new List<EmployeeVm>();
+    private IEnumerable<int> _selectedTechnicianIds = new List<int>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (RepairOrder is null)
+            throw new ArgumentNullException(nameof(RepairOrder), "RepairOrder cannot be null");
+
+        Logger.LogInformation("Load technician catalog for RepairOrder {repairOrder}.", RepairOrder);
+
+        var response = await EmployeeService.GetAllAsync();
+        if (response.Success)
+        {
+            _technicians = response.Data ?? [];
+            _selectedTechnicianIds = RepairOrder.Employees?.Select(e => e.Id) ?? new List<int>();
+        }
+    }
+
+    private void OnTechnicianIdsSelected(IEnumerable<int> technicianIds)
+    {
+        // Beim Clear (✕) liefert Radzen bei Mehrfachauswahl null statt einer leeren Liste.
+        technicianIds ??= [];
+        _selectedTechnicianIds = technicianIds;
+        RepairOrder.Employees ??= [];
+
+        var selected = _technicians.Where(t => technicianIds.Contains(t.Id)).ToList();
+        RepairOrder.Employees.Clear();
+        foreach (var technician in selected)
+            RepairOrder.Employees.Add(technician);
+    }
+}
