@@ -1,0 +1,29 @@
+﻿@page "/Login"
+@attribute [AllowAnonymous]
+@layout CamCare.Components.Layout.AnonymousLayout
+
+<PageTitle>Anmeldung - CamCare</PageTitle>
+
+@code {
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (!firstRender)
+            return;
+
+        await DialogService.OpenAsync<CamCare.Components.Common.LoginDialog>("Anmeldung",
+            new Dictionary<string, object?>
+            {
+                ["ShowError"] = false
+            },
+            new DialogOptions
+            {
+                Width = "420px",
+                Resizable = false,
+                Draggable = false
+            });
+    }
+}

@@ -93,6 +93,96 @@ namespace CamCare.Services
             return ServiceResponse.Success(paginated);
         }
 
+        /// <summary>
+        /// Liefert alle Aufträge (auch archivierte) zu einer Seriennummer für das Logbuch.
+        /// </summary>
+        public async Task<ServiceResponse<List<RepairOrderVm>>> GetBySerialNumberAsync(string serialNumber)
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+
+                var items = await context.RepairOrders
+                    .AsNoTracking()
+                    .Where(f => f.SerialNumber == serialNumber)
+                    .Include(i => i.RepairOrderStatus)
+                    .Include(i => i.RepairOrderStatusHistory)
+                        .ThenInclude(i => i.RepairOrderStatus)
+                    .Include(i => i.LogisticProvider)
+                    .Include(i => i.Employees)
+                    .Include(i => i.Defectives)
+                    .Include(i => i.IncludedComponents)
+                    .Include(i => i.RepairOrderRepairPositions)
+                        .ThenInclude(rp => rp.RepairPosition)
+                    .OrderByDescending(i => i.ArrivedAt)
+                    .ToListAsync();
+
+                var vms = items.Select(_mapper.Map<RepairOrder, RepairOrderVm>).ToList();
+
+                // Kundendaten aus dem Amicron-System anreichern (wie in GetAllAsync)
+                var customerIds = vms
+                    .Where(vm => vm.CustomerId.HasValue)
+                    .Select(vm => vm.CustomerId!.Value)
+                    .Distinct()
+                    .ToList();
+
+                if (customerIds.Count > 0)
+                {
+                    var customersResponse = await _amicronDataService.GetAddressesByCustomerIdsAsync(customerIds);
+                    if (customersResponse.Success && customersResponse.Data != null)
+                    {
+                        var customersById = customersResponse.Data.ToDictionary(customer => customer.LfdNr);
+                        foreach (var vm in vms)
+                        {
+                            if (!vm.CustomerId.HasValue)
+                                continue;
+
+                            if (customersById.TryGetValue(vm.CustomerId.Value, out var customer))
+                            {
+                                vm.Customer = customer;
+                            }
+                        }
+                    }
+                }
+
+                return ServiceResponse.Success(vms);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler beim Abrufen der Aufträge für Seriennummer {SerialNumber}", serialNumber);
+                NotifyError("Fehler beim Abrufen der Aufträge");
+                return ServiceResponse.Failure<List<RepairOrderVm>>("Fehler beim Abrufen der Aufträge", ex);
+            }
+        }
+
+        /// <summary>
+        /// Liefert alle Seriennummern, für die aktuell mindestens ein offener (nicht abgeschlossener)
+        /// Reparaturauftrag existiert. Wird verwendet, um Seriennummern in Listenansichten zu kennzeichnen.
+        /// </summary>
+        public async Task<ServiceResponse<HashSet<string>>> GetOpenOrderSerialNumbersAsync()
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+
+                var serialNumbers = await context.RepairOrders
+                    .AsNoTracking()
+                    .Where(f => !f.RepairOrderStatus.IsOrderClose)
+                    .Where(f => f.SerialNumber != null)
+                    .Select(f => f.SerialNumber!.Trim())
+                    .Distinct()
+                    .ToListAsync();
+
+                return ServiceResponse.Success(new HashSet<string>(serialNumbers, StringComparer.OrdinalIgnoreCase));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler beim Ermitteln der Seriennummern mit offenen Aufträgen");
+                NotifyError("Fehler beim Ermitteln der Seriennummern mit offenen Aufträgen");
+                return ServiceResponse.Failure<HashSet<string>>("Fehler beim Ermitteln der Seriennummern mit offenen Aufträgen", ex);
+            }
+        }
+
         public override async Task<ServiceResponse<RepairOrderVm>> CreateAsync(RepairOrderVm vm)
         {
             using var context = _contextFactory.CreateDbContext();
@@ -100,6 +190,18 @@ namespace CamCare.Services
 
             try
             {
+                // Verhindern, dass für eine Seriennummer ein zweiter offener Auftrag erstellt wird.
+                if (!string.IsNullOrWhiteSpace(vm.CameraSerialNumber)
+                    && await context.RepairOrders
+                        .AnyAsync(o => o.SerialNumber != null
+                                       && o.SerialNumber.Trim().ToLower() == vm.CameraSerialNumber.Trim().ToLower()
+                                       && !o.RepairOrderStatus.IsOrderClose))
+                {
+                    await transaction.RollbackAsync();
+                    return ServiceResponse.Failure<RepairOrderVm>(
+                        $"Für die Seriennummer {vm.CameraSerialNumber} existiert bereits ein offener Auftrag. Es kann kein weiterer Auftrag erstellt werden.");
+                }
+
                 var entity = new RepairOrder();
                 _mapper.Map(vm, entity);
 
@@ -253,6 +355,20 @@ namespace CamCare.Services
 
                 if (entity == null)
                     return ServiceResponse.Failure<RepairOrderVm>("Nicht gefunden");
+
+                // Verhindern, dass die Seriennummer auf eine Seriennummer geändert wird,
+                // für die bereits ein anderer offener Auftrag existiert.
+                if (!string.IsNullOrWhiteSpace(vm.CameraSerialNumber)
+                    && await context.RepairOrders
+                        .AnyAsync(o => o.Id != entity.Id
+                                       && o.SerialNumber != null
+                                       && o.SerialNumber.Trim().ToLower() == vm.CameraSerialNumber.Trim().ToLower()
+                                       && !o.RepairOrderStatus.IsOrderClose))
+                {
+                    await transaction.RollbackAsync();
+                    return ServiceResponse.Failure<RepairOrderVm>(
+                        $"Für die Seriennummer {vm.CameraSerialNumber} existiert bereits ein anderer offener Auftrag. Die Seriennummer kann nicht verwendet werden.");
+                }
 
                 // --- Statushistorie aktualisieren ---
                 if (entity.RepairOrderStatusId != vm.RepairOrderStatusId)
@@ -423,15 +539,35 @@ namespace CamCare.Services
             {
                 using var context = _contextFactory.CreateDbContext();
                 var entity = await context.RepairOrders
+                    .AsNoTracking()
+                    .Include(i => i.RepairOrderStatus)
+                    .Include(i => i.RepairOrderStatusHistory)
+                        .ThenInclude(i => i.RepairOrderStatus)
+                    .Include(i => i.LogisticProvider)
+                    .Include(i => i.Employees)
                     .Include(i => i.Defectives)
                     .Include(i => i.IncludedComponents)
-                    .Include(i => i.RepairPositions)
-                    .Include(i => i.RepairOrderStatus)
+                    .Include(i => i.RepairOrderRepairPositions)
+                        .ThenInclude(rp => rp.RepairPosition)
                     .Where(f => f.Id == (int)id)
                     .FirstOrDefaultAsync();
                 if (entity == null)
                     return ServiceResponse.Failure<RepairOrderVm>("Nicht gefunden");
+
                 var vm = _mapper.Map<RepairOrder, RepairOrderVm>(entity);
+
+                // Kundendaten aus dem Amicron-System anreichern (wie in GetAllAsync).
+                if (vm.CustomerId.HasValue)
+                {
+                    var customersResponse = await _amicronDataService.GetAddressesByCustomerIdsAsync([vm.CustomerId.Value]);
+                    if (customersResponse.Success && customersResponse.Data != null)
+                    {
+                        var customer = customersResponse.Data.FirstOrDefault(c => c.LfdNr == vm.CustomerId.Value);
+                        if (customer != null)
+                            vm.Customer = customer;
+                    }
+                }
+
                 return ServiceResponse.Success(vm);
             }
             catch (Exception ex)

@@ -17,6 +17,7 @@
                 <RadzenAutoComplete Value="@item.Description" Change="OnDescriptionChanged" Data=@_includedComponents
                                     LoadData="OnLoadDefectiveCatalog" OpenOnFocus="true"
                                     TextProperty="@nameof(IncludedComponentVm.Description)" Style="width: 100%"
+                                    ValueChanged="@(value => OnValueChanged(item, value))" SelectedItemChanged="OnSelectedItemChanged"
                                     InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Artikel Katalog" }, { "onkeydown", "if(event.key==='Enter'){event.stopPropagation();event.preventDefault();}" } })" />
             </EditTemplate>
         </RadzenDataGridColumn>
@@ -109,12 +110,32 @@ rp.Description.ToLower().Contains(args.Filter.ToLower()));
         return Task.CompletedTask;
     }
 
-    private async Task OnDescriptionChanged(dynamic item)
+    private static void OnValueChanged(IncludedComponentVm item, string? value)
+        => item.Description = value ?? string.Empty;
+
+    private void OnDescriptionChanged(dynamic item)
     {
         Logger.LogDebug("Description changed to {item}.", item as string);
-        var savedComponent = _includedComponents?.FirstOrDefault(d => d.Description == item?.ToString());
-        _toEdit!.Id = savedComponent?.Id ?? 0;
-        _toEdit!.Description = savedComponent?.Description ?? item.ToString();
+
+        if (_toEdit is null)
+            return;
+
+        // Nur Modell aktualisieren – KEIN `UpdateRow`, damit die Auswahl per Mausklick
+        // (`SelectedItemChanged`) verarbeitet werden kann, bevor die Zelle geschlossen wird.
+        var text = item?.ToString() ?? string.Empty;
+        var savedComponent = _includedComponents?.FirstOrDefault(d => d.Description == text);
+        _toEdit.Id = savedComponent?.Id ?? 0;
+        _toEdit.Description = savedComponent?.Description ?? text;
+    }
+
+    private async Task OnSelectedItemChanged(object? selected)
+    {
+        if (selected is not IncludedComponentVm selectedComponent || _toEdit is null)
+            return;
+
+        Logger.LogDebug("Included component '{description}' selected from catalog.", selectedComponent.Description);
+        _toEdit.Id = selectedComponent.Id;
+        _toEdit.Description = selectedComponent.Description;
         await _grid.UpdateRow(_toEdit);
     }
 

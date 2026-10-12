@@ -10,6 +10,6 @@ namespace CamCare.Options
         public string BucketName { get; set; } = "camcare-files";
         public bool UseSsl { get; set; }
         public int PresignedUrlLifetimeMinutes { get; set; } = 15;
-        public long MaxFileSizeBytes { get; set; } = 10 * 1024 * 1024;
+        public long MaxFileSizeBytes { get; set; } = 100 * 1024 * 1024;
     }
 }

@@ -4,15 +4,38 @@
 <RadzenComponents @rendermode="InteractiveServer" />
 <RadzenLayout>
     <RadzenHeader>
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
-            <RadzenSidebarToggle Click="@(() => sidebar1Expanded = !sidebar1Expanded)" />
-            <RadzenLabel Text="CamCare - Kamerareparatur Erfassung" />
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0"
+                     Style="justify-content:space-between;width:100%">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
+                <RadzenSidebarToggle Click="@(() => sidebar1Expanded = !sidebar1Expanded)" />
+                <RadzenLabel Text="CamCare - Kamerareparatur Erfassung" />
+            </RadzenStack>
+            <AuthorizeView Context="AuthContext">
+                <RadzenProfileMenu Click="OnUserMenuClicked" Style="margin-left:auto;margin-right:0.75rem">
+                    <Template>
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="8">
+                            <span class="camcare-avatar">@GetInitials(AuthContext.User.Identity?.Name)</span>
+                            <span class="camcare-user-name">@(AuthContext.User.Identity?.Name)</span>
+                        </RadzenStack>
+                    </Template>
+                    <ChildContent>
+                        <RadzenProfileMenuItem Icon="account_circle"
+                                               Text="@($"Angemeldet als: {AuthContext.User.Identity?.Name}")"
+                                               Style="border-bottom:1px solid var(--rz-base-300);font-weight:600" Value="info" />
+                        <RadzenProfileMenuItem Icon="info"
+                                               Text="@($"Version: {AppVersionOptions.Value.FullSemVer}")"
+                                               Value="version" />
+                        <RadzenProfileMenuItem Icon="logout" Text="Abmelden" Value="logout" />
+                    </ChildContent>
+                </RadzenProfileMenu>
+            </AuthorizeView>
         </RadzenStack>
     </RadzenHeader>
     <RadzenSidebar @bind-Expanded="@sidebar1Expanded">
         <RadzenPanelMenu>
             <RadzenPanelMenuItem Text="Home" Icon="home" Path="/" />
             <RadzenPanelMenuItem Text="Aufträge" Icon="order_approve" Path="RepairOrders" />
+            <RadzenPanelMenuItem Text="Logbuch" Icon="menu_book" Path="Logbuch" />
             <RadzenPanelMenuItem Text="Stammdaten" Icon="database">
                 <RadzenPanelMenuItem Text="Status" Icon="sweep" Path="RepairOrderStates" />
                 <RadzenPanelMenuItem Text="Defekte" Icon="broken_image" Path="Defectives" />
@@ -20,8 +43,13 @@
                 <RadzenPanelMenuItem Text="Mitgel. Komponenten" Icon="tile_small" Path="IncludedComponents" />
                 <RadzenPanelMenuItem Text="Mitarbeiter" Icon="person_apron" Path="Employees" />
                 <RadzenPanelMenuItem Text="Logistikpartner" Icon="delivery_truck_speed" Path="LogisticProviders" />
+                <AuthorizeView Policy="@AuthPolicies.AdminOnly">
+                    <RadzenPanelMenuItem Text="Benutzergruppen" Icon="manage_accounts" Path="UserGroups" />
+                </AuthorizeView>
             </RadzenPanelMenuItem>
-            <RadzenPanelMenuItem Text="Auftrag erstellen" Icon="add_task" Path="Customers" />
+            <AuthorizeView Policy="@AuthPolicies.CanCreateOrders">
+                <RadzenPanelMenuItem Text="Auftrag erstellen" Icon="add_task" Path="Customers" />
+            </AuthorizeView>
             <RadzenPanelMenuItem Text="Alte Aufträge" Icon="elderly" Path="KrdData" />
         </RadzenPanelMenu>
     </RadzenSidebar>
@@ -46,4 +74,59 @@
 
     [Inject]
     private IOptions<AppVersionOptions> AppVersionOptions { get; set; } = default!;
+
+    [Inject]
+    private IJSRuntime JS { get; set; } = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (!firstRender)
+            return;
+
+        // Auth-Helfer direkt im Browser-Kontext definieren — unabhängig von einer
+        // statischen JS-Datei bzw. einem veralteten Browser-Cache.
+        // (OnAfterRenderAsync läuft erst nach dem Prerendering, wenn JS verfügbar ist.)
+        await JS.InvokeVoidAsync("eval", AuthJsScript.Definitions);
+    }
+
+    private Task OnUserMenuClicked(RadzenProfileMenuItem item)
+    {
+        if (item.Value == "logout")
+        {
+            return OnLogoutClicked();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static string GetInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "?";
+
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var initials = parts.Length switch
+        {
+            0 => "?",
+            1 => parts[0][..1],
+            _ => string.Concat(parts[0][0], parts[^1][0])
+        };
+
+        return initials.ToUpperInvariant();
+    }
+
+    private async Task OnLogoutClicked()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("camcareLogout");
+        }
+        catch (Microsoft.JSInterop.JSException)
+        {
+            await JS.InvokeVoidAsync("eval", AuthJsScript.Definitions);
+            await JS.InvokeVoidAsync("camcareLogout");
+        }
+    }
 }

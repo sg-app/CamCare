@@ -3,7 +3,8 @@ namespace CamCare.Models
     public enum RepairOrderChangeType
     {
         Created,
-        Updated
+        Updated,
+        FileUploaded
     }
 
     /// <summary>

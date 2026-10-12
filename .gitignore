@@ -364,3 +364,13 @@ FodyWeavers.xsd
 *.db
 *.db-shm
 *.db-wal
+
+# Playwright E2E-Tests
+e2e/node_modules/
+e2e/test-results/
+e2e/playwright-report/
+e2e/blob-report/
+e2e/.last-run.json
+
+# Lokal gestartete App (Hilfsdatei, um den Hintergrundprozess zu beenden)
+app-pid.txt

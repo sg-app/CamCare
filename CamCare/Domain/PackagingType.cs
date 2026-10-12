@@ -8,5 +8,7 @@ namespace CamCare
         CustomersBox = 1,         // Employee uses customer's box
         [Display(Description = "Neuer Karton")]
         NewBox = 2,   // Employee use a new box
+        [Display(Description = "Palette")]
+        Pallet = 3,   // Employee use a new box
     }
 }

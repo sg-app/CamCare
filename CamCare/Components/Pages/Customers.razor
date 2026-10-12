@@ -1,4 +1,5 @@
 ﻿@page "/Customers"
+@attribute [Authorize(Policy = AuthPolicies.CanCreateOrders)]
 @using CamCare.Models.Amicron
 @using CamCare.Store.RepairOrderFeature
 
@@ -47,13 +48,27 @@
                 <Columns>
                     <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.Seriennummer)" Title="Seriennummer"
                                           Width="150px" FilterPlaceholder="Filter" />
+                    <RadzenDataGridColumn TItem="Serials" Title="Offener Auftrag" Width="100px" Sortable="false"
+                                          Filterable="false">
+                        <Template Context="serial">
+                            @if (serial.HasOpenOrder)
+                            {
+                                <span title="Seriennummer befindet sich in einem offenen Auftrag.">
+                                    <RadzenIcon Icon="assignment" IconColor="@Colors.Warning" />
+                                </span>
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
                     <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.Artikelbezeichnung)" Title="Artikel"
                                           MinWidth="200px" FilterPlaceholder="Filter" />
                     <RadzenDataGridColumn Width="50px">
                         <Template Context="serial">
                             <RadzenButton Click="@(() => OnSerialSelected(customer, serial))" Icon="add_task"
                                           Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Info"
-                                          MouseEnter="@(args => ShowTooltip(args, "Auftrag mit Seriennummer erstellen."))" />
+                                          Disabled="@serial.HasOpenOrder"
+                                          MouseEnter="@(args => ShowTooltip(args, serial.HasOpenOrder
+                                              ? "Für diese Seriennummer existiert bereits ein offener Auftrag."
+                                              : "Auftrag mit Seriennummer erstellen."))" />
                         </Template>
                     </RadzenDataGridColumn>
                 </Columns>
@@ -68,6 +83,7 @@
     [Inject] protected TooltipService TooltipService { get; set; } = default!;
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
     [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
+    [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
     [Inject] protected IDispatcher Dispatcher { get; set; } = default!;
 
     private RadzenDataGrid<Adressen> _grid = default!;
@@ -78,10 +94,12 @@
     private IEnumerable<Serials>? _serialnumbers;
     private int _totalCountSerials;
     private string? _selectedSerial;
+    private HashSet<string> _openOrderSerials = new(StringComparer.OrdinalIgnoreCase);
 
     private async Task OnLoadData(LoadDataArgs args)
     {
         _isLoading = true;
+        await LoadOpenOrderSerialsAsync();
         _filter = new();
         foreach (var filter in args.Filters ?? [])
         {
@@ -130,6 +148,22 @@
         if (response.Success)
         {
             args.Serials = response.Data;
+            if (args.Serials is not null)
+            {
+                foreach (var serial in args.Serials)
+                {
+                    serial.HasOpenOrder = _openOrderSerials.Contains(serial.Seriennummer?.Trim() ?? string.Empty);
+                }
+            }
+        }
+    }
+
+    private async Task LoadOpenOrderSerialsAsync()
+    {
+        var response = await RepairOrderService.GetOpenOrderSerialNumbersAsync();
+        if (response.Success && response.Data is not null)
+        {
+            _openOrderSerials = response.Data;
         }
     }
 

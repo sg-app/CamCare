@@ -1,7 +1,9 @@
 ﻿@page "/RepairOrderStates"
+@attribute [Authorize]
 
 
 <InsertButton InsertClick="OnInsertClicked" />
+<RadzenText>Die Sortierung kann über Drag & Drop der Zeilen durchgeführt werden.</RadzenText>
 <RadzenDataGrid @ref="_grid" TItem="RepairOrderStatusVm" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
                 Count="_totalCount" AllowPaging="true" PageSize="20" RowUpdate="OnRowUpdate" RowCreate="OnRowCreate"
                 RowRender="OnRowRender" Density="Density.Compact" AllowColumnResize="true" ShowEmptyMessage="false">
@@ -19,7 +21,7 @@
             </EditTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Order)" Title="Order"
-                              Width="60px" SortOrder="SortOrder.Ascending" TextAlign="TextAlign.Right" />
+                              Width="60px" SortOrder="SortOrder.Ascending" TextAlign="TextAlign.Right" Visible="false" />
         <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.BackgroundColor)"
                               Title="Hintergrundfarbe" Width="120px">
             <Template Context="item">

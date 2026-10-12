@@ -1,4 +1,5 @@
 ﻿@page "/RepairOrders"
+@attribute [Authorize]
 @using CamCare.Store.RepairOrderFeature
 @implements IDisposable
 
@@ -7,12 +8,15 @@
                     ValueChanged="@((val) => { _archiveOrders = val; _grid.Reload(); })" Name="_archiveOrders" />
     <RadzenLabel Text="Archivierte Aufträge" Component="_archiveOrders" class="rz-ms-2" />
 </div>
-<InsertButton InsertClick="OnInsertClicked" />
+<AuthorizeView Policy="@AuthPolicies.CanCreateOrders">
+    <InsertButton InsertClick="OnInsertClicked" />
+</AuthorizeView>
 
 <RadzenDataGrid @ref="_grid" TItem="RepairOrderVm" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
                 Count="_totalCount" AllowPaging="true" PageSize="20" Density="Density.Compact" AllowColumnResize="true"
                 ShowEmptyMessage="false">
     <Columns>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftrag" Property="Id" Width="60px"></RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status" Width="180px">
             <Template Context="item">
                 <RadzenBadge Style="@item.RepairOrderStatus?.BadageStyle">@item.RepairOrderStatus?.Name</RadzenBadge>
@@ -176,7 +180,7 @@
     private void OnEditRowClicked(RepairOrderVm item)
     {
         Dispatcher.Dispatch(new SetCurrentRepairOrderAction(item));
-        NavigationManager.NavigateTo($"/EditRepairOrder");
+        NavigationManager.NavigateTo($"/EditRepairOrder/{item.Id}");
     }
 
     protected override void OnInitialized()

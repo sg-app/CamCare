@@ -12,6 +12,12 @@
         public string? CustomerNumber { get; set; }
         public string? CustomerPlz { get; set; }
 
+        /// <summary>
+        /// True, wenn für diese Seriennummer aktuell ein offener (nicht abgeschlossener)
+        /// Reparaturauftrag existiert. Wird in den Listenansichten zur Anzeige eines Icons verwendet.
+        /// </summary>
+        public bool HasOpenOrder { get; set; }
+
         public string DisplayName => $"{Seriennummer} - {Artikelbezeichnung}";
     }
 }

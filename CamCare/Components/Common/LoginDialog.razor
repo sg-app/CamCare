@@ -1,0 +1,103 @@
+﻿@if (ShowErrorMessage)
+{
+    <div class="alert alert-danger py-2" role="alert">
+        Benutzergruppe oder Passwort ist falsch.
+    </div>
+}
+
+<form @onsubmit="OnFormSubmit" class="camcare-login-form">
+    <div class="mb-3">
+        <RadzenFormField Text="Benutzergruppe">
+            <RadzenDropDown TValue="string" @bind-Value="_group" Data="Groups" AllowClear="false"
+                            Style="width:100%" EmptyText="Bitte wählen…" />
+        </RadzenFormField>
+    </div>
+    <div class="mb-4">
+        <RadzenFormField Text="Passwort">
+            <RadzenPassword @bind-Value="_password" Style="width:100%" />
+        </RadzenFormField>
+    </div>
+    <RadzenButton Text="Anmelden" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Medium"
+                  ButtonType="ButtonType.Submit" Disabled="_isSubmitting" Style="width:100%" />
+</form>
+
+@code {
+    [Inject] protected IJSRuntime JS { get; set; } = default!;
+
+    [Parameter]
+    public bool ShowError { get; set; }
+
+    private IReadOnlyList<string> Groups { get; }
+        = UserGroups.All.Select(g => g.Name).ToList();
+
+    private string? _group;
+    private string? _password;
+    private bool _loginFailed;
+    private bool _isSubmitting;
+
+    private bool ShowErrorMessage => ShowError || _loginFailed;
+
+    /// <summary>
+    /// Wird beim Absenden des Formulars ausgelöst – sowohl über den „Anmelden“-Button
+    /// als auch über die Enter-Taste im Passwortfeld (implizites Form-Submit des Browsers).
+    /// </summary>
+    private async Task OnFormSubmit()
+    {
+        // Doppelte Auslösung verhindern (z. B. wenn Enter gedrückt wird, während bereits gesendet wird).
+        if (_isSubmitting)
+            return;
+
+        await OnLoginClicked();
+    }
+
+    private async Task OnLoginClicked()
+    {
+        if (string.IsNullOrWhiteSpace(_group) || string.IsNullOrWhiteSpace(_password))
+        {
+            _loginFailed = true;
+            return;
+        }
+
+        _isSubmitting = true;
+        try
+        {
+            var success = await InvokeLoginAsync();
+            if (!success)
+            {
+                _loginFailed = true;
+                _password = null;
+            }
+        }
+        catch (Exception)
+        {
+            // Beim erfolgreichen Login löst der anschließende Full-Reload den Circuit auf;
+            // Fehler beim Aufruf werden hier nur protokolliert, nicht angezeigt.
+            _loginFailed = true;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Auth-Helfer direkt im Browser-Kontext definieren — unabhängig von einer
+        // statischen JS-Datei bzw. einem veralteten Browser-Cache.
+        await JS.InvokeVoidAsync("eval", AuthJsScript.Definitions);
+    }
+
+    private async Task<bool> InvokeLoginAsync()
+    {
+        try
+        {
+            return await JS.InvokeAsync<bool>("camcareLogin", _group, _password);
+        }
+        catch (Microsoft.JSInterop.JSException)
+        {
+            // Helfer war (noch) nicht definiert → einmalig nachregistrieren und erneut versuchen.
+            await JS.InvokeVoidAsync("eval", AuthJsScript.Definitions);
+            return await JS.InvokeAsync<bool>("camcareLogin", _group, _password);
+        }
+    }
+}

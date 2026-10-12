@@ -14,6 +14,7 @@ namespace CamCare.Persistence
         public DbSet<LogisticProvider> LogisticProviders { get; set; }
         public DbSet<RepairOrderStatusHistory> RepairOrderStatusHistories { get; set; }
         public DbSet<DataStore> DataStores { get; set; }
+        public DbSet<UserGroup> UserGroups { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

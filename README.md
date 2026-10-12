@@ -51,6 +51,7 @@
   - Anhängen von Dateien an Reparaturaufträge (z. B. Fotos, Dokumente)
   - Speicherung in einem S3-kompatiblen Object Storage (MinIO)
   - Bereitstellung über einen API-Endpunkt mit Download- und Range-Support
+  - Mobiler Upload per QR-Code/Link direkt aus der Auftragsansicht (ohne Login)
 
 - **Weitere Funktionen**
   - Responsive Blazor-UI mit Radzen-Komponenten
@@ -134,6 +135,18 @@ Die Anwendung ist anschließend unter `https://localhost:5001` (bzw. dem in `lau
 
 Beim Start werden offene EF-Core-Migrationen automatisch angewendet und Stammdaten initialisiert.
 
+## Anmeldung & Benutzergruppen
+
+Die Anwendung nutzt eine einfache Gruppenanmeldung (ohne einzelne Benutzerkonten). Beim ersten Start werden die drei Benutzergruppen mit folgenden Standard-Passwörtern angelegt:
+
+| Benutzergruppe | Standard-Passwort | Rechte |
+|---|---|---|
+| `admin` | `admin` | Volle Sicht und alle Rechte (inkl. Auftragserstellung); kann Passwörter aller Gruppen unter **Stammdaten → Benutzergruppen** ändern |
+| `buero` | `buero` | Kann neue Aufträge anlegen („Auftrag erstellen") |
+| `werkstatt` | `werk` | Zugriff auf Aufträge und Stammdaten, keine Auftragserstellung |
+
+Die Anmeldung erfolgt über einen Anmeldedialog (Benutzergruppe + Passwort). Eine Benutzergruppe bleibt angemeldet, bis über „Abmelden" abgemeldet wird. Nach dem ersten Anmelden sollten die Standard-Passwörter über **Stammdaten → Benutzergruppen** (nur `admin`) geändert werden. Die Passwörter werden gesalzen und gehasht (PBKDF2) gespeichert.
+
 ## Docker-Deployment
 
 Die `docker-compose.yml` startet die vollständige Umgebung:
@@ -146,6 +159,12 @@ Die `docker-compose.yml` startet die vollständige Umgebung:
 # SA_PASSWORD als Umgebungsvariable setzen
 export SA_PASSWORD="DeinSicheresPasswort"
 
+# Geheimer Schlüssel für die Upload-Link-Signierung (mindestens 16 Zeichen)
+export UPLOAD_LINK_SECRET="EinSehrLangesGeheimesPasswort"
+
+# Öffentliche Basis-URL, unter der CamCare (bzw. der mobile Upload) erreichbar ist
+export UPLOAD_LINK_PUBLIC_BASE_URL="https://upload.example.com"
+
 # Alle Dienste starten
 docker compose up -d
 ```
@@ -154,13 +173,16 @@ Die Anwendung ist danach unter `http://localhost:8085` erreichbar.
 
 ### Wichtige Umgebungsvariablen
 
-| Variable                             | Beschreibung                                    |
-| ------------------------------------ | ----------------------------------------------- |
-| `ConnectionStrings__Default`         | SQL-Server-Verbindung für die CamCare-Datenbank |
-| `ConnectionStrings__AmicronDatabase` | Firebird-Datenbank (Amicron)                    |
-| `ConnectionStrings__DefaultKrd`      | SQL-Server-Verbindung für die KRD-Altdaten      |
-| `ObjectStorage__Endpoint`            | Endpunkt des MinIO/Object-Storage-Servers       |
-| `ASPNETCORE_ENVIRONMENT`             | ASP.NET-Umgebung (Development/Production)       |
+| Variable                             | Beschreibung                                                       |
+| ------------------------------------ | ------------------------------------------------------------------ |
+| `ConnectionStrings__Default`         | SQL-Server-Verbindung für die CamCare-Datenbank                     |
+| `ConnectionStrings__AmicronDatabase` | Firebird-Datenbank (Amicron)                                        |
+| `ConnectionStrings__DefaultKrd`      | SQL-Server-Verbindung für die KRD-Altdaten                           |
+| `ObjectStorage__Endpoint`            | Endpunkt des MinIO/Object-Storage-Servers                            |
+| `UploadLink__Secret`                 | Geheimer Schlüssel zur Signierung der mobilen Upload-Links           |
+| `UploadLink__TokenLifetimeMinutes`   | Gültigkeitsdauer eines Upload-Links in Minuten (Standard: 120)       |
+| `UploadLink__PublicBaseUrl`          | Öffentliche Basis-URL für QR-Code/Link des mobilen Uploads           |
+| `ASPNETCORE_ENVIRONMENT`             | ASP.NET-Umgebung (Development/Production)                            |
 
 ## API-Endpunkte
 
@@ -168,7 +190,81 @@ Die Anwendung ist danach unter `http://localhost:8085` erreichbar.
 | --------------------------------------------- | ---------------------------------------------------------------------- |
 | `GET /health`                                 | Health-Check                                                           |
 | `GET /api/datastores/{id}/file?download=true` | Datei aus dem Object Storage abrufen (mit Download- und Range-Support) |
+| `GET /u/{token}`                              | Anonyme Mobile-Upload-Seite (statisches HTML, kein WebSocket)          |
+| `POST /api/upload/{token}`                    | Multipart-Upload für einen Auftrag (bild/PDF/Video, max. 100 MB)       |
+
+## Mobiler Datei-Upload per QR-Code
+
+In der Auftragsansicht (**Auftrag bearbeiten**) kann über **„Mobiler Upload"** ein zeitlich
+begrenzter Upload-Link erzeugt werden (QR-Code + kopierbarer Link). Damit können z.&#8201;B.
+Mitarbeiter oder Kunden mit dem Smartphone Fotos, PDF- und Videodateien direkt an den Auftrag
+anhängen – ganz ohne Login in der CamCare-Oberfläche.
+
+- Der Link zeigt auf die anonyme Seite `GET /u/{Token}`.
+- Das Token ist ein HMAC-SHA256-signierter, zeitlich begrenzter Link (Standard:
+  `UploadLink__TokenLifetimeMinutes`, siehe `appsettings.json`), signiert mit `UploadLink__Secret`.
+  **Ohne gültiges/abgelaufenes Token liefert die Seite sowie die Upload-API `404 Not Found`.**
+- Die Upload-Seite ist **bewusst nicht-interaktiv** (reines HTML + Vanilla-JS, kein
+  Blazor-Circuit/WebSocket): Die Dateien werden per `fetch()` als `multipart/form-data` an
+  `POST /api/upload/{token}` übertragen – dadurch funktioniert der Upload zuverlässig auch hinter
+  Reverse-Proxies.
+- Hochgeladene Dateien landen über den vorhandenen `DataStoreService` im Object Storage (MinIO)
+  und erscheinen sofort in der Dateiablage des Auftrags.
+- Geöffnete Editor-Ansichten aktualisieren ihre Dateiliste **live**: Der Upload-Endpunkt
+  publiziert ein `RepairOrderChangedEvent` (Typ `FileUploaded`) über den In-Process-Change-Bus
+  (`RepairOrderChangeBroadcaster`). `<DataAssign />` abonniert dieses Event und lädt die Dateien
+  des Auftrags neu.
+
+### Freigabe über Nginx Proxy Manager
+
+Die mobile Upload-Seite wird **gezielt** über einen eigenen Reverse-Proxy-Host freigegeben
+(z.&#8201;B. `upload.example.com`), nicht die gesamte CamCare-Oberfläche:
+
+1. **Proxy Host anlegen:** Domain `upload.example.com` → Ziel `http://camcare:8080`
+   (bzw. die IP des Docker-Hosts und den veröffentlichten Port).
+2. **Websockets sind NICHT erforderlich:** Die Upload-Seite ist eine statische HTML-Seite und
+   die Upload-API ein klassischer HTTP-POST-Endpunkt. Die Option **„Websockets Support"** im
+   Nginx Proxy Manager kann aus bleiben.
+3. **Pfad-Allowlist** (Advanced-Config des Locations), damit über diese Domain nur die
+   Upload-Seite und die Upload-API erreichbar sind – alles andere blockieren:
+
+   ```nginx
+   # Nur Upload-Seite und Upload-API freigeben – alles andere blockieren.
+   location ~ ^/(u/|api/upload/) {
+       proxy_pass http://camcare:8080;
+       proxy_set_header Host $host;
+       proxy_set_header X-Real-IP $remote_addr;
+       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+       proxy_set_header X-Forwarded-Proto $scheme;
+       proxy_http_version 1.1;
+   }
+   location / {
+       return 403;
+   }
+   ```
+
+4. **Upload-Größe begrenzen:** Passt das Limit an die maximale Dateigröße an
+   (Standard 100&#8201;MB, siehe `ObjectStorage__MaxFileSizeBytes`; Kestrel beachtet
+   zusätzlich `client_max_body_size` des Proxys):
+
+   ```nginx
+   client_max_body_size 110m;
+   ```
+
+5. **`UploadLink__PublicBaseUrl`** muss auf die öffentliche Domain zeigen (z.&#8201;B.
+   `https://upload.example.com`), damit der QR-Code nicht auf die interne Adresse verweist.
+6. CamCare erwartet, dass der Proxy die Header `X-Forwarded-For` und `X-Forwarded-Proto`
+   setzt (im NPM standardmäßig der Fall). Die App vertraut diesen Headern aus privaten
+   IP-Netzwerken (`10/8`, `172.16/12`, `192.168/16`, Loopback) über `UseForwardedHeaders`
+   mit `ForwardedHeadersOptions`.
+7. **Abgelaufene/ungültige Tokens** beantworten sowohl `GET /u/{token}` als auch
+   `POST /api/upload/{token}` mit **HTTP 404** – der Upload-Host verrät dadurch nichts über
+   die Existenz eines Auftrags und alte QR-Codes werden als „Link abgelaufen" angezeigt.
 
 ## Lizenz
 
 Siehe [LICENSE.txt](LICENSE.txt).
+
+### Eingebundene Drittbibliotheken
+
+- **`wwwroot/js/qrcode.min.js`** – QR-Code-Generator ([`davidshimjs/qrcodejs`](https://github.com/davidshimjs/qrcodejs), MIT-Lizenz).

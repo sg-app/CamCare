@@ -224,6 +224,14 @@ namespace CamCare.Services
                     e.FirstName = evm.FirstName;
                     e.LastName = evm.LastName;
                     break;
+                case UserGroup ug when destination is UserGroupVm ugvm:
+                    ugvm.Id = ug.Id;
+                    ugvm.Name = ug.Name;
+                    break;
+                case UserGroupVm ugvm when destination is UserGroup ug:
+                    ug.Id = ugvm.Id;
+                    ug.Name = ugvm.Name;
+                    break;
                 case Krd_Data d when destination is Krd_DataVm vm:
                     vm.CameraSerial = d.CameraSerial;
                     vm.Description = d.Description;
