@@ -16,6 +16,7 @@
                 Count="_totalCount" AllowPaging="true" PageSize="20" Density="Density.Compact" AllowColumnResize="true"
                 ShowEmptyMessage="false">
     <Columns>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftrag" Property="Id" Width="60px"></RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status" Width="180px">
             <Template Context="item">
                 <RadzenBadge Style="@item.RepairOrderStatus?.BadageStyle">@item.RepairOrderStatus?.Name</RadzenBadge>
@@ -179,7 +180,7 @@
     private void OnEditRowClicked(RepairOrderVm item)
     {
         Dispatcher.Dispatch(new SetCurrentRepairOrderAction(item));
-        NavigationManager.NavigateTo($"/EditRepairOrder");
+        NavigationManager.NavigateTo($"/EditRepairOrder/{item.Id}");
     }
 
     protected override void OnInitialized()

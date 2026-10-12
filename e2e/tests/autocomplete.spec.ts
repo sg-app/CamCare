@@ -9,7 +9,7 @@ async function openFirstRepairOrder(page: Page): Promise<void> {
   await expect(page.locator('.rz-data-row').first()).toBeVisible({ timeout: 30_000 });
 
   await page.locator('.rz-data-row').first().locator('button:has-text("edit_square")').click();
-  await page.waitForURL('**/EditRepairOrder', { timeout: 15_000 });
+  await page.waitForURL('**/EditRepairOrder*', { timeout: 15_000 });
   await expect(page.locator('button:has-text("add")').first()).toBeVisible({ timeout: 30_000 });
 }
 

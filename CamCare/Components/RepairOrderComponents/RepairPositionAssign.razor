@@ -1,5 +1,4 @@
 ﻿@using CamCare.Models.Amicron
-
 <RadzenDataGrid TItem="Artikel" class="mt-2" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
                 Count="_totalCount" AllowPaging="true" PageSize="10" AllowFiltering="true" FilterMode="FilterMode.Simple"
                 Density="Density.Compact" SelectionMode="DataGridSelectionMode.Single" @bind-Value="@_selectedItems"
@@ -7,8 +6,8 @@
     <Columns>
         <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Artikelnummer)" Title="Artikel-Nr" Width="150px"
                               FilterPlaceholder="Filter" />
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Description)" Title="Bezeichnung"
-                              MinWidth="200px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Description)"
+                              Title="Bezeichnung (Artikel durch doppelklick einfügen)" MinWidth="200px" FilterPlaceholder="Filter" />
         <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Unit)" Title="Einheit" Width="80px"
                               Filterable="false" />
         <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.InStock)" Title="Bestand" Width="100px"

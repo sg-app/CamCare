@@ -1,9 +1,13 @@
 ﻿@page "/EditRepairOrder"
+@page "/EditRepairOrder/{RepairOrderId:int}"
 @attribute [Authorize]
 @inherits FluxorComponent
 @using CamCare.Models.Amicron
 @using CamCare.Store.RepairOrderFeature
-<RadzenTemplateForm Data="@RepairOrder" TItem="RepairOrderVm" Submit="OnSaveClicked" InvalidSubmit="OnInvalidSubmit">
+
+@if (RepairOrder is not null)
+{
+    <RadzenTemplateForm Data="@RepairOrder" TItem="RepairOrderVm" Submit="OnSaveClicked" InvalidSubmit="OnInvalidSubmit">
     <FluentValidator />
     <RadzenStack Orientation="Orientation.Horizontal">
 
@@ -90,6 +94,11 @@
 
     <FormButtons Class="pt-2" CancelClick="OnCancelClicked" />
 </RadzenTemplateForm>
+}
+else
+{
+    <RadzenText TextStyle="TextStyle.Body1">Lade Auftrag…</RadzenText>
+}
 
 @code {
     [Inject] protected IState<RepairOrderState> RepairOrderState { get; set; } = default!;
@@ -99,10 +108,11 @@
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
     [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
     [Inject] protected NotificationService NotificationService { get; set; } = default!;
+    [Inject] protected IDispatcher Dispatcher { get; set; } = default!;
 
     [Parameter] public int RepairOrderId { get; set; }
 
-    private RepairOrderVm RepairOrder => RepairOrderState.Value.CurrentRepairOrder!;
+    private RepairOrderVm? RepairOrder => RepairOrderState.Value.CurrentRepairOrder;
     private IList<Serials> _customerSerials = new List<Serials>();
     private bool _serialNotListed;
     private int _disabledSerialsCount;
@@ -113,15 +123,46 @@
         await base.OnInitializedAsync();
         ArgumentNullException.ThrowIfNull(RepairOrderState);
 
+        // Nach einem Hot Reload (oder direktem Aufruf / Refresh) ist der Fluxor-State
+        // evtl. leer oder enthält einen anderen Auftrag → dann selbstständig laden.
+        if (RepairOrderId > 0
+            && (RepairOrderState.Value.CurrentRepairOrder is null
+                || RepairOrderState.Value.CurrentRepairOrder.Id != RepairOrderId))
+        {
+            await LoadRepairOrderAsync(RepairOrderId);
+        }
+
+        if (RepairOrder is null)
+            return;
+
         await LoadCustomerSerialsAsync();
         _serialNotListed = RepairOrder.SerialNumberNeedsMaintenance == true
             || (!string.IsNullOrEmpty(RepairOrder.CameraSerialNumber)
                 && _customerSerials.All(s => s.Seriennummer != RepairOrder.CameraSerialNumber));
     }
 
+    private async Task LoadRepairOrderAsync(int id)
+    {
+        var response = await RepairOrderService.GetByIdAsync(id);
+        if (!response.Success || response.Data is null)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Auftrag nicht gefunden",
+                Detail = response.Message ?? "Der Reparaturauftrag konnte nicht geladen werden.",
+                Duration = 5000
+            });
+            NavigationManager.NavigateTo("/RepairOrders");
+            return;
+        }
+
+        Dispatcher.Dispatch(new SetCurrentRepairOrderAction(response.Data));
+    }
+
     private async Task LoadCustomerSerialsAsync()
     {
-        if (RepairOrder.CustomerId is not int customerId)
+        if (RepairOrder is null || RepairOrder.CustomerId is not int customerId)
             return;
 
         var response = await AmicronDataService.GetSerialsFromCustomerIdAsync(customerId);

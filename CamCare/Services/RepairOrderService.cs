@@ -539,15 +539,35 @@ namespace CamCare.Services
             {
                 using var context = _contextFactory.CreateDbContext();
                 var entity = await context.RepairOrders
+                    .AsNoTracking()
+                    .Include(i => i.RepairOrderStatus)
+                    .Include(i => i.RepairOrderStatusHistory)
+                        .ThenInclude(i => i.RepairOrderStatus)
+                    .Include(i => i.LogisticProvider)
+                    .Include(i => i.Employees)
                     .Include(i => i.Defectives)
                     .Include(i => i.IncludedComponents)
-                    .Include(i => i.RepairPositions)
-                    .Include(i => i.RepairOrderStatus)
+                    .Include(i => i.RepairOrderRepairPositions)
+                        .ThenInclude(rp => rp.RepairPosition)
                     .Where(f => f.Id == (int)id)
                     .FirstOrDefaultAsync();
                 if (entity == null)
                     return ServiceResponse.Failure<RepairOrderVm>("Nicht gefunden");
+
                 var vm = _mapper.Map<RepairOrder, RepairOrderVm>(entity);
+
+                // Kundendaten aus dem Amicron-System anreichern (wie in GetAllAsync).
+                if (vm.CustomerId.HasValue)
+                {
+                    var customersResponse = await _amicronDataService.GetAddressesByCustomerIdsAsync([vm.CustomerId.Value]);
+                    if (customersResponse.Success && customersResponse.Data != null)
+                    {
+                        var customer = customersResponse.Data.FirstOrDefault(c => c.LfdNr == vm.CustomerId.Value);
+                        if (customer != null)
+                            vm.Customer = customer;
+                    }
+                }
+
                 return ServiceResponse.Success(vm);
             }
             catch (Exception ex)

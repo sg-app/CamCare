@@ -290,7 +290,7 @@ else
     private void OnEditClicked(RepairOrderVm item)
     {
         Dispatcher.Dispatch(new SetCurrentRepairOrderAction(item));
-        NavigationManager.NavigateTo("/EditRepairOrder");
+        NavigationManager.NavigateTo($"/EditRepairOrder/{item.Id}");
     }
 
     protected override void OnInitialized()
