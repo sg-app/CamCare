@@ -190,6 +190,8 @@ Die Anwendung ist danach unter `http://localhost:8085` erreichbar.
 | --------------------------------------------- | ---------------------------------------------------------------------- |
 | `GET /health`                                 | Health-Check                                                           |
 | `GET /api/datastores/{id}/file?download=true` | Datei aus dem Object Storage abrufen (mit Download- und Range-Support) |
+| `GET /u/{token}`                              | Anonyme Mobile-Upload-Seite (statisches HTML, kein WebSocket)          |
+| `POST /api/upload/{token}`                    | Multipart-Upload für einen Auftrag (bild/PDF/Video, max. 100 MB)       |
 
 ## Mobiler Datei-Upload per QR-Code
 
@@ -199,10 +201,19 @@ Mitarbeiter oder Kunden mit dem Smartphone Fotos, PDF- und Videodateien direkt a
 anhängen – ganz ohne Login in der CamCare-Oberfläche.
 
 - Der Link zeigt auf die anonyme Seite `GET /u/{Token}`.
-- Das Token ist ein HMAC-SHA256-signierter, zeitlich begrenzter Link (Standard: 120 Minuten),
-  signiert mit `UploadLink__Secret`. Ohne gültiges/abgelaufenes Token wird die Seite verweigert.
+- Das Token ist ein HMAC-SHA256-signierter, zeitlich begrenzter Link (Standard:
+  `UploadLink__TokenLifetimeMinutes`, siehe `appsettings.json`), signiert mit `UploadLink__Secret`.
+  **Ohne gültiges/abgelaufenes Token liefert die Seite sowie die Upload-API `404 Not Found`.**
+- Die Upload-Seite ist **bewusst nicht-interaktiv** (reines HTML + Vanilla-JS, kein
+  Blazor-Circuit/WebSocket): Die Dateien werden per `fetch()` als `multipart/form-data` an
+  `POST /api/upload/{token}` übertragen – dadurch funktioniert der Upload zuverlässig auch hinter
+  Reverse-Proxies.
 - Hochgeladene Dateien landen über den vorhandenen `DataStoreService` im Object Storage (MinIO)
   und erscheinen sofort in der Dateiablage des Auftrags.
+- Geöffnete Editor-Ansichten aktualisieren ihre Dateiliste **live**: Der Upload-Endpunkt
+  publiziert ein `RepairOrderChangedEvent` (Typ `FileUploaded`) über den In-Process-Change-Bus
+  (`RepairOrderChangeBroadcaster`). `<DataAssign />` abonniert dieses Event und lädt die Dateien
+  des Auftrags neu.
 
 ### Freigabe über Nginx Proxy Manager
 
@@ -211,22 +222,21 @@ Die mobile Upload-Seite wird **gezielt** über einen eigenen Reverse-Proxy-Host 
 
 1. **Proxy Host anlegen:** Domain `upload.example.com` → Ziel `http://camcare:8080`
    (bzw. die IP des Docker-Hosts und den veröffentlichten Port).
-2. **Websockets aktivieren:** Da die Upload-Seite eine **Blazor-Server**-Komponente ist,
-   muss im Nginx Proxy Manager die Option **„Websockets Support"** aktiviert sein.
+2. **Websockets sind NICHT erforderlich:** Die Upload-Seite ist eine statische HTML-Seite und
+   die Upload-API ein klassischer HTTP-POST-Endpunkt. Die Option **„Websockets Support"** im
+   Nginx Proxy Manager kann aus bleiben.
 3. **Pfad-Allowlist** (Advanced-Config des Locations), damit über diese Domain nur die
-   Upload-Seite und deren Ressourcen erreichbar sind:
+   Upload-Seite und die Upload-API erreichbar sind – alles andere blockieren:
 
    ```nginx
-   # Nur Upload-Seite und benötigte Assets freigeben – alles andere blockieren.
-   location ~ ^/(u/|_framework/|_blazor|js/|css/|_content/|CamCare\.png) {
+   # Nur Upload-Seite und Upload-API freigeben – alles andere blockieren.
+   location ~ ^/(u/|api/upload/) {
        proxy_pass http://camcare:8080;
        proxy_set_header Host $host;
        proxy_set_header X-Real-IP $remote_addr;
        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
        proxy_set_header X-Forwarded-Proto $scheme;
        proxy_http_version 1.1;
-       proxy_set_header Upgrade $http_upgrade;
-       proxy_set_header Connection "upgrade";
    }
    location / {
        return 403;
@@ -234,7 +244,8 @@ Die mobile Upload-Seite wird **gezielt** über einen eigenen Reverse-Proxy-Host 
    ```
 
 4. **Upload-Größe begrenzen:** Passt das Limit an die maximale Dateigröße an
-   (Standard 100&#8201;MB, siehe `ObjectStorage__MaxFileSizeBytes`):
+   (Standard 100&#8201;MB, siehe `ObjectStorage__MaxFileSizeBytes`; Kestrel beachtet
+   zusätzlich `client_max_body_size` des Proxys):
 
    ```nginx
    client_max_body_size 110m;
@@ -246,6 +257,9 @@ Die mobile Upload-Seite wird **gezielt** über einen eigenen Reverse-Proxy-Host 
    setzt (im NPM standardmäßig der Fall). Die App vertraut diesen Headern aus privaten
    IP-Netzwerken (`10/8`, `172.16/12`, `192.168/16`, Loopback) über `UseForwardedHeaders`
    mit `ForwardedHeadersOptions`.
+7. **Abgelaufene/ungültige Tokens** beantworten sowohl `GET /u/{token}` als auch
+   `POST /api/upload/{token}` mit **HTTP 404** – der Upload-Host verrät dadurch nichts über
+   die Existenz eines Auftrags und alte QR-Codes werden als „Link abgelaufen" angezeigt.
 
 ## Lizenz
 

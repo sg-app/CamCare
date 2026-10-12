@@ -110,8 +110,10 @@
 </RadzenCard>
 
 
+@implements IDisposable
 @code {
     [Inject] protected ILogger<DataAssign> Logger { get; set; } = default!;
+    [Inject] protected IRepairOrderChangeSubscriber RepairOrderChangeSubscriber { get; set; } = default!;
     [Inject] protected DialogService DialogService { get; set; } = default!;
     [Inject] protected IDataStoreService DataStoreService { get; set; } = default!;
     [Inject] protected IOptions<ObjectStorageOptions> ObjectStorageOptions { get; set; } = default!;
@@ -120,6 +122,12 @@
     [Inject] protected IUploadTokenService UploadTokenService { get; set; } = default!;
     [Inject] protected NotificationService NotificationService { get; set; } = default!;
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        RepairOrderChangeSubscriber.Changed += OnRepairOrderFilesChanged;
+    }
 
     private long MaxFileSizeBytes => ObjectStorageOptions.Value.MaxFileSizeBytes;
     private long MaxFileSizeMb => MaxFileSizeBytes / (1024 * 1024);
@@ -261,5 +269,43 @@ ConfirmOptions
         await JS.InvokeVoidAsync("renderQrCode", "uploadQrCode", _uploadUrl);
         _qrCodeGenerated = DateTime.Now;
         await InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Reagiert auf Datei-Uploads (z. B. mobiler Upload per QR-Code) und lädt die
+    /// Dateiliste des aktuellen Auftrags neu. Der Change-Bus wird dabei vom
+    /// Request-Thread des Upload-Endpunkts aus bedient – InvokeAsync marshallt
+    /// auf den Synchronisationskontext dieses Circuits.
+    /// </summary>
+    private async void OnRepairOrderFilesChanged(object? sender, RepairOrderChangedEvent changeEvent)
+    {
+        try
+        {
+            if (changeEvent.ChangeType != RepairOrderChangeType.FileUploaded)
+                return;
+
+            await InvokeAsync(async () =>
+            {
+                if (RepairOrder is null || RepairOrder.Id != changeEvent.RepairOrderId)
+                    return;
+
+                var response = await DataStoreService.GetFromRepairOrderAsync(RepairOrder.Id);
+                if (response.Success)
+                {
+                    RepairOrder.DataStores = response.Data ?? [];
+                    StateHasChanged();
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fehler beim Aktualisieren der Dateiliste nach Upload (Auftrag {RepairOrderId}).",
+                changeEvent.RepairOrderId);
+        }
+    }
+
+    public void Dispose()
+    {
+        RepairOrderChangeSubscriber.Changed -= OnRepairOrderFilesChanged;
     }
 }

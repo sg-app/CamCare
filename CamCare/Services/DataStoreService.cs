@@ -306,7 +306,16 @@ namespace CamCare.Services
 
         private string CreateInternalReadUrl(int dataStoreId)
         {
-            return _navigationManager.ToAbsoluteUri($"/api/datastores/{dataStoreId}/file").ToString();
+            try
+            {
+                return _navigationManager.ToAbsoluteUri($"/api/datastores/{dataStoreId}/file").ToString();
+            }
+            catch
+            {
+                // Außerhalb eines Blazor-Circuits (z. B. HTTP-Upload-Endpunkt) ist kein
+                // NavigationManager verfügbar – relative, app-root-bezogene URL als Fallback.
+                return $"/api/datastores/{dataStoreId}/file";
+            }
         }
 
         private static IReadOnlyDictionary<string, string> BuildObjectMetadata(int repairOrderId, string filename)
