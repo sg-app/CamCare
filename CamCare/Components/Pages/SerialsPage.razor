@@ -9,6 +9,16 @@
     <Columns>
         <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.Seriennummer)" Title="Seriennummer"
                               Width="150px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Serials" Title="Offener Auftrag" Width="100px" Sortable="false" Filterable="false">
+            <Template Context="serial">
+                @if (serial.HasOpenOrder)
+                {
+                    <span title="Seriennummer befindet sich in einem offenen Auftrag.">
+                        <RadzenIcon Icon="assignment" IconColor="@Colors.Warning" />
+                    </span>
+                }
+            </Template>
+        </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.Artikelbezeichnung)" Title="Artikel"
                               MinWidth="200px" FilterPlaceholder="Filter" />
         <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.CustomerNumber)" Title="Kundennummer"
@@ -25,6 +35,7 @@
     [Inject] protected DialogService DialogService { get; set; } = default!;
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
     [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
+    [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
     private RadzenDataGrid<Serials> _grid = default!;
     private IList<Serials>? _data;
     private int _totalCount;
@@ -58,6 +69,15 @@
         {
             _data = response.Data?.Items.ToList() ?? [];
             _totalCount = response.Data?.TotalCount ?? 0;
+        }
+
+        var openOrdersResponse = await RepairOrderService.GetOpenOrderSerialNumbersAsync();
+        if (openOrdersResponse.Success && openOrdersResponse.Data is not null && _data is not null)
+        {
+            foreach (var serial in _data)
+            {
+                serial.HasOpenOrder = openOrdersResponse.Data.Contains(serial.Seriennummer?.Trim() ?? string.Empty);
+            }
         }
         _isLoading = false;
     }

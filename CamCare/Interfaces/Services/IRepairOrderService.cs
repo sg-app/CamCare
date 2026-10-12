@@ -8,5 +8,6 @@ namespace CamCare.Interfaces.Services
     {
         Task<ServiceResponse<Paginated<RepairOrderVm>>> GetAllAsync(LoadDataArgs args, bool viewCurrentOrders);
         Task<ServiceResponse<List<RepairOrderVm>>> GetBySerialNumberAsync(string serialNumber);
+        Task<ServiceResponse<HashSet<string>>> GetOpenOrderSerialNumbersAsync();
     }
 }

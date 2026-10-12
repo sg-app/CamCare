@@ -34,12 +34,20 @@
                         <RadzenDropDown TValue="string" Value="@RepairOrder.CameraSerialNumber"
                                         ValueChanged="@(args => OnCameraSerialChanged(args))" Data="@_customerSerials"
                                         TextProperty="@nameof(Serials.DisplayName)" ValueProperty="@nameof(Serials.Seriennummer)"
+                                        DisabledProperty="@nameof(Serials.HasOpenOrder)"
                                         AllowClear="true" AllowFiltering="true"
                                         FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                         FilterOperator="StringFilterOperator.Contains" AllowVirtualization="true"
                                         EmptyText="Keine Seriennummern für diesen Kunden gefunden" Style="width:100%" />
                     }
                 </RadzenFormField>
+
+                @if (_disabledSerialsCount > 0)
+                {
+                    <RadzenText class="d-block text-secondary pt-1 pb-2">
+                        @_disabledSerialsCount Seriennummer(n) sind deaktiviert, da für sie bereits ein anderer offener Auftrag existiert.
+                    </RadzenText>
+                }
 
                 @if (RepairOrder.SerialNumberNeedsMaintenance == true)
                 {
@@ -93,6 +101,7 @@
     private RepairOrderVm RepairOrder => RepairOrderState.Value.CurrentRepairOrder!;
     private IList<Serials> _customerSerials = new List<Serials>();
     private bool _serialNotListed;
+    private int _disabledSerialsCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -113,7 +122,25 @@
         var response = await AmicronDataService.GetSerialsFromCustomerIdAsync(customerId);
         if (response.Success)
         {
-            _customerSerials = response.Data ?? new List<Serials>();
+            var allSerials = response.Data ?? new List<Serials>();
+
+            var openOrdersResponse = await RepairOrderService.GetOpenOrderSerialNumbersAsync();
+            if (openOrdersResponse.Success && openOrdersResponse.Data is not null)
+            {
+                var currentSerial = RepairOrder.CameraSerialNumber?.Trim();
+
+                foreach (var serial in allSerials)
+                {
+                    // Seriennummern mit offenem Auftrag werden über DisabledProperty deaktiviert,
+                    // die aktuell diesem Auftrag zugeordnete Seriennummer bleibt auswählbar.
+                    serial.HasOpenOrder = openOrdersResponse.Data.Contains(serial.Seriennummer?.Trim() ?? string.Empty)
+                                          && serial.Seriennummer?.Trim() != currentSerial;
+                }
+
+                _disabledSerialsCount = allSerials.Count(s => s.HasOpenOrder);
+            }
+
+            _customerSerials = allSerials;
         }
     }
 
@@ -188,8 +215,21 @@
 
     private async Task OnSaveClicked(RepairOrderVm item)
     {
-        await RepairOrderService.UpdateAsync(RepairOrder.Id, RepairOrder);
-        NavigationManager.NavigateTo("/RepairOrders");
+        var response = await RepairOrderService.UpdateAsync(RepairOrder.Id, RepairOrder);
+        if (response.Success)
+        {
+            NavigationManager.NavigateTo("/RepairOrders");
+        }
+        else
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Fehler",
+                Detail = response.Message ?? "Unbekannter Fehler",
+                Duration = 5000
+            });
+        }
     }
 
     private void OnCancelClicked(MouseEventArgs args)

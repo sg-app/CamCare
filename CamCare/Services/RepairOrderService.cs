@@ -155,6 +155,34 @@ namespace CamCare.Services
             }
         }
 
+        /// <summary>
+        /// Liefert alle Seriennummern, für die aktuell mindestens ein offener (nicht abgeschlossener)
+        /// Reparaturauftrag existiert. Wird verwendet, um Seriennummern in Listenansichten zu kennzeichnen.
+        /// </summary>
+        public async Task<ServiceResponse<HashSet<string>>> GetOpenOrderSerialNumbersAsync()
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+
+                var serialNumbers = await context.RepairOrders
+                    .AsNoTracking()
+                    .Where(f => !f.RepairOrderStatus.IsOrderClose)
+                    .Where(f => f.SerialNumber != null)
+                    .Select(f => f.SerialNumber!.Trim())
+                    .Distinct()
+                    .ToListAsync();
+
+                return ServiceResponse.Success(new HashSet<string>(serialNumbers, StringComparer.OrdinalIgnoreCase));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler beim Ermitteln der Seriennummern mit offenen Aufträgen");
+                NotifyError("Fehler beim Ermitteln der Seriennummern mit offenen Aufträgen");
+                return ServiceResponse.Failure<HashSet<string>>("Fehler beim Ermitteln der Seriennummern mit offenen Aufträgen", ex);
+            }
+        }
+
         public override async Task<ServiceResponse<RepairOrderVm>> CreateAsync(RepairOrderVm vm)
         {
             using var context = _contextFactory.CreateDbContext();
@@ -162,6 +190,18 @@ namespace CamCare.Services
 
             try
             {
+                // Verhindern, dass für eine Seriennummer ein zweiter offener Auftrag erstellt wird.
+                if (!string.IsNullOrWhiteSpace(vm.CameraSerialNumber)
+                    && await context.RepairOrders
+                        .AnyAsync(o => o.SerialNumber != null
+                                       && o.SerialNumber.Trim().ToLower() == vm.CameraSerialNumber.Trim().ToLower()
+                                       && !o.RepairOrderStatus.IsOrderClose))
+                {
+                    await transaction.RollbackAsync();
+                    return ServiceResponse.Failure<RepairOrderVm>(
+                        $"Für die Seriennummer {vm.CameraSerialNumber} existiert bereits ein offener Auftrag. Es kann kein weiterer Auftrag erstellt werden.");
+                }
+
                 var entity = new RepairOrder();
                 _mapper.Map(vm, entity);
 
@@ -315,6 +355,20 @@ namespace CamCare.Services
 
                 if (entity == null)
                     return ServiceResponse.Failure<RepairOrderVm>("Nicht gefunden");
+
+                // Verhindern, dass die Seriennummer auf eine Seriennummer geändert wird,
+                // für die bereits ein anderer offener Auftrag existiert.
+                if (!string.IsNullOrWhiteSpace(vm.CameraSerialNumber)
+                    && await context.RepairOrders
+                        .AnyAsync(o => o.Id != entity.Id
+                                       && o.SerialNumber != null
+                                       && o.SerialNumber.Trim().ToLower() == vm.CameraSerialNumber.Trim().ToLower()
+                                       && !o.RepairOrderStatus.IsOrderClose))
+                {
+                    await transaction.RollbackAsync();
+                    return ServiceResponse.Failure<RepairOrderVm>(
+                        $"Für die Seriennummer {vm.CameraSerialNumber} existiert bereits ein anderer offener Auftrag. Die Seriennummer kann nicht verwendet werden.");
+                }
 
                 // --- Statushistorie aktualisieren ---
                 if (entity.RepairOrderStatusId != vm.RepairOrderStatusId)
