@@ -7,7 +7,7 @@
 
 @if (RepairOrder is not null)
 {
-    <RadzenTemplateForm Data="@RepairOrder" TItem="RepairOrderVm" Submit="OnSaveClicked" InvalidSubmit="OnInvalidSubmit">
+    <RadzenTemplateForm @ref="_form" Data="@RepairOrder" TItem="RepairOrderVm" Submit="OnSaveClicked" InvalidSubmit="OnInvalidSubmit">
         <FluentValidator />
         <RadzenStack Orientation="Orientation.Horizontal">
 
@@ -85,6 +85,7 @@
             <RepairOrderDescription RepairOrder="@RepairOrder" />
             <EmployeeAssign RepairOrder="@RepairOrder" />
             <DefectiveAssign RepairOrder="@RepairOrder" />
+            <WorkAssign RepairOrder="@RepairOrder" />
             <RepairPositionAssign RepairOrder="@RepairOrder" />
             <div class="d-flex flex-wrap gap-3">
                 <div class="flex-grow-1" style="min-width: 320px;">
@@ -110,6 +111,7 @@ else
     [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
     [Inject] protected NotificationService NotificationService { get; set; } = default!;
     [Inject] protected IDispatcher Dispatcher { get; set; } = default!;
+    [Inject] protected IJSRuntime JS { get; set; } = default!;
 
     [Parameter] public int RepairOrderId { get; set; }
 
@@ -117,7 +119,24 @@ else
     private IList<Serials> _customerSerials = new List<Serials>();
     private bool _serialNotListed;
     private int _disabledSerialsCount;
+    private RadzenTemplateForm<RepairOrderVm> _form = default!;
+    private bool _enterGuardAttached;
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        // Die Enter-Taste in einem Formularfeld (z. B. "Beschreibung" in einer neu eingefügten
+        // Grid-Zeile) löst sonst das implizite Absenden des RadzenTemplateForm aus:
+        // Submit -> OnSaveClicked -> NavigateTo("/RepairOrders") – die Seite würde sich schließen.
+        // Der Guard wird genau einmal pro Seite am <form>-Element aktiviert und unterdrückt nur
+        // das implizite Submit (Enter in einem <input>), ohne Radzen-Listener zu beeinträchtigen.
+        if (RepairOrder is not null && !_enterGuardAttached && !string.IsNullOrEmpty(_form?.Element.Id))
+        {
+            _enterGuardAttached = true;
+            await JS.InvokeVoidAsync("camcarePreventImplicitFormSubmit", _form.Element);
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {

@@ -1,9 +1,14 @@
 ﻿@page "/RepairOrderStates"
-@attribute [Authorize]
+@attribute [Authorize(Policy = AuthPolicies.AdminOnly)]
 
 
 <InsertButton InsertClick="OnInsertClicked" />
 <RadzenText>Die Sortierung kann über Drag & Drop der Zeilen durchgeführt werden.</RadzenText>
+<RadzenStack Gap="0rem">
+    <RadzenText TextStyle="TextStyle.Subtitle2">Standard: Auswahl bei neu erstellen Aufträgen</RadzenText>
+    <RadzenText TextStyle="TextStyle.Subtitle2">Aktiv: Werden in den DropDowns angezeigt</RadzenText>
+    <RadzenText TextStyle="TextStyle.Subtitle2">Abschluss: Archiviert den Auftrag</RadzenText>
+</RadzenStack>
 <RadzenDataGrid @ref="_grid" TItem="RepairOrderStatusVm" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
                 Count="_totalCount" AllowPaging="true" PageSize="20" RowUpdate="OnRowUpdate" RowCreate="OnRowCreate"
                 RowRender="OnRowRender" Density="Density.Compact" AllowColumnResize="true" ShowEmptyMessage="false">
@@ -12,12 +17,6 @@
                               MinWidth="200px">
             <EditTemplate Context="item">
                 <RadzenTextBox @bind-Value="item.Name" Style="width:100%" />
-            </EditTemplate>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Description)"
-                              Title="Description" MinWidth="250px">
-            <EditTemplate Context="item">
-                <RadzenTextBox @bind-Value="item.Description" Style="width:100%" />
             </EditTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Order)" Title="Order"
@@ -156,11 +155,38 @@ $"document.querySelector('.rz-grid-draggable').classList.remove('rz-grid-draggab
     private async Task OnDeleteRowClicked(RepairOrderStatusVm item)
     {
         var dialogResult = await DialogService.Confirm("Soll der Datensatz wirklich gelöscht werden?", "Datensatz löschen", new
-ConfirmOptions
+        ConfirmOptions
         { OkButtonText = "Ja", CancelButtonText = "Nein" });
         if (dialogResult != true) return;
 
-        await RepairOrderStatusService.DeleteAsync(item.Id, false);
+        var usageResponse = await RepairOrderStatusService.GetUsageAsync(item.Id);
+        if (!usageResponse.Success || usageResponse.Data is null) return;
+
+        var usage = usageResponse.Data;
+
+        // Status wird noch von Reparaturaufträgen als aktueller Status verwendet -> nicht löschbar
+        if (usage.RepairOrderCount > 0)
+        {
+            var message = $"Der Status \"{item.Name}\" wird aktuell noch von {usage.RepairOrderCount} Reparaturaufträgen verwendet und kann daher nicht gelöscht werden.\n\n" +
+                          "Bitte weisen Sie diesen Aufträgen zuerst einen anderen Status zu.";
+            await DialogService.Alert(message, "Löschen nicht möglich");
+            return;
+        }
+
+        // Status ist nur über History-Einträge verknüpft -> Hinweis, dass diese erhalten bleiben
+        if (usage.HistoryCount > 0)
+        {
+            var message = $"Der Status \"{item.Name}\" ist mit {usage.HistoryCount} History-Einträgen verknüpft.\n\n" +
+                          "Diese Einträge bleiben mit dem zum Zeitpunkt der Änderung gespeicherten Statusnamen erhalten und werden NICHT gelöscht.\n\n" +
+                          "Soll der Status trotzdem gelöscht werden?";
+            var deleteStatus = await DialogService.Confirm(message, "Status löschen", new ConfirmOptions
+            { OkButtonText = "Ja, löschen", CancelButtonText = "Abbrechen" });
+            if (deleteStatus != true) return;
+        }
+
+        var result = await RepairOrderStatusService.DeleteAsync(item.Id, false);
+        if (!result.Success) return;
+
         await _grid.Reload();
     }
 

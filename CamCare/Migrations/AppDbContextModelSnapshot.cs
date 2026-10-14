@@ -276,8 +276,14 @@ namespace CamCare.Migrations
                     b.Property<int>("ShippingMethod")
                         .HasColumnType("int");
 
+                    b.Property<string>("ShippingMethodDescription")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("Warranty")
+                        .HasColumnType("bit");
 
                     b.HasKey("Id");
 
@@ -455,14 +461,26 @@ namespace CamCare.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("BackgroundColor")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<DateTime>("ChangedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("FontColor")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<int>("RepairOrderId")
                         .HasColumnType("int");
 
-                    b.Property<int>("RepairOrderStatusId")
+                    b.Property<int?>("RepairOrderStatusId")
                         .HasColumnType("int");
+
+                    b.Property<string>("StatusName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
@@ -540,6 +558,32 @@ namespace CamCare.Migrations
                     b.ToTable("UserGroups");
                 });
 
+            modelBuilder.Entity("CamCare.Domain.Work", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Works");
+                });
+
             modelBuilder.Entity("DefectiveRepairOrder", b =>
                 {
                     b.Property<int>("DefectivesId")
@@ -603,6 +647,21 @@ namespace CamCare.Migrations
                     b.ToTable("RepairOrderRepairPosition");
                 });
 
+            modelBuilder.Entity("RepairOrderWork", b =>
+                {
+                    b.Property<int>("RepairOrdersId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WorksId")
+                        .HasColumnType("int");
+
+                    b.HasKey("RepairOrdersId", "WorksId");
+
+                    b.HasIndex("WorksId");
+
+                    b.ToTable("RepairOrderWork");
+                });
+
             modelBuilder.Entity("CamCare.Domain.DataStore", b =>
                 {
                     b.HasOne("CamCare.Domain.RepairOrder", "RepairOrder")
@@ -641,9 +700,7 @@ namespace CamCare.Migrations
 
                     b.HasOne("CamCare.Domain.RepairOrderStatus", "RepairOrderStatus")
                         .WithMany()
-                        .HasForeignKey("RepairOrderStatusId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("RepairOrderStatusId");
 
                     b.Navigation("RepairOrderStatus");
                 });
@@ -710,6 +767,21 @@ namespace CamCare.Migrations
                     b.Navigation("RepairOrder");
 
                     b.Navigation("RepairPosition");
+                });
+
+            modelBuilder.Entity("RepairOrderWork", b =>
+                {
+                    b.HasOne("CamCare.Domain.RepairOrder", null)
+                        .WithMany()
+                        .HasForeignKey("RepairOrdersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CamCare.Domain.Work", null)
+                        .WithMany()
+                        .HasForeignKey("WorksId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("CamCare.Domain.LogisticProvider", b =>

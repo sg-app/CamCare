@@ -27,6 +27,8 @@ namespace CamCare.Services
                     rovm.PiceOfEquipment = ro.PiceOfEquipment;
                     rovm.RepairOrderStatusId = ro.RepairOrderStatusId;
                     rovm.ShippingMethod = ro.ShippingMethod;
+                    rovm.ShippingMethodDescription = ro.ShippingMethodDescription;
+                    rovm.Warranty = ro.Warranty;
                     rovm.PackagingType = ro.PackagingType;
                     rovm.PackagingLength = ro.PackagingLength;
                     rovm.PackagingWidth = ro.PackagingWidth;
@@ -47,6 +49,8 @@ namespace CamCare.Services
                         rovm.LogisticProvider = Map<LogisticProvider, LogisticProviderVm>(ro.LogisticProvider);
                     if (ro.Defectives != null)
                         rovm.Defectives = ro.Defectives.Select(Map<Defective, DefectiveVm>).ToList();
+                    if (ro.Works != null)
+                        rovm.Works = ro.Works.Select(Map<Work, WorkVm>).ToList();
                     if (ro.IncludedComponents != null)
                         rovm.IncludedComponents = ro.IncludedComponents.Select(Map<IncludedComponent, IncludedComponentVm>).ToList();
                     if (ro.RepairPositions != null)
@@ -63,6 +67,8 @@ namespace CamCare.Services
                     ro.PiceOfEquipment = rovm.PiceOfEquipment;
                     ro.RepairOrderStatusId = rovm.RepairOrderStatusId;
                     ro.ShippingMethod = rovm.ShippingMethod;
+                    ro.ShippingMethodDescription = rovm.ShippingMethodDescription;
+                    ro.Warranty = rovm.Warranty;
                     ro.PackagingType = rovm.PackagingType;
                     ro.PackagingLength = rovm.PackagingLength;
                     ro.PackagingWidth = rovm.PackagingWidth;
@@ -130,6 +136,16 @@ namespace CamCare.Services
                     def.Id = defvm.Id;
                     def.Description = defvm.Description;
                     break;
+                case Work wrk when destination is WorkVm wrkvm:
+                    wrkvm.Id = wrk.Id;
+                    wrkvm.Description = wrk.Description;
+                    wrkvm.CreatedAt = wrk.CreatedAt;
+                    wrkvm.UpdatedAt = wrk.UpdatedAt;
+                    break;
+                case WorkVm wrkvm when destination is Work wrk:
+                    wrk.Id = wrkvm.Id;
+                    wrk.Description = wrkvm.Description;
+                    break;
                 case IncludedComponent includedComponent when destination is IncludedComponentVm includedComponentVm:
                     includedComponentVm.Id = includedComponent.Id;
                     includedComponentVm.Description = includedComponent.Description;
@@ -163,7 +179,6 @@ namespace CamCare.Services
                 case RepairOrderStatus ros when destination is RepairOrderStatusVm rosvm:
                     rosvm.Id = ros.Id;
                     rosvm.Name = ros.Name;
-                    rosvm.Description = ros.Description;
                     rosvm.Order = ros.Order;
                     rosvm.BackgroundColor = ros.BackgroundColor;
                     rosvm.FontColor = ros.FontColor;
@@ -176,7 +191,6 @@ namespace CamCare.Services
                 case RepairOrderStatusVm rosvm when destination is RepairOrderStatus ros:
                     ros.Id = rosvm.Id;
                     ros.Name = rosvm.Name;
-                    ros.Description = rosvm.Description;
                     ros.Order = rosvm.Order;
                     ros.BackgroundColor = rosvm.BackgroundColor;
                     ros.FontColor = rosvm.FontColor;
@@ -190,6 +204,9 @@ namespace CamCare.Services
                     vm.Id = history.Id;
                     vm.RepairOrderId = history.RepairOrderId;
                     vm.RepairOrderStatusId = history.RepairOrderStatusId;
+                    vm.StatusName = history.StatusName;
+                    vm.BackgroundColor = history.BackgroundColor;
+                    vm.FontColor = history.FontColor;
                     vm.ChangedAt = history.ChangedAt.ToLocalTime();
                     if (history.RepairOrderStatus != null)
                         vm.RepairOrderStatus = Map<RepairOrderStatus, RepairOrderStatusVm>(history.RepairOrderStatus);
@@ -198,6 +215,9 @@ namespace CamCare.Services
                     history.Id = vm.Id;
                     history.RepairOrderId = vm.RepairOrderId;
                     history.RepairOrderStatusId = vm.RepairOrderStatusId;
+                    history.StatusName = vm.StatusName;
+                    history.BackgroundColor = vm.BackgroundColor;
+                    history.FontColor = vm.FontColor;
                     history.ChangedAt = vm.ChangedAt.ToUniversalTime();
                     break;
                 case LogisticProvider lp when destination is LogisticProviderVm lpvm:

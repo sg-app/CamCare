@@ -1,6 +1,7 @@
 ﻿@page "/RepairOrders"
 @attribute [Authorize]
 @using CamCare.Store.RepairOrderFeature
+@using Fluxor.Blazor.Web
 @implements IDisposable
 
 <div class="pe-2">
@@ -42,6 +43,15 @@
                 </RadzenStack>
             </Template>
         </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Garantie" Width="100px">
+            <Template Context="item">
+                @{
+                    var icon = item.Warranty ? "check_box" :
+                "check_box_outline_blank";
+                }
+                <RadzenIcon Icon="@icon" />
+            </Template>
+        </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eigenversand" Width="100px">
             <Template Context="item">
                 @{
@@ -78,15 +88,20 @@
             }
         }
         <RadzenText TextStyle="TextStyle.H5" class="d-block">
-            Defekte
+            Defekt:
         </RadzenText>
         @foreach (var defective in item.Defectives ?? [])
         {
-            <RadzenText class="d-block">
-                @defective.Description
-            </RadzenText>
+            <div class="d-block">- @defective.Description</div>
         }
-        <RadzenFieldset Text="Reparaturpositionen">
+        <RadzenText TextStyle="TextStyle.H5" class="d-block">
+            Ausgeführte Arbeiten:
+        </RadzenText>
+        @foreach (var work in item.Works ?? [])
+        {
+            <div class="d-block">- @work.Description</div>
+        }
+        <RadzenFieldset Text="Zu berechnende Artikel">
             @if (item.RepairPositions?.Any() == true && item.RepairPositions.Count >= 1)
             {
                 <RadzenTable AllowAlternatingRows="true">
@@ -136,8 +151,8 @@
                             <RadzenText>
                                 @history.ChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
                             </RadzenText>
-                            <RadzenBadge Style="@history.RepairOrderStatus?.BadageStyle">
-                                @history.RepairOrderStatus?.Name
+                            <RadzenBadge Style="@history.BadageStyle">
+                                @history.DisplayStatusName
                             </RadzenBadge>
                         </RadzenStack>
                     }

@@ -10,10 +10,6 @@ namespace CamCare.Models
         [MaxLength(100, ErrorMessage = "Maximal {1} Zeichen erlaubt.")]
         [MinLength(3, ErrorMessage = "Mindestens {1} Zeichen erforderlich.")]
         public string Name { get; set; } = string.Empty;
-        [Required(ErrorMessage = "Beschreibung ist erforderlich.")]
-        [MaxLength(300, ErrorMessage = "Maximal {1} Zeichen erlaubt.")]
-        [MinLength(3, ErrorMessage = "Mindestens {1} Zeichen erforderlich.")]
-        public string Description { get; set; } = string.Empty;
         public int Order { get; set; }
         [MaxLength(30)]
         public string? BackgroundColor { get; set; }

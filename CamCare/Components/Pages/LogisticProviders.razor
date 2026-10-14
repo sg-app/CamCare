@@ -1,5 +1,5 @@
 ﻿@page "/LogisticProviders"
-@attribute [Authorize]
+@attribute [Authorize(Policy = AuthPolicies.AdminOnly)]
 
 
 <InsertButton InsertClick="OnInsertClicked" />
