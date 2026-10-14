@@ -13,6 +13,8 @@ namespace CamCare.Domain
         public string? PiceOfEquipment { get; set; }
         public int RepairOrderStatusId { get; set; }
         public ShippingMethod ShippingMethod { get; set; }
+        public string? ShippingMethodDescription { get; set; }
+        public bool Warranty { get; set; }
         public PackagingType PackagingType { get; set; }
         public int? PackagingLength { get; set; }
         public int? PackagingWidth { get; set; }
@@ -27,6 +29,7 @@ namespace CamCare.Domain
         public virtual RepairOrderStatus RepairOrderStatus { get; set; } = null!;
         public virtual LogisticProvider LogisticProvider { get; set; } = null!;
         public virtual ICollection<Defective> Defectives { get; set; } = [];
+        public virtual ICollection<Work> Works { get; set; } = [];
         public virtual ICollection<IncludedComponent> IncludedComponents { get; set; } = [];
         public virtual ICollection<RepairPosition> RepairPositions { get; set; } = [];
         public virtual ICollection<RepairOrderRepairPosition> RepairOrderRepairPositions { get; set; } = [];

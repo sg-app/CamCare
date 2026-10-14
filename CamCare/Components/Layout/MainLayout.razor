@@ -22,8 +22,7 @@
                         <RadzenProfileMenuItem Icon="account_circle"
                                                Text="@($"Angemeldet als: {AuthContext.User.Identity?.Name}")"
                                                Style="border-bottom:1px solid var(--rz-base-300);font-weight:600" Value="info" />
-                        <RadzenProfileMenuItem Icon="info"
-                                               Text="@($"Version: {AppVersionOptions.Value.FullSemVer}")"
+                        <RadzenProfileMenuItem Icon="info" Text="@($"Version: {AppVersionOptions.Value.FullSemVer}")"
                                                Value="version" />
                         <RadzenProfileMenuItem Icon="logout" Text="Abmelden" Value="logout" />
                     </ChildContent>
@@ -39,7 +38,8 @@
             <RadzenPanelMenuItem Text="Stammdaten" Icon="database">
                 <RadzenPanelMenuItem Text="Status" Icon="sweep" Path="RepairOrderStates" />
                 <RadzenPanelMenuItem Text="Defekte" Icon="broken_image" Path="Defectives" />
-                <RadzenPanelMenuItem Text="Reparaturen" Icon="build" Path="RepairPositions" />
+                <RadzenPanelMenuItem Text="Arbeiten" Icon="build" Path="Works" />
+                <RadzenPanelMenuItem Text="Material" Icon="brick" Path="RepairPositions" />
                 <RadzenPanelMenuItem Text="Mitgel. Komponenten" Icon="tile_small" Path="IncludedComponents" />
                 <RadzenPanelMenuItem Text="Mitarbeiter" Icon="person_apron" Path="Employees" />
                 <RadzenPanelMenuItem Text="Logistikpartner" Icon="delivery_truck_speed" Path="LogisticProviders" />

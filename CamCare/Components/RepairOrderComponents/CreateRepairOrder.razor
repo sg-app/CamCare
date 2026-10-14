@@ -6,7 +6,7 @@
 
 @if (RepairOrder is not null)
 {
-    <RadzenTemplateForm Data="@RepairOrder" TItem="RepairOrderVm" Submit="OnSaveClicked" InvalidSubmit="OnInvalidSubmit">
+    <RadzenTemplateForm @ref="_form" Data="@RepairOrder" TItem="RepairOrderVm" Submit="OnSaveClicked" InvalidSubmit="OnInvalidSubmit">
         <FluentValidator />
 
         <RadzenFieldset Text="Kunde">
@@ -95,12 +95,29 @@
     [Inject] protected IDispatcher Dispatcher { get; set; } = default!;
     [Inject] protected IState<RepairOrderState> RepairOrderState { get; set; } = default!;
     [Inject] protected NotificationService NotificationService { get; set; } = default!;
+    [Inject] protected IJSRuntime JS { get; set; } = default!;
 
     private RepairOrderVm? RepairOrder => RepairOrderState.Value.CurrentRepairOrder;
 
     private IList<Serials> _customerSerials = new List<Serials>();
     private bool _serialNotListed;
     private int _disabledSerialsCount;
+    private RadzenTemplateForm<RepairOrderVm> _form = default!;
+    private bool _enterGuardAttached;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        // Siehe EditRepairOrder.razor: Unterbindet das implizite Absenden des Formulars durch
+        // Enter in einem Eingabefeld (Submit -> OnSaveClicked -> Navigation), damit sich die
+        // Seite beim Bearbeiten einer neu eingefügten Zeile nicht ungewollt schließt.
+        if (RepairOrder is not null && !_enterGuardAttached && !string.IsNullOrEmpty(_form?.Element.Id))
+        {
+            _enterGuardAttached = true;
+            await JS.InvokeVoidAsync("camcarePreventImplicitFormSubmit", _form.Element);
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {

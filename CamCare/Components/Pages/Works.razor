@@ -1,0 +1,87 @@
+﻿@page "/Works"
+@attribute [Authorize(Policy = AuthPolicies.AdminOnly)]
+
+
+<InsertButton InsertClick="OnInsertClicked" />
+<RadzenDataGrid @ref="_grid" TItem="WorkVm" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
+                Count="_totalCount" AllowPaging="true" PageSize="20" AllowFiltering="true" FilterMode="FilterMode.Simple"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" RowUpdate="OnRowUpdate" RowCreate="OnRowCreate"
+                Density="Density.Compact" AllowColumnResize="true" ShowEmptyMessage="false">
+    <Columns>
+        <RadzenDataGridColumn TItem="WorkVm" Property="@nameof(WorkVm.Description)" Title="Beschreibung">
+            <EditTemplate Context="item">
+                <RadzenTextBox @bind-Value="item.Description" Style="width:100%" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridInlineEditColumn TItem="WorkVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked"
+                                        CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    [Inject] protected IWorkService WorkService { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+
+    private RadzenDataGrid<WorkVm> _grid = default!;
+    private IList<WorkVm>? _data;
+    private int _totalCount;
+    private bool _isLoading;
+    private async Task OnLoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        var response = await WorkService.GetAllAsync(args);
+        if (response.Success)
+        {
+            _data = response.Data?.Items.ToList();
+            _totalCount = response.Data?.TotalCount ?? 0;
+        }
+        _isLoading = false;
+    }
+
+    private async Task OnInsertClicked(MouseEventArgs args)
+    {
+        if (!_grid.IsValid) return;
+        var item = new WorkVm();
+        await _grid.InsertRow(item);
+    }
+
+    private async Task OnRowUpdate(WorkVm item)
+    {
+        await WorkService.UpdateAsync(item.Id, item);
+        await _grid.Reload();
+    }
+
+    private async Task OnRowCreate(WorkVm item)
+    {
+        await WorkService.CreateAsync(item);
+        await _grid.Reload();
+    }
+
+    private async Task OnEditRowClicked(WorkVm item)
+    {
+        if (!_grid.IsValid) return;
+        await _grid.EditRow(item);
+    }
+
+    private async Task OnDeleteRowClicked(WorkVm item)
+    {
+        var dialogResult = await DialogService.Confirm("Soll der Datensatz wirklich gelöscht werden?", "Datensatz löschen", new
+ConfirmOptions
+        { OkButtonText = "Ja", CancelButtonText = "Nein" });
+        if (dialogResult != true) return;
+
+        await WorkService.DeleteAsync(item.Id, false);
+        await _grid.Reload();
+    }
+
+    private async Task OnCancelEditRowClicked(WorkVm item)
+    {
+        _grid.CancelEditRow(item);
+        await _grid.Reload();
+    }
+
+    private async Task OnSaveRowClicked(WorkVm item)
+    {
+        await _grid.UpdateRow(item);
+    }
+}

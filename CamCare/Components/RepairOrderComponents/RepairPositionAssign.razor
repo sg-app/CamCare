@@ -1,30 +1,16 @@
 ﻿@using CamCare.Models.Amicron
-<RadzenDataGrid TItem="Artikel" class="mt-2" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
-                Count="_totalCount" AllowPaging="true" PageSize="10" AllowFiltering="true" FilterMode="FilterMode.Simple"
-                Density="Density.Compact" SelectionMode="DataGridSelectionMode.Single" @bind-Value="@_selectedItems"
-                RowDoubleClick="OnItemDoubleClicked" AllowColumnResize="true" ShowEmptyMessage="false" Style="height:370px">
-    <Columns>
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Artikelnummer)" Title="Artikel-Nr" Width="150px"
-                              FilterPlaceholder="Filter" />
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Description)"
-                              Title="Bezeichnung (Artikel durch doppelklick einfügen)" MinWidth="200px" FilterPlaceholder="Filter" />
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Unit)" Title="Einheit" Width="80px"
-                              Filterable="false" />
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.InStock)" Title="Bestand" Width="100px"
-                              Filterable="false" />
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.MinStock)" Title="Mind. Bestand" Width="80px"
-                              Filterable="false" />
-        @* <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Picture)" Title="Bild" Width="80px"
-        Filterable="false" /> *@
-    </Columns>
-</RadzenDataGrid>
-<RadzenDataGrid @ref="_grid" Data="@RepairOrder.RepairPositions" TItem="RepairPositionVm" RowUpdate="OnRowUpdate"
-                RowCreate="OnRowCreate" Density="Density.Compact" EmptyText="Keine Positionen eingetragen">
+
+<RadzenDataGrid @ref="_grid" class="mt-2" Data="@RepairOrder.RepairPositions" TItem="RepairPositionVm"
+                RowUpdate="OnRowUpdate" RowCreate="OnRowCreate" Density="Density.Compact" EmptyText="Keine Positionen eingetragen">
     <HeaderTemplate>
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
 
             <InsertIconButton Click="OnInsertClicked" />
-            <RadzenText Text="Reparaturpositionen" TextStyle="TextStyle.H6" />
+            <RadzenText Text="Zu berechnende Artikel" TextStyle="TextStyle.H6" />
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                <RadzenLabel Text="Garantiereparatur" Component="warranty" />
+                <RadzenCheckBox @bind-Value="@RepairOrder.Warranty" Name="Warranty" />
+            </RadzenStack>
         </RadzenStack>
     </HeaderTemplate>
     <Columns>
@@ -50,7 +36,7 @@
                 }
                 else
                 {
-                    <RadzenAutoComplete Value="@item.Description" Change="OnDescriptionChanged" Data=@_repairPositions
+                    <RadzenAutoComplete @onkeydown="(args) => OnEditKeyDown(args, item)" Value="@item.Description" Change="OnDescriptionChanged" Data=@_repairPositions
                                         LoadData="OnLoadRepairPositionCatalog" OpenOnFocus="true"
                                         TextProperty="@nameof(RepairPositionVm.Description)" Style="width: 100%"
                                         ValueChanged="@(value => OnValueChanged(item, value))" SelectedItemChanged="OnSelectedItemChanged"
@@ -62,11 +48,31 @@
                                         CancelEditRow="OnCancelEditRow" EditRow="OnEditRow" />
     </Columns>
 </RadzenDataGrid>
+<RadzenDataGrid TItem="Artikel" class="mt-1" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
+                Count="_totalCount" AllowPaging="true" PageSize="10" AllowFiltering="true" FilterMode="FilterMode.Simple"
+                Density="Density.Compact" SelectionMode="DataGridSelectionMode.Single" @bind-Value="@_selectedItems"
+                RowDoubleClick="OnItemDoubleClicked" AllowColumnResize="true" ShowEmptyMessage="false" Style="height:370px">
+    <Columns>
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Artikelnummer)" Title="Artikel-Nr" Width="150px"
+                              FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Description)"
+                              Title="Bezeichnung (Artikel durch doppelklick einfügen)" MinWidth="200px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Unit)" Title="Einheit" Width="80px"
+                              Filterable="false" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.InStock)" Title="Bestand" Width="100px"
+                              Filterable="false" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.MinStock)" Title="Mind. Bestand" Width="80px"
+                              Filterable="false" />
+        @* <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Picture)" Title="Bild" Width="80px"
+        Filterable="false" /> *@
+    </Columns>
+</RadzenDataGrid>
 @code {
     [Inject] protected ILogger<RepairPositionAssign> Logger { get; set; } = default!;
     [Inject] protected IRepairPositionService RepairPositionService { get; set; } = default!;
     [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
     [Inject] protected DialogService DialogService { get; set; } = default!;
+    [Inject] protected IJSRuntime JS { get; set; } = default!;
 
     [Parameter] public RepairOrderVm RepairOrder { get; set; } = new();
 
@@ -154,6 +160,26 @@ rp.Description.ToLower().Contains(args.Filter.ToLower()));
     private async Task OnSaveRow(RepairPositionVm item)
     {
         await _grid.UpdateRow(item);
+    }
+
+    private async Task OnEditKeyDown(KeyboardEventArgs args, RepairPositionVm item)
+    {
+        if (args.Key != "Enter")
+            return;
+
+        // Das change-Event des RadzenAutoComplete (ValueChanged -> Modellbindung) feuert bei
+        // Enter noch nicht – erst beim Verlassen des Felds (Blur). Damit die Eingabe übernommen
+        // wird, lesen wir den aktuellen Wert direkt aus dem fokussierten Input und aktualisieren
+        // das Modell, BEVOR die Zeile gespeichert wird.
+        var value = await JS.InvokeAsync<string>("camcareGetActiveElementValue");
+        OnDescriptionChanged(value);
+
+        // Wurde die Zeile bereits über die Dropdown-Auswahl (OnSelectedItemChanged) gespeichert,
+        // ist _toEdit null und es ist hier nichts mehr zu tun.
+        if (_toEdit is not null)
+        {
+            await OnSaveRow(item);
+        }
     }
 
     private async Task OnCancelEditRow(RepairPositionVm item)

@@ -7,6 +7,7 @@ namespace CamCare.Persistence
     public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options), IAppDbContext
     {
         public DbSet<Defective> Defectives { get; set; }
+        public DbSet<Work> Works { get; set; }
         public DbSet<IncludedComponent> IncludedComponents { get; set; }
         public DbSet<RepairOrderStatus> RepairOrderStatuses { get; set; }
         public DbSet<RepairOrder> RepairOrders { get; set; }
