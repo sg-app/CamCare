@@ -49,6 +49,8 @@ namespace CamCare.Services
                         rovm.LogisticProvider = Map<LogisticProvider, LogisticProviderVm>(ro.LogisticProvider);
                     if (ro.Defectives != null)
                         rovm.Defectives = ro.Defectives.Select(Map<Defective, DefectiveVm>).ToList();
+                    if (ro.Works != null)
+                        rovm.Works = ro.Works.Select(Map<Work, WorkVm>).ToList();
                     if (ro.IncludedComponents != null)
                         rovm.IncludedComponents = ro.IncludedComponents.Select(Map<IncludedComponent, IncludedComponentVm>).ToList();
                     if (ro.RepairPositions != null)

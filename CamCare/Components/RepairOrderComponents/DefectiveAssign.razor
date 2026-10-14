@@ -29,6 +29,7 @@
 @code {
     [Inject] protected ILogger<DefectiveAssign> Logger { get; set; } = default!;
     [Inject] protected IDefectiveService DefectiveService { get; set; } = default!;
+    [Inject] protected IJSRuntime JS { get; set; } = default!;
 
     [Parameter] public RepairOrderVm RepairOrder { get; set; } = new();
 
@@ -85,10 +86,19 @@
 
     private async Task OnEditKeyDown(KeyboardEventArgs args, DefectiveVm item)
     {
-        // Enter in der "Beschreibung"-Zelle speichert die Zeile (wie der Save-Button).
-        // Das implizite Absenden des umgebenden RadzenTemplateForm verhindert der
-        // Formular-Guard (camcarePreventImplicitFormSubmit) auf der jeweiligen Seite.
-        if (args.Key == "Enter")
+        if (args.Key != "Enter")
+            return;
+
+        // Das change-Event des RadzenAutoComplete (ValueChanged -> Modellbindung) feuert bei
+        // Enter noch nicht – erst beim Verlassen des Felds (Blur). Damit die Eingabe übernommen
+        // wird, lesen wir den aktuellen Wert direkt aus dem fokussierten Input und aktualisieren
+        // das Modell, BEVOR die Zeile gespeichert wird.
+        var value = await JS.InvokeAsync<string>("camcareGetActiveElementValue");
+        OnDescriptionChanged(value);
+
+        // Wurde die Zeile bereits über die Dropdown-Auswahl (OnSelectedItemChanged) gespeichert,
+        // ist _toEdit null und es ist hier nichts mehr zu tun.
+        if (_toEdit is not null)
         {
             await OnSaveRow(item);
         }

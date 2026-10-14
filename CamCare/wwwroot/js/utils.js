@@ -57,3 +57,14 @@ window.camcarePreventImplicitFormSubmit = function (formElement) {
     }
   });
 };
+
+// Liefert den aktuellen Wert des fokussierten Eingabefelds zurück. Wird genutzt, um die Eingabe
+// eines RadzenAutoComplete bereits beim Enter-Druck zu übernehmen: Das change-Event (und damit
+// die ValueChanged-Modellbindung) feuert sonst erst beim Verlassen des Felds (Blur).
+window.camcareGetActiveElementValue = function () {
+  var el = document.activeElement;
+  if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+    return el.value;
+  }
+  return null;
+};
