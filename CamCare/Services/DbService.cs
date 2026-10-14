@@ -261,7 +261,8 @@ namespace CamCare.Services
                 string errorMessage = "Fehler beim Löschen des Datensatzes";
                 if (updateException.InnerException is not null)
                 {
-                    if (updateException.InnerException.Message.Contains("conflicted with the REFERENCE constraint"))
+                    if (updateException.InnerException.Message.Contains("conflicted with the REFERENCE constraint")
+                     || updateException.InnerException.Message.Contains("Konflikt mit der REFERENCE-Einschränkung"))
                     {
                         errorMessage = "Löschen nicht möglich, da noch verknüpfte Daten existieren.";
                     }
