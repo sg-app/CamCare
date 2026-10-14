@@ -1,5 +1,5 @@
 ﻿@page "/RepairOrderStates"
-@attribute [Authorize]
+@attribute [Authorize(Policy = AuthPolicies.AdminOnly)]
 
 
 <InsertButton InsertClick="OnInsertClicked" />

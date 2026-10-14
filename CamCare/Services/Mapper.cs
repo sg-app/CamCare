@@ -28,6 +28,7 @@ namespace CamCare.Services
                     rovm.RepairOrderStatusId = ro.RepairOrderStatusId;
                     rovm.ShippingMethod = ro.ShippingMethod;
                     rovm.ShippingMethodDescription = ro.ShippingMethodDescription;
+                    rovm.Warranty = ro.Warranty;
                     rovm.PackagingType = ro.PackagingType;
                     rovm.PackagingLength = ro.PackagingLength;
                     rovm.PackagingWidth = ro.PackagingWidth;
@@ -65,6 +66,7 @@ namespace CamCare.Services
                     ro.RepairOrderStatusId = rovm.RepairOrderStatusId;
                     ro.ShippingMethod = rovm.ShippingMethod;
                     ro.ShippingMethodDescription = rovm.ShippingMethodDescription;
+                    ro.Warranty = rovm.Warranty;
                     ro.PackagingType = rovm.PackagingType;
                     ro.PackagingLength = rovm.PackagingLength;
                     ro.PackagingWidth = rovm.PackagingWidth;
@@ -131,6 +133,16 @@ namespace CamCare.Services
                 case DefectiveVm defvm when destination is Defective def:
                     def.Id = defvm.Id;
                     def.Description = defvm.Description;
+                    break;
+                case Work wrk when destination is WorkVm wrkvm:
+                    wrkvm.Id = wrk.Id;
+                    wrkvm.Description = wrk.Description;
+                    wrkvm.CreatedAt = wrk.CreatedAt;
+                    wrkvm.UpdatedAt = wrk.UpdatedAt;
+                    break;
+                case WorkVm wrkvm when destination is Work wrk:
+                    wrk.Id = wrkvm.Id;
+                    wrk.Description = wrkvm.Description;
                     break;
                 case IncludedComponent includedComponent when destination is IncludedComponentVm includedComponentVm:
                     includedComponentVm.Id = includedComponent.Id;

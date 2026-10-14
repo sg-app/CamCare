@@ -43,6 +43,15 @@
                 </RadzenStack>
             </Template>
         </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Garantie" Width="100px">
+            <Template Context="item">
+                @{
+                    var icon = item.Warranty ? "check_box" :
+                "check_box_outline_blank";
+                }
+                <RadzenIcon Icon="@icon" />
+            </Template>
+        </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eigenversand" Width="100px">
             <Template Context="item">
                 @{
@@ -85,7 +94,14 @@
         {
             <div class="d-block">- @defective.Description</div>
         }
-        <RadzenFieldset Text="Reparaturpositionen">
+        <RadzenText TextStyle="TextStyle.H5" class="d-block">
+            Ausgeführte Arbeiten:
+        </RadzenText>
+        @foreach (var work in item.Works ?? [])
+        {
+            <div class="d-block">- @work.Description</div>
+        }
+        <RadzenFieldset Text="Zu berechnende Artikel">
             @if (item.RepairPositions?.Any() == true && item.RepairPositions.Count >= 1)
             {
                 <RadzenTable AllowAlternatingRows="true">

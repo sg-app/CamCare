@@ -35,3 +35,25 @@ window.copyTextToClipboard = function (text) {
   document.execCommand("copy");
   document.body.removeChild(ta);
 };
+
+// Verhindert das implizite Absenden eines <form>-Elements durch die Enter-Taste in Eingabefeldern.
+// Ohne diesen Schutz löst ein Enter in einem <input> innerhalb eines RadzenTemplateForm das Submit
+// aus (z. B. OnSaveClicked auf der EditRepairOrder-Seite), wodurch die Seite ungewollt geschlossen
+// würde – etwa während der Bearbeitung einer neu eingefügten Grid-Zeile ("Beschreibung" eingeben
+// und Enter drücken).
+// Nur die Standard-Aktion (implizites Submit) wird unterdrückt; alle anderen Listener (z. B. Radzen
+// AutoComplete/DataGrid) laufen weiter. Buttons (Speichern) bleiben per Enter/Klick funktionsfähig,
+// Textareas und Selects werden nicht angetastet (Enter dort = neue Zeile bzw. Dropdown).
+// Idempotent: Der Guard wird pro Formular nur einmal aktiviert.
+window.camcarePreventImplicitFormSubmit = function (formElement) {
+  if (!formElement || formElement.__camcareEnterGuard) return;
+  formElement.__camcareEnterGuard = true;
+  formElement.addEventListener("keydown", function (event) {
+    var target = event.target;
+    if (!target || target.tagName !== "INPUT") return;
+    if (target.type === "submit" || target.type === "button") return;
+    if (event.key === "Enter") {
+      event.preventDefault();
+    }
+  });
+};

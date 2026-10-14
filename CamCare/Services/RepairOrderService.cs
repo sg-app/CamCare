@@ -49,6 +49,7 @@ namespace CamCare.Services
                 .Include(i => i.LogisticProvider)
                 .Include(i => i.Employees)
                 .Include(i => i.Defectives)
+                .Include(i => i.Works)
                 .Include(i => i.IncludedComponents)
                 .Include(i => i.RepairOrderRepairPositions)
                     .ThenInclude(rp => rp.RepairPosition);
@@ -111,6 +112,7 @@ namespace CamCare.Services
                     .Include(i => i.LogisticProvider)
                     .Include(i => i.Employees)
                     .Include(i => i.Defectives)
+                    .Include(i => i.Works)
                     .Include(i => i.IncludedComponents)
                     .Include(i => i.RepairOrderRepairPositions)
                         .ThenInclude(rp => rp.RepairPosition)
@@ -206,6 +208,7 @@ namespace CamCare.Services
                 _mapper.Map(vm, entity);
 
                 entity.Defectives = new List<Defective>();
+                entity.Works = new List<Work>();
                 entity.IncludedComponents = new List<IncludedComponent>();
                 entity.Employees = new List<Employee>();
                 entity.RepairOrderRepairPositions = new List<RepairOrderRepairPosition>();
@@ -236,6 +239,35 @@ namespace CamCare.Services
                         }
 
                         entity.Defectives.Add(defective);
+                    }
+                }
+
+                // Works zuordnen oder anlegen
+                if (vm.Works != null)
+                {
+                    var descriptions = vm.Works
+                        .Select(d => d.Description)
+                        .Where(d => !string.IsNullOrWhiteSpace(d))
+                        .Distinct()
+                        .ToList();
+
+                    var worksByDescription = await context.Works
+                        .Where(d => descriptions.Contains(d.Description))
+                        .ToDictionaryAsync(d => d.Description, d => d);
+
+                    foreach (var defVm in vm.Works)
+                    {
+                        if (string.IsNullOrWhiteSpace(defVm.Description))
+                            continue;
+
+                        if (!worksByDescription.TryGetValue(defVm.Description, out var work))
+                        {
+                            work = new Work { Description = defVm.Description, CreatedAt = DateTime.UtcNow };
+                            context.Works.Add(work);
+                            worksByDescription[defVm.Description] = work;
+                        }
+
+                        entity.Works.Add(work);
                     }
                 }
 
@@ -347,6 +379,7 @@ namespace CamCare.Services
             {
                 var entity = await context.RepairOrders
                     .Include(r => r.Defectives)
+                    .Include(i => i.Works)
                     .Include(r => r.IncludedComponents)
                     .Include(r => r.RepairOrderRepairPositions)
                         .ThenInclude(rp => rp.RepairPosition)
@@ -425,6 +458,38 @@ namespace CamCare.Services
                 entity.Defectives.Clear();
                 foreach (var defective in newDefectives)
                     entity.Defectives.Add(defective);
+
+                // --- Works synchronisieren ---
+                var vmWorks = vm.Works ?? new List<WorkVm>();
+                var workDescriptions = vmWorks
+                    .Select(d => d.Description)
+                    .Where(d => !string.IsNullOrWhiteSpace(d))
+                    .Distinct()
+                    .ToList();
+
+                var worksByDescription = await context.Works
+                    .Where(d => workDescriptions.Contains(d.Description))
+                    .ToDictionaryAsync(d => d.Description, d => d);
+
+                var newWorks = new List<Work>();
+                foreach (var workVm in vmWorks)
+                {
+                    if (string.IsNullOrWhiteSpace(workVm.Description))
+                        continue;
+
+                    if (!worksByDescription.TryGetValue(workVm.Description, out var work))
+                    {
+                        work = new Work { Description = workVm.Description, CreatedAt = DateTime.UtcNow };
+                        context.Works.Add(work);
+                        worksByDescription[workVm.Description] = work;
+                    }
+
+                    newWorks.Add(work);
+                }
+
+                entity.Works.Clear();
+                foreach (var work in newWorks)
+                    entity.Works.Add(work);
 
                 // --- Included Components synchronisieren ---
                 var vmIncludedComponents = vm.IncludedComponents ?? new List<IncludedComponentVm>();
@@ -555,6 +620,7 @@ namespace CamCare.Services
                     .Include(i => i.LogisticProvider)
                     .Include(i => i.Employees)
                     .Include(i => i.Defectives)
+                    .Include(i => i.Works)
                     .Include(i => i.IncludedComponents)
                     .Include(i => i.RepairOrderRepairPositions)
                         .ThenInclude(rp => rp.RepairPosition)

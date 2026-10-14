@@ -1,0 +1,156 @@
+﻿<RadzenDataGrid class="mt-2" @ref="_grid" Data="@RepairOrder.Works" TItem="WorkVm" RowUpdate="OnRowUpdate"
+                RowCreate="OnRowCreate" Density="Density.Compact" EmptyText="Keine Positionen eingetragen">
+    <HeaderTemplate>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+
+            <InsertIconButton Click="OnInsertClicked" />
+            <RadzenText Text="Ausgeführte Arbeiten" TextStyle="TextStyle.H6" />
+        </RadzenStack>
+    </HeaderTemplate>
+    <Columns>
+        <RadzenDataGridColumn TItem="WorkVm" Title="Beschreibung">
+            <Template Context="item">
+                @item.Description
+            </Template>
+            <EditTemplate Context="item">
+
+                <RadzenAutoComplete @onkeydown="(args) => OnEditKeyDown(args, item)" Value="@item.Description" Change="OnDescriptionChanged" Data=@_Works
+                                    LoadData="OnLoadWorkCatalog" OpenOnFocus="true" TextProperty="@nameof(WorkVm.Description)"
+                                    ValueChanged="@(value => OnValueChanged(item, value))" SelectedItemChanged="OnSelectedItemChanged"
+                                    Style="width: 100%"
+                                    InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Arbeiten" } })" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridInlineEditColumn TItem="WorkVm" DeleteRow="OnDeleteRow" SaveRow="OnSaveRow"
+                                        CancelEditRow="OnCancelEditRow" EditRow="OnEditRow" />
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    [Inject] protected ILogger<WorkAssign> Logger { get; set; } = default!;
+    [Inject] protected IWorkService WorkService { get; set; } = default!;
+
+    [Parameter] public RepairOrderVm RepairOrder { get; set; } = new();
+
+    private IList<WorkVm>? _Works;
+    private RadzenDataGrid<WorkVm> _grid = default!;
+    private WorkVm? _toEdit;
+    private WorkVm? _toCreate;
+
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (RepairOrder is null)
+            throw new ArgumentNullException(nameof(RepairOrder), "RepairOrder cannot be null");
+
+        Logger.LogInformation("RepairOrder set to: {repairOrder}", RepairOrder);
+        RepairOrder.Works ??= [];
+        return base.OnParametersSetAsync();
+    }
+
+    private async Task OnLoadWorkCatalog(LoadDataArgs args)
+    {
+        Logger.LogTrace("Load defects catalog with Filter: {filter}", args.Filter);
+
+        ServiceResponse<Paginated<WorkVm>> response;
+        if (!string.IsNullOrEmpty(args.Filter))
+            response = await WorkService.GetAllAsync(args, rp => rp.Description.ToLower().Contains(args.Filter.ToLower()));
+        else
+            response = await WorkService.GetAllAsync(args);
+
+        _Works = response.Data?.Items.ToList() ?? [];
+    }
+
+    private async Task OnDeleteRow(WorkVm item)
+    {
+        RepairOrder.Works!.Remove(item);
+        Logger.LogInformation("Position {item} deleted.", item);
+        await _grid.Reload();
+    }
+
+    private async Task OnInsertClicked(MouseEventArgs args)
+    {
+        if (_toEdit is not null)
+            return;
+
+        Logger.LogInformation("New position added.");
+        _toEdit = new WorkVm();
+        await _grid.InsertRow(_toEdit);
+    }
+
+    private async Task OnSaveRow(WorkVm item)
+    {
+        await _grid.UpdateRow(item);
+    }
+
+    private async Task OnEditKeyDown(KeyboardEventArgs args, WorkVm item)
+    {
+        // Enter in der "Beschreibung"-Zelle speichert die Zeile (wie der Save-Button).
+        // Das implizite Absenden des umgebenden RadzenTemplateForm verhindert der
+        // Formular-Guard (camcarePreventImplicitFormSubmit) auf der jeweiligen Seite.
+        if (args.Key == "Enter")
+        {
+            await OnSaveRow(item);
+        }
+    }
+
+    private async Task OnCancelEditRow(WorkVm item)
+    {
+        _toEdit = null;
+        _toCreate = null;
+        _grid.CancelEditRow(item);
+        await _grid.Reload();
+    }
+
+    private async Task OnEditRow(WorkVm item)
+    {
+        _toEdit = item;
+        await _grid.EditRow(item);
+    }
+
+    private Task OnRowCreate(WorkVm item)
+    {
+        Logger.LogInformation("Row created with {item}.", item);
+        RepairOrder.Works!.Add(item);
+        _toCreate = item;
+        _toEdit = null;
+        return Task.CompletedTask;
+    }
+
+    private Task OnRowUpdate(WorkVm item)
+    {
+        _toEdit = null;
+        return Task.CompletedTask;
+    }
+
+    private static void OnValueChanged(WorkVm item, string? value)
+        => item.Description = value ?? string.Empty;
+
+    private void OnDescriptionChanged(dynamic item)
+    {
+        Logger.LogDebug("Description changed to {item}.", item as string);
+
+        if (_toEdit is null)
+            return;
+
+        // Beim Verlassen des Felds (Enter/Blur) wird hier nur das Modell aktualisiert –
+        // KEIN `UpdateRow`, damit ein anschließendes `click`-Event (Auswahl per Maus)
+        // verarbeitet werden kann, bevor die Zelle geschlossen wird.
+        var text = item?.ToString() ?? string.Empty;
+        var savedWork = _Works?.FirstOrDefault(d => d.Description == text);
+        _toEdit.Id = savedWork?.Id ?? 0;
+        _toEdit.Description = savedWork?.Description ?? text;
+    }
+
+    private async Task OnSelectedItemChanged(object? selected)
+    {
+        if (selected is not WorkVm selectedWork || _toEdit is null)
+            return;
+
+        Logger.LogDebug("Work '{description}' selected from catalog.", selectedWork.Description);
+        _toEdit.Id = selectedWork.Id;
+        _toEdit.Description = selectedWork.Description;
+        await _grid.UpdateRow(_toEdit);
+    }
+
+}

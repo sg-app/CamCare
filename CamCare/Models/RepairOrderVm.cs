@@ -19,6 +19,7 @@ namespace CamCare.Models
         public string? PackagingComment { get; set; }
         public int? LogisticProviderId { get; set; }
         public string? ShippingMethodDescription { get; set; }
+        public bool Warranty { get; set; }
         public string? OrderNumber { get; set; }
         public string? QuoteNumber { get; set; }
         public string? DeliveryNoteNumber { get; set; }
@@ -31,6 +32,7 @@ namespace CamCare.Models
         public RepairOrderStatusVm? RepairOrderStatus { get; set; }
         public LogisticProviderVm? LogisticProvider { get; set; }
         public ICollection<DefectiveVm>? Defectives { get; set; }
+        public ICollection<WorkVm>? Works { get; set; }
         public ICollection<IncludedComponentVm>? IncludedComponents { get; set; }
         public ICollection<RepairPositionVm>? RepairPositions { get; set; }
         public ICollection<EmployeeVm>? Employees { get; set; }

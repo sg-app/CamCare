@@ -6,7 +6,11 @@
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
 
             <InsertIconButton Click="OnInsertClicked" />
-            <RadzenText Text="Reparaturpositionen" TextStyle="TextStyle.H6" />
+            <RadzenText Text="Zu berechnende Artikel" TextStyle="TextStyle.H6" />
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                <RadzenLabel Text="Garantiereparatur" Component="warranty" />
+                <RadzenCheckBox @bind-Value="@RepairOrder.Warranty" Name="Warranty" />
+            </RadzenStack>
         </RadzenStack>
     </HeaderTemplate>
     <Columns>
@@ -32,7 +36,7 @@
                 }
                 else
                 {
-                    <RadzenAutoComplete Value="@item.Description" Change="OnDescriptionChanged" Data=@_repairPositions
+                    <RadzenAutoComplete @onkeydown="(args) => OnEditKeyDown(args, item)" Value="@item.Description" Change="OnDescriptionChanged" Data=@_repairPositions
                                         LoadData="OnLoadRepairPositionCatalog" OpenOnFocus="true"
                                         TextProperty="@nameof(RepairPositionVm.Description)" Style="width: 100%"
                                         ValueChanged="@(value => OnValueChanged(item, value))" SelectedItemChanged="OnSelectedItemChanged"
@@ -155,6 +159,17 @@ rp.Description.ToLower().Contains(args.Filter.ToLower()));
     private async Task OnSaveRow(RepairPositionVm item)
     {
         await _grid.UpdateRow(item);
+    }
+
+    private async Task OnEditKeyDown(KeyboardEventArgs args, RepairPositionVm item)
+    {
+        // Enter in der "Beschreibung"-Zelle speichert die Zeile (wie der Save-Button).
+        // Das implizite Absenden des umgebenden RadzenTemplateForm verhindert der
+        // Formular-Guard (camcarePreventImplicitFormSubmit) auf der jeweiligen Seite.
+        if (args.Key == "Enter")
+        {
+            await OnSaveRow(item);
+        }
     }
 
     private async Task OnCancelEditRow(RepairPositionVm item)
