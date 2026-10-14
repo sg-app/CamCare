@@ -27,6 +27,7 @@ namespace CamCare.Services
                     rovm.PiceOfEquipment = ro.PiceOfEquipment;
                     rovm.RepairOrderStatusId = ro.RepairOrderStatusId;
                     rovm.ShippingMethod = ro.ShippingMethod;
+                    rovm.ShippingMethodDescription = ro.ShippingMethodDescription;
                     rovm.PackagingType = ro.PackagingType;
                     rovm.PackagingLength = ro.PackagingLength;
                     rovm.PackagingWidth = ro.PackagingWidth;
@@ -63,6 +64,7 @@ namespace CamCare.Services
                     ro.PiceOfEquipment = rovm.PiceOfEquipment;
                     ro.RepairOrderStatusId = rovm.RepairOrderStatusId;
                     ro.ShippingMethod = rovm.ShippingMethod;
+                    ro.ShippingMethodDescription = rovm.ShippingMethodDescription;
                     ro.PackagingType = rovm.PackagingType;
                     ro.PackagingLength = rovm.PackagingLength;
                     ro.PackagingWidth = rovm.PackagingWidth;

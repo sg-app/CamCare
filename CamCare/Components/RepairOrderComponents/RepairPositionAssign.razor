@@ -1,25 +1,7 @@
 ﻿@using CamCare.Models.Amicron
-<RadzenDataGrid TItem="Artikel" class="mt-2" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
-                Count="_totalCount" AllowPaging="true" PageSize="10" AllowFiltering="true" FilterMode="FilterMode.Simple"
-                Density="Density.Compact" SelectionMode="DataGridSelectionMode.Single" @bind-Value="@_selectedItems"
-                RowDoubleClick="OnItemDoubleClicked" AllowColumnResize="true" ShowEmptyMessage="false" Style="height:370px">
-    <Columns>
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Artikelnummer)" Title="Artikel-Nr" Width="150px"
-                              FilterPlaceholder="Filter" />
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Description)"
-                              Title="Bezeichnung (Artikel durch doppelklick einfügen)" MinWidth="200px" FilterPlaceholder="Filter" />
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Unit)" Title="Einheit" Width="80px"
-                              Filterable="false" />
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.InStock)" Title="Bestand" Width="100px"
-                              Filterable="false" />
-        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.MinStock)" Title="Mind. Bestand" Width="80px"
-                              Filterable="false" />
-        @* <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Picture)" Title="Bild" Width="80px"
-        Filterable="false" /> *@
-    </Columns>
-</RadzenDataGrid>
-<RadzenDataGrid @ref="_grid" Data="@RepairOrder.RepairPositions" TItem="RepairPositionVm" RowUpdate="OnRowUpdate"
-                RowCreate="OnRowCreate" Density="Density.Compact" EmptyText="Keine Positionen eingetragen">
+
+<RadzenDataGrid @ref="_grid" class="mt-2" Data="@RepairOrder.RepairPositions" TItem="RepairPositionVm"
+                RowUpdate="OnRowUpdate" RowCreate="OnRowCreate" Density="Density.Compact" EmptyText="Keine Positionen eingetragen">
     <HeaderTemplate>
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
 
@@ -60,6 +42,25 @@
         </RadzenDataGridColumn>
         <RadzenDataGridInlineEditColumn TItem="RepairPositionVm" DeleteRow="OnDeleteRow" SaveRow="OnSaveRow"
                                         CancelEditRow="OnCancelEditRow" EditRow="OnEditRow" />
+    </Columns>
+</RadzenDataGrid>
+<RadzenDataGrid TItem="Artikel" class="mt-1" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
+                Count="_totalCount" AllowPaging="true" PageSize="10" AllowFiltering="true" FilterMode="FilterMode.Simple"
+                Density="Density.Compact" SelectionMode="DataGridSelectionMode.Single" @bind-Value="@_selectedItems"
+                RowDoubleClick="OnItemDoubleClicked" AllowColumnResize="true" ShowEmptyMessage="false" Style="height:370px">
+    <Columns>
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Artikelnummer)" Title="Artikel-Nr" Width="150px"
+                              FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Description)"
+                              Title="Bezeichnung (Artikel durch doppelklick einfügen)" MinWidth="200px" FilterPlaceholder="Filter" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Unit)" Title="Einheit" Width="80px"
+                              Filterable="false" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.InStock)" Title="Bestand" Width="100px"
+                              Filterable="false" />
+        <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.MinStock)" Title="Mind. Bestand" Width="80px"
+                              Filterable="false" />
+        @* <RadzenDataGridColumn TItem="Artikel" Property="@nameof(Artikel.Picture)" Title="Bild" Width="80px"
+        Filterable="false" /> *@
     </Columns>
 </RadzenDataGrid>
 @code {

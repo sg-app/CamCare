@@ -276,6 +276,9 @@ namespace CamCare.Migrations
                     b.Property<int>("ShippingMethod")
                         .HasColumnType("int");
 
+                    b.Property<string>("ShippingMethodDescription")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
