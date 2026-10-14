@@ -1,6 +1,7 @@
 ﻿@page "/RepairOrders"
 @attribute [Authorize]
 @using CamCare.Store.RepairOrderFeature
+@using Fluxor.Blazor.Web
 @implements IDisposable
 
 <div class="pe-2">
@@ -78,13 +79,11 @@
             }
         }
         <RadzenText TextStyle="TextStyle.H5" class="d-block">
-            Defekte
+            Defekt:
         </RadzenText>
         @foreach (var defective in item.Defectives ?? [])
         {
-            <RadzenText class="d-block">
-                @defective.Description
-            </RadzenText>
+            <div class="d-block">- @defective.Description</div>
         }
         <RadzenFieldset Text="Reparaturpositionen">
             @if (item.RepairPositions?.Any() == true && item.RepairPositions.Count >= 1)
