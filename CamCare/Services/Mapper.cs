@@ -165,7 +165,6 @@ namespace CamCare.Services
                 case RepairOrderStatus ros when destination is RepairOrderStatusVm rosvm:
                     rosvm.Id = ros.Id;
                     rosvm.Name = ros.Name;
-                    rosvm.Description = ros.Description;
                     rosvm.Order = ros.Order;
                     rosvm.BackgroundColor = ros.BackgroundColor;
                     rosvm.FontColor = ros.FontColor;
@@ -178,7 +177,6 @@ namespace CamCare.Services
                 case RepairOrderStatusVm rosvm when destination is RepairOrderStatus ros:
                     ros.Id = rosvm.Id;
                     ros.Name = rosvm.Name;
-                    ros.Description = rosvm.Description;
                     ros.Order = rosvm.Order;
                     ros.BackgroundColor = rosvm.BackgroundColor;
                     ros.FontColor = rosvm.FontColor;
@@ -192,6 +190,9 @@ namespace CamCare.Services
                     vm.Id = history.Id;
                     vm.RepairOrderId = history.RepairOrderId;
                     vm.RepairOrderStatusId = history.RepairOrderStatusId;
+                    vm.StatusName = history.StatusName;
+                    vm.BackgroundColor = history.BackgroundColor;
+                    vm.FontColor = history.FontColor;
                     vm.ChangedAt = history.ChangedAt.ToLocalTime();
                     if (history.RepairOrderStatus != null)
                         vm.RepairOrderStatus = Map<RepairOrderStatus, RepairOrderStatusVm>(history.RepairOrderStatus);
@@ -200,6 +201,9 @@ namespace CamCare.Services
                     history.Id = vm.Id;
                     history.RepairOrderId = vm.RepairOrderId;
                     history.RepairOrderStatusId = vm.RepairOrderStatusId;
+                    history.StatusName = vm.StatusName;
+                    history.BackgroundColor = vm.BackgroundColor;
+                    history.FontColor = vm.FontColor;
                     history.ChangedAt = vm.ChangedAt.ToUniversalTime();
                     break;
                 case LogisticProvider lp when destination is LogisticProviderVm lpvm:

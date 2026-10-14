@@ -458,14 +458,26 @@ namespace CamCare.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("BackgroundColor")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<DateTime>("ChangedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("FontColor")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<int>("RepairOrderId")
                         .HasColumnType("int");
 
-                    b.Property<int>("RepairOrderStatusId")
+                    b.Property<int?>("RepairOrderStatusId")
                         .HasColumnType("int");
+
+                    b.Property<string>("StatusName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
@@ -644,9 +656,7 @@ namespace CamCare.Migrations
 
                     b.HasOne("CamCare.Domain.RepairOrderStatus", "RepairOrderStatus")
                         .WithMany()
-                        .HasForeignKey("RepairOrderStatusId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("RepairOrderStatusId");
 
                     b.Navigation("RepairOrderStatus");
                 });

@@ -164,7 +164,7 @@ else
                             {
                                 <RadzenStack Orientation="Orientation.Horizontal">
                                     <RadzenText>@history.ChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</RadzenText>
-                                    <RadzenBadge Style="@history.RepairOrderStatus?.BadageStyle">@history.RepairOrderStatus?.Name</RadzenBadge>
+                                    <RadzenBadge Style="@history.BadageStyle">@history.DisplayStatusName</RadzenBadge>
                                 </RadzenStack>
                             }
                         </RadzenStack>

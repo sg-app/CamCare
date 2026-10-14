@@ -373,10 +373,19 @@ namespace CamCare.Services
                 // --- Statushistorie aktualisieren ---
                 if (entity.RepairOrderStatusId != vm.RepairOrderStatusId)
                 {
+                    // Statusnamen und Farben zum Zeitpunkt der Änderung als Snapshot sichern,
+                    // damit die Historie auch nach dem Löschen eines Status nachvollziehbar bleibt.
+                    var newStatus = await context.RepairOrderStatuses
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(s => s.Id == vm.RepairOrderStatusId);
+
                     context.RepairOrderStatusHistories.Add(new RepairOrderStatusHistory
                     {
                         RepairOrderId = entity.Id,
                         RepairOrderStatusId = vm.RepairOrderStatusId,
+                        StatusName = newStatus?.Name,
+                        BackgroundColor = newStatus?.BackgroundColor,
+                        FontColor = newStatus?.FontColor,
                         ChangedAt = DateTime.UtcNow
                     });
                 }
