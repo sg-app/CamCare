@@ -129,7 +129,6 @@
 0;
         RepairOrder.ShippingMethod = ShippingMethod.SentByCustomer;
         RepairOrder.PackagingType = PackagingType.CustomersBox;
-        RepairOrder.ArrivedAt = DateTime.Now;
 
         await LoadCustomerSerialsAsync();
         _serialNotListed = RepairOrder.SerialNumberNeedsMaintenance;

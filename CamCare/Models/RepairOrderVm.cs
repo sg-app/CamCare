@@ -23,7 +23,7 @@ namespace CamCare.Models
         public string? OrderNumber { get; set; }
         public string? QuoteNumber { get; set; }
         public string? DeliveryNoteNumber { get; set; }
-        public DateTime ArrivedAt { get; set; }
+        public DateTime? ArrivedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 

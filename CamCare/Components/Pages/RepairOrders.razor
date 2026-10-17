@@ -15,9 +15,9 @@
 
 <RadzenDataGrid @ref="_grid" TItem="RepairOrderVm" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
                 Count="_totalCount" AllowPaging="true" PageSize="20" Density="Density.Compact" AllowColumnResize="true"
-                ShowEmptyMessage="false">
+                AllowSorting="true" ShowEmptyMessage="false">
     <Columns>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftrag" Property="Id" Width="60px"></RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftrag" Property="Id" Width="80px"></RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status" Width="180px">
             <Template Context="item">
                 <RadzenBadge Style="@item.RepairOrderStatus?.BadageStyle">@item.RepairOrderStatus?.Name</RadzenBadge>
@@ -28,7 +28,7 @@
                 @item.Customer?.DisplayName
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftragsnummer" Width="120px">
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftragsnummer" Width="150px">
             <Template Context="item">
                 @item.OrderNumber
             </Template>
@@ -58,9 +58,9 @@
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eingetroffen" Property="@nameof(RepairOrderVm.ArrivedAt)"
-                              Width="150px" SortOrder="SortOrder.Descending">
+                              Width="150px" SortOrder="SortOrder.Ascending">
             <Template Context="item">
-                @item.ArrivedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
+                @item.ArrivedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridInlineEditColumn TItem="RepairOrderVm" EditRow="OnEditRowClicked" CanDelete="(_) => false" />

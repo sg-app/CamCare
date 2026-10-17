@@ -213,6 +213,15 @@ namespace CamCare.Services
                 entity.Employees = new List<Employee>();
                 entity.RepairOrderRepairPositions = new List<RepairOrderRepairPosition>();
 
+                // Wird der Auftrag direkt mit dem als "Eingetroffen" markierten Status angelegt,
+                // wird der Eingetroffen-Zeitstempel auf den aktuellen Zeitpunkt gesetzt.
+                if (await context.RepairOrderStatuses
+                        .AsNoTracking()
+                        .AnyAsync(s => s.Id == entity.RepairOrderStatusId && s.IsArrived))
+                {
+                    entity.ArrivedAt = DateTime.UtcNow;
+                }
+
                 // Defectives zuordnen oder anlegen
                 if (vm.Defectives != null)
                 {
@@ -404,11 +413,13 @@ namespace CamCare.Services
                 }
 
                 // --- Statushistorie aktualisieren ---
-                if (entity.RepairOrderStatusId != vm.RepairOrderStatusId)
+                var statusChanged = entity.RepairOrderStatusId != vm.RepairOrderStatusId;
+                RepairOrderStatus? newStatus = null;
+                if (statusChanged)
                 {
                     // Statusnamen und Farben zum Zeitpunkt der Änderung als Snapshot sichern,
                     // damit die Historie auch nach dem Löschen eines Status nachvollziehbar bleibt.
-                    var newStatus = await context.RepairOrderStatuses
+                    newStatus = await context.RepairOrderStatuses
                         .AsNoTracking()
                         .FirstOrDefaultAsync(s => s.Id == vm.RepairOrderStatusId);
 
@@ -426,6 +437,11 @@ namespace CamCare.Services
                 // Update Haupt-Entity
                 _mapper.Map(vm, entity);
                 entity.UpdatedAt = DateTime.UtcNow;
+
+                // Wird der Auftrag in den als "Eingetroffen" markierten Status gesetzt,
+                // wird der Eingetroffen-Zeitstempel auf den aktuellen Zeitpunkt gesetzt.
+                if (statusChanged && newStatus?.IsArrived == true)
+                    entity.ArrivedAt = DateTime.UtcNow;
 
                 // --- Defectives synchronisieren ---
                 var vmDefectives = vm.Defectives ?? new List<DefectiveVm>();

@@ -222,7 +222,7 @@ namespace CamCare.Migrations
                     b.Property<DateTime?>("ArchivedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("ArrivedAt")
+                    b.Property<DateTime?>("ArrivedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("CreatedAt")
@@ -324,6 +324,9 @@ namespace CamCare.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsArrived")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsDefault")
                         .HasColumnType("bit");
 
@@ -354,6 +357,7 @@ namespace CamCare.Migrations
                             Description = "Reparatur wurde von Kunden angemeldet.",
                             FontColor = "rgb(0, 0, 0)",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = true,
                             IsOrderClose = false,
                             Name = "In Anlieferung",
@@ -365,6 +369,7 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Reparatur ist im Lager eingetroffen.",
                             IsActive = true,
+                            IsArrived = true,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Eingetroffen",
@@ -376,6 +381,7 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Reparatur wird von Mitarbeiter begutachtet.",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Begutachtung",
@@ -389,6 +395,7 @@ namespace CamCare.Migrations
                             Description = "Begutachtung wurde vom Mitarbeiter abgeschlosen.",
                             FontColor = "rgb(0, 0, 0)",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Begutachtung abgeschlossen",
@@ -400,6 +407,7 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Angebot wurde erstellt.",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Angebot erstellt",
@@ -411,6 +419,7 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Kamera befindet sich in der Reparatur.",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Reparatur",
@@ -422,6 +431,7 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Reparatur kann nicht fortgesetzt werden da Ersatzteile bestellt wurden.",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Warte auf Ersatzteile",
@@ -433,6 +443,7 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Kamera ist fertig repariert.",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Reparatur fertig",
@@ -446,6 +457,7 @@ namespace CamCare.Migrations
                             Description = "Kamera wurde versendet.",
                             FontColor = "rgb(0, 0, 0)",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Versendet",

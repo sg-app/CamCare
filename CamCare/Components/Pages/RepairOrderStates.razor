@@ -8,6 +8,7 @@
     <RadzenText TextStyle="TextStyle.Subtitle2">Standard: Auswahl bei neu erstellen Aufträgen</RadzenText>
     <RadzenText TextStyle="TextStyle.Subtitle2">Aktiv: Werden in den DropDowns angezeigt</RadzenText>
     <RadzenText TextStyle="TextStyle.Subtitle2">Abschluss: Archiviert den Auftrag</RadzenText>
+    <RadzenText TextStyle="TextStyle.Subtitle2">Eingetroffen: Setzt beim Zuweisen des Status den Eingetroffen-Zeitstempel</RadzenText>
 </RadzenStack>
 <RadzenDataGrid @ref="_grid" TItem="RepairOrderStatusVm" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
                 Count="_totalCount" AllowPaging="true" PageSize="20" RowUpdate="OnRowUpdate" RowCreate="OnRowCreate"
@@ -73,6 +74,15 @@
             </Template>
             <EditTemplate Context="item">
                 <RadzenCheckBox @bind-Value="item.IsOrderClose" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.IsArrived)"
+                              Title="Eingetroffen" Width="80px">
+            <Template Context="item">
+                <RadzenIcon Icon="@(item.IsArrived ? "check_circle" : "circle")" />
+            </Template>
+            <EditTemplate Context="item">
+                <RadzenCheckBox @bind-Value="item.IsArrived" />
             </EditTemplate>
         </RadzenDataGridColumn>
         <RadzenDataGridInlineEditColumn TItem="RepairOrderStatusVm" EditRow="OnEditRowClicked"

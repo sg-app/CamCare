@@ -24,7 +24,7 @@ namespace CamCare.Domain
         public string? OrderNumber { get; set; }
         public string? QuoteNumber { get; set; }
         public string? DeliveryNoteNumber { get; set; }
-        public DateTime ArrivedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? ArrivedAt { get; set; }
 
         public virtual RepairOrderStatus RepairOrderStatus { get; set; } = null!;
         public virtual LogisticProvider LogisticProvider { get; set; } = null!;

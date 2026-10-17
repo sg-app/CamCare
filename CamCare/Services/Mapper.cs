@@ -38,7 +38,7 @@ namespace CamCare.Services
                     rovm.OrderNumber = ro.OrderNumber;
                     rovm.QuoteNumber = ro.QuoteNumber;
                     rovm.DeliveryNoteNumber = ro.DeliveryNoteNumber;
-                    rovm.ArrivedAt = ro.ArrivedAt.ToLocalTime();
+                    rovm.ArrivedAt = ro.ArrivedAt?.ToLocalTime();
                     rovm.CreatedAt = ro.CreatedAt;
                     rovm.UpdatedAt = ro.UpdatedAt;
                     if (ro.RepairOrderStatus != null)
@@ -78,7 +78,7 @@ namespace CamCare.Services
                     ro.OrderNumber = rovm.OrderNumber;
                     ro.QuoteNumber = rovm.QuoteNumber;
                     ro.DeliveryNoteNumber = rovm.DeliveryNoteNumber;
-                    ro.ArrivedAt = rovm.ArrivedAt.ToUniversalTime();
+                    ro.ArrivedAt = rovm.ArrivedAt?.ToUniversalTime();
                     ro.CreatedAt = rovm.CreatedAt;
                     ro.UpdatedAt = rovm.UpdatedAt;
                     if (rovm.PackagingType == PackagingType.CustomersBox)
@@ -185,6 +185,7 @@ namespace CamCare.Services
                     rosvm.IsActive = ros.IsActive;
                     rosvm.IsDefault = ros.IsDefault;
                     rosvm.IsOrderClose = ros.IsOrderClose;
+                    rosvm.IsArrived = ros.IsArrived;
                     rosvm.CreatedAt = ros.CreatedAt;
                     rosvm.UpdatedAt = ros.UpdatedAt;
                     break;
@@ -197,6 +198,7 @@ namespace CamCare.Services
                     ros.IsActive = rosvm.IsActive;
                     ros.IsDefault = rosvm.IsDefault;
                     ros.IsOrderClose = rosvm.IsOrderClose;
+                    ros.IsArrived = rosvm.IsArrived;
                     ros.CreatedAt = rosvm.CreatedAt;
                     ros.UpdatedAt = rosvm.UpdatedAt;
                     break;

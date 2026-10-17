@@ -88,7 +88,7 @@ else
                 </RadzenDataGridColumn>
                 <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eingetroffen" Width="170px" SortOrder="SortOrder.Descending">
                     <Template Context="item">
-                        @item.ArrivedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
+                        @item.ArrivedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
                     </Template>
                 </RadzenDataGridColumn>
                 <RadzenDataGridColumn TItem="RepairOrderVm" Title="Zuletzt geändert" Width="170px">
