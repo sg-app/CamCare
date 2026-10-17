@@ -250,7 +250,7 @@ namespace CamCare.Services
         {
             using var connection = new FbConnection(ConnectionString);
             await connection.OpenAsync();
-            var query = "SELECT ser.SERIENNR, MIN(a.BEZEICHNUNG) " +
+            var query = "SELECT ser.SERIENNR, MIN(a.BEZEICHNUNG), MIN(a.ARTIKELNR) " +
                 "FROM ARTSERNR ser " +
                 "LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
                 "WHERE ser.KUNDENLFDNR = @CustomerId " +
@@ -269,6 +269,7 @@ namespace CamCare.Services
                 {
                     Seriennummer = reader.GetString(0),
                     Artikelbezeichnung = reader.GetString(1),
+                    Artikelnumber = reader.GetString(2),
                 });
             }
 
@@ -343,80 +344,81 @@ namespace CamCare.Services
                 var result = new List<Serials>();
 
 
-            using var connection = new FbConnection(ConnectionString);
-            await connection.OpenAsync();
-            var query = new StringBuilder("SELECT FIRST @Top SKIP @Skip MIN(ser.LFDNR), ser.SERIENNR, MIN(a.BEZEICHNUNG), MIN(ad.NR), MIN(ad.NAME), MIN(ad.PLZ)" +
-                " FROM ARTSERNR ser " +
-                " LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
-                " LEFT JOIN ADRESSEN ad ON ser.KUNDENLFDNR = ad.LFDNR " +
-                " WHERE 1=1");
-            var countQuery = new StringBuilder("SELECT COUNT(DISTINCT ser.SERIENNR)" +
-                " FROM ARTSERNR ser" +
-                " LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
-                " LEFT JOIN ADRESSEN ad ON ser.KUNDENLFDNR = ad.LFDNR " +
-                " WHERE 1=1");
+                using var connection = new FbConnection(ConnectionString);
+                await connection.OpenAsync();
+                var query = new StringBuilder("SELECT FIRST @Top SKIP @Skip MIN(ser.LFDNR), ser.SERIENNR, MIN(a.BEZEICHNUNG), MIN(a.ARTIKELNR), MIN(ad.NR), MIN(ad.NAME), MIN(ad.PLZ)" +
+                    " FROM ARTSERNR ser " +
+                    " LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
+                    " LEFT JOIN ADRESSEN ad ON ser.KUNDENLFDNR = ad.LFDNR " +
+                    " WHERE 1=1");
+                var countQuery = new StringBuilder("SELECT COUNT(DISTINCT ser.SERIENNR)" +
+                    " FROM ARTSERNR ser" +
+                    " LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
+                    " LEFT JOIN ADRESSEN ad ON ser.KUNDENLFDNR = ad.LFDNR " +
+                    " WHERE 1=1");
 
-            using var command = new FbCommand();
-            using var command2 = new FbCommand();
+                using var command = new FbCommand();
+                using var command2 = new FbCommand();
 
-            if (!string.IsNullOrEmpty(args.Filter))
-            {
-                filter ??= new();
-                filter.SerialNumber = args.Filter;
-            }
-            if (filter?.SerialNumber is not null)
-            {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(ser.SERIENNR) LIKE UPPER(@Serialnumber)", "@Serialnumber", $"%{filter.SerialNumber}%", SerialNumberFilterMaxLength);
-            }
-            if (filter?.ArticleName is not null)
-            {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(a.BEZEICHNUNG) LIKE UPPER(@Article)", "@Article", $"%{filter.ArticleName}%");
-            }
-            if (filter?.CustomerName is not null)
-            {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(ad.NAME) LIKE UPPER(@CustomerName)", "@CustomerName", $"%{filter.CustomerName}%");
-            }
-            if (filter?.CustomerNumber is not null)
-            {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(ad.NR) LIKE UPPER(@CustomerNumber)", "@CustomerNumber", $"%{filter.CustomerNumber}%");
-            }
-
-            query.Append(" GROUP BY ser.SERIENNR ORDER BY MIN(ser.LFDNR)");
-
-            logger.LogDebug(query.ToString());
-
-            command.Parameters.AddWithValue("@Top", top);
-            command.Parameters.AddWithValue("@Skip", skip);
-
-            logger.LogDebug(query.ToString());
-            command.Connection = connection;
-            command.CommandText = query.ToString();
-            using var reader = await command.ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                result.Add(new Serials
+                if (!string.IsNullOrEmpty(args.Filter))
                 {
-                    LfdNr = reader.GetInt32(0),
-                    Seriennummer = reader.GetString(1),
-                    Artikelbezeichnung = reader.GetString(2),
-                    CustomerNumber = reader.GetString(3),
-                    CustomerName = reader.GetString(4),
-                    CustomerPlz = reader.GetString(5),
+                    filter ??= new();
+                    filter.SerialNumber = args.Filter;
+                }
+                if (filter?.SerialNumber is not null)
+                {
+                    AddFilterCondition(command, command2, query, countQuery, "UPPER(ser.SERIENNR) LIKE UPPER(@Serialnumber)", "@Serialnumber", $"%{filter.SerialNumber}%", SerialNumberFilterMaxLength);
+                }
+                if (filter?.ArticleName is not null)
+                {
+                    AddFilterCondition(command, command2, query, countQuery, "UPPER(a.BEZEICHNUNG) LIKE UPPER(@Article)", "@Article", $"%{filter.ArticleName}%");
+                }
+                if (filter?.CustomerName is not null)
+                {
+                    AddFilterCondition(command, command2, query, countQuery, "UPPER(ad.NAME) LIKE UPPER(@CustomerName)", "@CustomerName", $"%{filter.CustomerName}%");
+                }
+                if (filter?.CustomerNumber is not null)
+                {
+                    AddFilterCondition(command, command2, query, countQuery, "UPPER(ad.NR) LIKE UPPER(@CustomerNumber)", "@CustomerNumber", $"%{filter.CustomerNumber}%");
+                }
+
+                query.Append(" GROUP BY ser.SERIENNR ORDER BY MIN(ser.LFDNR)");
+
+                logger.LogDebug(query.ToString());
+
+                command.Parameters.AddWithValue("@Top", top);
+                command.Parameters.AddWithValue("@Skip", skip);
+
+                logger.LogDebug(query.ToString());
+                command.Connection = connection;
+                command.CommandText = query.ToString();
+                using var reader = await command.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    result.Add(new Serials
+                    {
+                        LfdNr = reader.GetInt32(0),
+                        Seriennummer = reader.GetString(1),
+                        Artikelbezeichnung = reader.GetString(2),
+                        Artikelnumber = reader.GetString(3),
+                        CustomerNumber = reader.GetString(4),
+                        CustomerName = reader.GetString(5),
+                        CustomerPlz = reader.GetString(6),
+                    });
+                }
+
+                logger.LogDebug(countQuery.ToString());
+                command2.Connection = connection;
+                command2.CommandText = countQuery.ToString();
+                var countReader = await command2.ExecuteScalarAsync();
+                var totalCount = Convert.ToInt32(countReader);
+
+                return ServiceResponse.Success(new Paginated<Serials>
+                {
+                    Items = result,
+                    TotalCount = totalCount
                 });
-            }
-
-            logger.LogDebug(countQuery.ToString());
-            command2.Connection = connection;
-            command2.CommandText = countQuery.ToString();
-            var countReader = await command2.ExecuteScalarAsync();
-            var totalCount = Convert.ToInt32(countReader);
-
-            return ServiceResponse.Success(new Paginated<Serials>
-            {
-                Items = result,
-                TotalCount = totalCount
-            });
             }
             catch (Exception ex)
             {
