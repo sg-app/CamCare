@@ -1,6 +1,11 @@
-﻿<RadzenFormField class="d-block pt-2" Text="Eingetroffen">
-    <RadzenDatePicker @bind-Value="RepairOrder.ArrivedAt" ShowTime="true" DateFormat="dd.MM.yyyy HH:mm" />
-</RadzenFormField>
+﻿<RadzenStack Orientation="Orientation.Horizontal">
+    <RadzenFormField class="d-block pt-2" Text="Eingetroffen">
+        <RadzenDatePicker @bind-Value="RepairOrder.ArrivedAt" ShowTime="true" DateFormat="dd.MM.yyyy HH:mm" />
+    </RadzenFormField>
+    <RadzenFormField class="d-block pt-2" Text="Auftragsnummer">
+        <RadzenTextBox @bind-Value="RepairOrder.OrderNumber" />
+    </RadzenFormField>
+</RadzenStack>
 <RadzenFormField class="pt-2" Text="Status">
     <RadzenDropDown @bind-Value="RepairOrder.RepairOrderStatusId" Data="@(MasterdataService.Get<RepairOrderStatusVm>())"
                     AllowFiltering="true" AllowVirtualization="true" TextProperty="@nameof(RepairOrderStatusVm.Name)"

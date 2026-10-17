@@ -28,6 +28,11 @@
                 @item.Customer?.DisplayName
             </Template>
         </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftragsnummer" Width="120px">
+            <Template Context="item">
+                @item.OrderNumber
+            </Template>
+        </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Seriennummer" Width="220px">
             <Template Context="item">
                 <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
@@ -50,20 +55,6 @@
                 "check_box_outline_blank";
                 }
                 <RadzenIcon Icon="@icon" />
-            </Template>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eigenversand" Width="100px">
-            <Template Context="item">
-                @{
-                    var icon = item.ShippingMethod == ShippingMethod.SentByCustomer ? "check_box" :
-                "check_box_outline_blank";
-                }
-                <RadzenIcon Icon="@icon" />
-            </Template>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Versandunternehmen" Width="150px">
-            <Template Context="item">
-                @item.LogisticProvider?.Name
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eingetroffen" Property="@nameof(RepairOrderVm.ArrivedAt)"
