@@ -34,18 +34,13 @@
         <RadzenRadioButtonListItem Text="@PackagingType.Pallet.GetDisplayDescription()" Value="PackagingType.Pallet" />
     </Items>
 </RadzenRadioButtonList>
-@if (RepairOrder.PackagingType == PackagingType.NewBox || RepairOrder.PackagingType == PackagingType.Pallet)
+@if (RepairOrder.PackagingType == PackagingType.CustomersBox || RepairOrder.PackagingType == PackagingType.Pallet)
 {
     <div>
         <RadzenLabel Text="Kartonmaße in cm (L x B x H)" class="pe-2" />
-        <RadzenNumeric @bind-Value="RepairOrder.PackagingLength" Style="width:100px" Min="1" />
-        <RadzenNumeric @bind-Value="RepairOrder.PackagingHeight" Style="width:100px" Min="1" />
-        <RadzenNumeric @bind-Value="RepairOrder.PackagingWidth" Style="width:100px" Min="1" />
-    </div>
-    <div>
-        <ValidationMessage For="@(() => RepairOrder.PackagingLength)" />
-        <ValidationMessage For="@(() => RepairOrder.PackagingHeight)" />
-        <ValidationMessage For="@(() => RepairOrder.PackagingWidth)" />
+        <RadzenNumeric @bind-Value="RepairOrder.PackagingLength" Style="width:100px" />
+        <RadzenNumeric @bind-Value="RepairOrder.PackagingHeight" Style="width:100px" />
+        <RadzenNumeric @bind-Value="RepairOrder.PackagingWidth" Style="width:100px" />
     </div>
 }
 <RadzenFormField class="d-block" Text="Verpackungsbemerkung">
