@@ -104,19 +104,19 @@ namespace CamCare.Services
 
             if (filter?.KdNummer is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(KDNUMMER) LIKE UPPER(@KdNummer)", "@KdNummer", $"%{filter.KdNummer}%", CustomerNumberFilterMaxLength);
+                AddFilterCondition(command, command2, query, countQuery, LikeExpression("NR", "@KdNummer"), "@KdNummer", $"%{filter.KdNummer}%", CustomerNumberFilterMaxLength);
             }
             if (filter?.Name is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(NAME) LIKE UPPER(@Name)", "@Name", $"%{filter.Name}%");
+                AddFilterCondition(command, command2, query, countQuery, LikeExpression("NAME", "@Name"), "@Name", $"%{filter.Name}%");
             }
             if (filter?.Plz is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "PLZ LIKE @Plz", "@Plz", $"{filter.Plz}%", PostalCodeFilterMaxLength);
+                AddFilterCondition(command, command2, query, countQuery, LikeExpression("PLZ", "@Plz", caseInsensitive: false), "@Plz", $"{filter.Plz}%", PostalCodeFilterMaxLength);
             }
             if (filter?.Ort is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(ORT) LIKE UPPER(@Ort)", "@Ort", $"%{filter.Ort}%");
+                AddFilterCondition(command, command2, query, countQuery, LikeExpression("ORT", "@Ort"), "@Ort", $"%{filter.Ort}%");
             }
 
 
@@ -177,8 +177,8 @@ namespace CamCare.Services
                 " WHERE ser.SERIENNR = @Serialnumber");
 
             var countQuery = new StringBuilder("SELECT COUNT(*)" +
-                " FROM ADRESSEN" +
-                " LEFT JOIN ARTSERNR ser ON ADRESSEN.LFDNR = ser.KUNDENLFDNR" +
+                " FROM ADRESSEN a" +
+                " LEFT JOIN ARTSERNR ser ON a.LFDNR = ser.KUNDENLFDNR" +
                 " WHERE ser.SERIENNR = @Serialnumber");
 
             using var command = new FbCommand();
@@ -188,19 +188,19 @@ namespace CamCare.Services
 
             if (filter?.KdNummer is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(KDNUMMER) LIKE UPPER(@KdNummer)", "@KdNummer", $"%{filter.KdNummer}%", CustomerNumberFilterMaxLength);
+                AddFilterCondition(command, command2, query, countQuery, LikeExpression("a.NR", "@KdNummer"), "@KdNummer", $"%{filter.KdNummer}%", CustomerNumberFilterMaxLength);
             }
             if (filter?.Name is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(NAME) LIKE UPPER(@Name)", "@Name", $"%{filter.Name}%");
+                AddFilterCondition(command, command2, query, countQuery, LikeExpression("a.NAME", "@Name"), "@Name", $"%{filter.Name}%");
             }
             if (filter?.Plz is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "PLZ LIKE @Plz", "@Plz", $"{filter.Plz}%", PostalCodeFilterMaxLength);
+                AddFilterCondition(command, command2, query, countQuery, LikeExpression("a.PLZ", "@Plz", caseInsensitive: false), "@Plz", $"{filter.Plz}%", PostalCodeFilterMaxLength);
             }
             if (filter?.Ort is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(ORT) LIKE UPPER(@Ort)", "@Ort", $"%{filter.Ort}%");
+                AddFilterCondition(command, command2, query, countQuery, LikeExpression("a.ORT", "@Ort"), "@Ort", $"%{filter.Ort}%");
             }
 
 
@@ -290,12 +290,13 @@ namespace CamCare.Services
                 "FROM ARTSERNR ser " +
                 "LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
                 "WHERE ser.KUNDENLFDNR = @CustomerId";
-            var countQuery = "SELECT COUNT(DISTINCT SERIENNR) FROM ARTSERNR WHERE KUNDENLFDNR = @CustomerId";
+            var countQuery = "SELECT COUNT(DISTINCT ser.SERIENNR) FROM ARTSERNR ser WHERE ser.KUNDENLFDNR = @CustomerId";
 
             if (filter is not null)
             {
-                query += " AND UPPER(ser.SERIENNR) LIKE UPPER(@Filter)";
-                countQuery += " AND UPPER(SERIENNR) LIKE UPPER(@Filter)";
+                var condition = LikeExpression("ser.SERIENNR", "@Filter");
+                query += $" AND {condition}";
+                countQuery += $" AND {condition}";
             }
             query += " GROUP BY ser.SERIENNR ORDER BY MIN(ser.LFDNR)";
 
@@ -367,19 +368,19 @@ namespace CamCare.Services
                 }
                 if (filter?.SerialNumber is not null)
                 {
-                    AddFilterCondition(command, command2, query, countQuery, "UPPER(ser.SERIENNR) LIKE UPPER(@Serialnumber)", "@Serialnumber", $"%{filter.SerialNumber}%", SerialNumberFilterMaxLength);
+                    AddFilterCondition(command, command2, query, countQuery, LikeExpression("ser.SERIENNR", "@Serialnumber"), "@Serialnumber", $"%{filter.SerialNumber}%", SerialNumberFilterMaxLength);
                 }
                 if (filter?.ArticleName is not null)
                 {
-                    AddFilterCondition(command, command2, query, countQuery, "UPPER(a.BEZEICHNUNG) LIKE UPPER(@Article)", "@Article", $"%{filter.ArticleName}%");
+                    AddFilterCondition(command, command2, query, countQuery, LikeExpression("a.BEZEICHNUNG", "@Article"), "@Article", $"%{filter.ArticleName}%");
                 }
                 if (filter?.CustomerName is not null)
                 {
-                    AddFilterCondition(command, command2, query, countQuery, "UPPER(ad.NAME) LIKE UPPER(@CustomerName)", "@CustomerName", $"%{filter.CustomerName}%");
+                    AddFilterCondition(command, command2, query, countQuery, LikeExpression("ad.NAME", "@CustomerName"), "@CustomerName", $"%{filter.CustomerName}%");
                 }
                 if (filter?.CustomerNumber is not null)
                 {
-                    AddFilterCondition(command, command2, query, countQuery, "UPPER(ad.NR) LIKE UPPER(@CustomerNumber)", "@CustomerNumber", $"%{filter.CustomerNumber}%");
+                    AddFilterCondition(command, command2, query, countQuery, LikeExpression("ad.NR", "@CustomerNumber"), "@CustomerNumber", $"%{filter.CustomerNumber}%");
                 }
 
                 query.Append(" GROUP BY ser.SERIENNR ORDER BY MIN(ser.LFDNR)");
@@ -445,11 +446,11 @@ namespace CamCare.Services
 
             if (filter?.Artikelnummer is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(ARTIKELNR) LIKE UPPER(@Artikelnummer)", "@Artikelnummer", $"%{filter.Artikelnummer}%", ArticleNumberFilterMaxLength);
+                AddFilterCondition(command, command2, query, countQuery, LikeExpression("ARTIKELNR", "@Artikelnummer"), "@Artikelnummer", $"%{filter.Artikelnummer}%", ArticleNumberFilterMaxLength);
             }
             if (filter?.Description is not null)
             {
-                AddFilterCondition(command, command2, query, countQuery, "UPPER(BEZEICHNUNG) LIKE UPPER(@Bezeichnung)", "@Bezeichnung", $"%{filter.Description}%");
+                AddFilterCondition(command, command2, query, countQuery, LikeExpression("BEZEICHNUNG", "@Bezeichnung"), "@Bezeichnung", $"%{filter.Description}%");
             }
 
             query.Append(" ORDER BY LFDNR");
@@ -506,6 +507,28 @@ namespace CamCare.Services
         private const int CustomerNumberFilterMaxLength = 20;
         private const int PostalCodeFilterMaxLength = 12;
         private const int ArticleNumberFilterMaxLength = 30;
+
+        /// <summary>
+        /// Länge, auf die eine Textspalte beim Filtern gecastet wird. Firebird leitet die Länge
+        /// eines LIKE-Parameters aus der verglichenen Spalte ab (in Amicron z. B. ADRESSEN.NR =
+        /// VARCHAR(8), ADRESSEN.PLZ = VARCHAR(9), ADRESSEN.NAME/ORT = VARCHAR(40),
+        /// ARTSERNR.SERIENNR = VARCHAR(40), ARTIKEL.ARTIKELNR = VARCHAR(20),
+        /// ARTIKEL.BEZEICHNUNG = VARCHAR(80)). Werte, die länger als die Spalte sind, führen beim
+        /// Senden der Parameter zu "arithmetic exception, numeric overflow, or string truncation"
+        /// (string right truncation). Durch den Cast in <see cref="LikeExpression"/> passen alle
+        /// durch <see cref="TruncateParameter"/> erlaubten Werte (maximal
+        /// <see cref="DefaultFilterMaxLength"/> + 2 Wildcards) sicher in den Parameter.
+        /// </summary>
+        private const int FilterCastLength = 120;
+
+        /// <summary>
+        /// Erzeugt den Vergleichsausdruck für einen Textfilter inklusive Cast der Spalte,
+        /// damit überlange Filterwerte keinen "string right truncation"-Fehler mehr auslösen.
+        /// </summary>
+        private static string LikeExpression(string column, string parameterName, bool caseInsensitive = true)
+            => caseInsensitive
+                ? $"UPPER(CAST({column} AS VARCHAR({FilterCastLength}))) LIKE UPPER({parameterName})"
+                : $"CAST({column} AS VARCHAR({FilterCastLength})) LIKE {parameterName}";
 
         private static void AddFilterCondition(
             FbCommand dataCommand,
