@@ -1,7 +1,6 @@
 ﻿@page "/RepairOrders"
 @attribute [Authorize]
 @using CamCare.Store.RepairOrderFeature
-@using Fluxor.Blazor.Web
 @implements IDisposable
 
 <div class="pe-2">
@@ -13,12 +12,14 @@
     <InsertButton InsertClick="OnInsertClicked" />
 </AuthorizeView>
 
-<RadzenDataGrid @ref="_grid" TItem="RepairOrderVm" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
-                Count="_totalCount" AllowPaging="true" PageSize="20" Density="Density.Compact" AllowColumnResize="true"
-                AllowSorting="true" ShowEmptyMessage="false">
+<RadzenDataGrid @ref="_grid" Render="@OnRender" TItem="RepairOrderVm" Data="_data" LoadData="OnLoadData"
+                IsLoading="_isLoading" Count="_totalCount" AllowPaging="true" PageSize="20" Density="Density.Compact"
+                AllowColumnResize="true" AllowSorting="true" AllowMultiColumnSorting="true" ShowMultiColumnSortingIndex="true"
+                AllowGrouping="true" ShowEmptyMessage="false">
     <Columns>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftrag" Property="Id" Width="80px"></RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status" Width="180px">
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status" Property="@nameof(RepairOrderVm.RepairOrderStatus)"
+                              Width="180px">
             <Template Context="item">
                 <RadzenBadge Style="@item.RepairOrderStatus?.BadageStyle">@item.RepairOrderStatus?.Name</RadzenBadge>
             </Template>
@@ -29,17 +30,15 @@
                 @item.ArrivedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Kunde">
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Kunde" Property="@nameof(RepairOrderVm.CustomerId)">
             <Template Context="item">
                 @item.Customer?.DisplayName
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftragsnummer" Width="150px">
-            <Template Context="item">
-                @item.OrderNumber
-            </Template>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Seriennummer" Width="220px">
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftragsnummer" Property="@nameof(RepairOrderVm.OrderNumber)"
+                              Width="150px" />
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Seriennummer"
+                              Property="@nameof(RepairOrderVm.CameraSerialNumber)" Width="220px">
             <Template Context="item">
                 <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
                     @if (item.SerialNumberNeedsMaintenance || item.IsCamera is null)
@@ -54,6 +53,17 @@
                 </RadzenStack>
             </Template>
         </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Priorität" Property="@nameof(RepairOrderVm.PriorityRepair)"
+                              Width="100px">
+            <Template Context="item">
+                @{
+                    var icon = item.PriorityRepair ?? false ? "check_box" :
+                "check_box_outline_blank";
+                    var color = item.PriorityRepair ?? false ? "orange" : "black";
+                }
+                <RadzenIcon Icon="@icon" IconColor="@color" />
+            </Template>
+        </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Garantie" Width="100px">
             <Template Context="item">
                 @{
@@ -64,7 +74,7 @@
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eingetroffen" Property="@nameof(RepairOrderVm.ArrivedAt)"
-                              Width="150px" SortOrder="SortOrder.Ascending">
+                              Width="150px">
             <Template Context="item">
                 @item.ArrivedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
             </Template>
@@ -84,7 +94,21 @@
                 </RadzenText>
             }
         }
-        <RadzenText TextStyle="TextStyle.H5" class="d-block">
+        @if (item.DeliveryAddress is not null)
+        {
+            <RadzenText TextStyle="TextStyle.H5" class="d-block">
+                Lieferanschrift:
+            </RadzenText>
+            <div class="d-block">@item.DeliveryAddress.Recipient</div>
+            @if (!string.IsNullOrWhiteSpace(item.DeliveryAddress.ContactPerson))
+            {
+                <div class="d-block">Ansprechpartner: @item.DeliveryAddress.ContactPerson</div>
+            }
+            <div class="d-block">@item.DeliveryAddress.Street</div>
+            <div class="d-block">@item.DeliveryAddress.Country @item.DeliveryAddress.PostalCode @item.DeliveryAddress.City
+            </div>
+        }
+        <RadzenText TextStyle="TextStyle.H5" class="d-block pt-2">
             Defekt:
         </RadzenText>
         @foreach (var defective in item.Defectives ?? [])
@@ -182,6 +206,24 @@
             _totalCount = response.Data?.TotalCount ?? 0;
         }
         _isLoading = false;
+    }
+
+    private void OnRender(DataGridRenderEventArgs<RepairOrderVm> args)
+    {
+        if (args.FirstRender && args?.Grid is not null)
+        {
+            args.Grid.Sorts.Add(new SortDescriptor()
+            {
+                Property = nameof(RepairOrderVm.PriorityRepair),
+                SortOrder =
+SortOrder.Descending
+            });
+            args.Grid.Sorts.Add(new SortDescriptor()
+            {
+                Property = nameof(RepairOrderVm.ArrivedAt),
+                SortOrder = SortOrder.Ascending
+            });
+        }
     }
 
     private void OnInsertClicked(MouseEventArgs args)

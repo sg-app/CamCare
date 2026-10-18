@@ -6,6 +6,13 @@
         <RadzenTextBox @bind-Value="RepairOrder.OrderNumber" />
     </RadzenFormField>
 </RadzenStack>
+<RadzenStack Orientation="Orientation.Horizontal" class="pt-2">
+    <RadzenLabel Text="Prioritätsreparatur" Component="Priority" />
+    <RadzenCheckBox @bind-Value="RepairOrder.PriorityRepair" Name="Priority" />
+</RadzenStack>
+<RadzenFormField class="d-block pt-2" Text="Kundenbemerkung">
+    <RadzenTextArea @bind-Value="RepairOrder.CustomerDescription" Rows="2" Cols="100" />
+</RadzenFormField>
 <RadzenFormField class="pt-2" Text="Status">
     <RadzenDropDown @bind-Value="RepairOrder.RepairOrderStatusId" Data="@(MasterdataService.Get<RepairOrderStatusVm>())"
                     AllowFiltering="true" AllowVirtualization="true" TextProperty="@nameof(RepairOrderStatusVm.Name)"

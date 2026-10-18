@@ -9,6 +9,7 @@ namespace CamCare.Models
         public bool? IsCamera { get; set; }
         public string? CameraSerialNumber { get; set; }
         public bool SerialNumberNeedsMaintenance { get; set; }
+        public bool? PriorityRepair { get; set; }
         public string? PiceOfEquipment { get; set; }
         public int RepairOrderStatusId { get; set; }
         public ShippingMethod ShippingMethod { get; set; }
@@ -18,7 +19,14 @@ namespace CamCare.Models
         public int? PackagingHeight { get; set; }
         public string? PackagingComment { get; set; }
         public int? LogisticProviderId { get; set; }
+
+        /// <summary>
+        /// Ausgewählte Lieferanschrift des Auftrags (Id der gespeicherten Anschrift).
+        /// </summary>
+        public int? DeliveryAddressId { get; set; }
+
         public string? ShippingMethodDescription { get; set; }
+        public string? CustomerDescription { get; set; }
         public bool Warranty { get; set; }
         public string? OrderNumber { get; set; }
         public string? QuoteNumber { get; set; }
@@ -35,6 +43,13 @@ namespace CamCare.Models
         public Serials? Serials { get; set; }
         public RepairOrderStatusVm? RepairOrderStatus { get; set; }
         public LogisticProviderVm? LogisticProvider { get; set; }
+
+        /// <summary>
+        /// Ausgewählte bzw. neu erfasste Lieferanschrift. Eine neu erfasste Anschrift
+        /// (Id = 0) wird beim Speichern des Auftrags für den Kunden hinterlegt.
+        /// </summary>
+        public DeliveryAddressVm? DeliveryAddress { get; set; }
+
         public ICollection<DefectiveVm>? Defectives { get; set; }
         public ICollection<WorkVm>? Works { get; set; }
         public ICollection<IncludedComponentVm>? IncludedComponents { get; set; }

@@ -14,6 +14,8 @@
             <RadzenText>@RepairOrder.Customer?.Plz @RepairOrder.Customer?.Ort</RadzenText>
         </RadzenFieldset>
 
+        <DeliveryAddressAssign RepairOrder="@RepairOrder" />
+
         <RadzenFieldset Text="Reparaturgegenstand">
             <RadzenText class="d-block pb-2">Handelt es sich um eine Gerät mit Seriennummer oder ein Einzelteil?
             </RadzenText>

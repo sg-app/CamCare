@@ -95,6 +95,53 @@ namespace CamCare.Migrations
                     b.ToTable("Defectives");
                 });
 
+            modelBuilder.Entity("CamCare.Domain.DeliveryAddress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContactPerson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Country")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PostalCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Recipient")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Street")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeliveryAddresses");
+                });
+
             modelBuilder.Entity("CamCare.Domain.Employee", b =>
                 {
                     b.Property<int>("Id")
@@ -231,7 +278,13 @@ namespace CamCare.Migrations
                     b.Property<DateTime?>("CurrentStateAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("CustomerDescription")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DeliveryAddressId")
                         .HasColumnType("int");
 
                     b.Property<string>("DeliveryNoteNumber")
@@ -264,6 +317,9 @@ namespace CamCare.Migrations
                     b.Property<string>("PiceOfEquipment")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool?>("PriorityRepair")
+                        .HasColumnType("bit");
+
                     b.Property<string>("QuoteNumber")
                         .HasColumnType("nvarchar(max)");
 
@@ -289,6 +345,8 @@ namespace CamCare.Migrations
                         .HasColumnType("bit");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DeliveryAddressId");
 
                     b.HasIndex("LogisticProviderId");
 
@@ -690,6 +748,11 @@ namespace CamCare.Migrations
 
             modelBuilder.Entity("CamCare.Domain.RepairOrder", b =>
                 {
+                    b.HasOne("CamCare.Domain.DeliveryAddress", "DeliveryAddress")
+                        .WithMany("RepairOrders")
+                        .HasForeignKey("DeliveryAddressId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("CamCare.Domain.LogisticProvider", "LogisticProvider")
                         .WithMany("RepairOrders")
                         .HasForeignKey("LogisticProviderId");
@@ -699,6 +762,8 @@ namespace CamCare.Migrations
                         .HasForeignKey("RepairOrderStatusId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("DeliveryAddress");
 
                     b.Navigation("LogisticProvider");
 
@@ -797,6 +862,11 @@ namespace CamCare.Migrations
                         .HasForeignKey("WorksId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("CamCare.Domain.DeliveryAddress", b =>
+                {
+                    b.Navigation("RepairOrders");
                 });
 
             modelBuilder.Entity("CamCare.Domain.LogisticProvider", b =>

@@ -16,6 +16,7 @@ namespace CamCare.Persistence
         public DbSet<RepairOrderStatusHistory> RepairOrderStatusHistories { get; set; }
         public DbSet<DataStore> DataStores { get; set; }
         public DbSet<UserGroup> UserGroups { get; set; }
+        public DbSet<DeliveryAddress> DeliveryAddresses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -70,6 +71,15 @@ namespace CamCare.Persistence
                .HasOne(ro => ro.RepairOrderStatus)
                .WithMany()
                .HasForeignKey(ro => ro.RepairOrderStatusId)
+               .OnDelete(DeleteBehavior.Restrict);
+
+            // Die Lieferanschrift gehört zum Kunden und kann von mehreren Aufträgen
+            // verwendet werden. Ein Löschen der Anschrift bei verwendeten Aufträgen
+            // wird daher unterbunden (Restrict).
+            modelBuilder.Entity<RepairOrder>()
+               .HasOne(ro => ro.DeliveryAddress)
+               .WithMany(da => da.RepairOrders)
+               .HasForeignKey(ro => ro.DeliveryAddressId)
                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<RepairOrderStatus>()

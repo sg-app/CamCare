@@ -10,10 +10,12 @@ namespace CamCare.Domain
         public bool? IsCamera { get; set; }
         public string? SerialNumber { get; set; }
         public bool SerialNumberNeedsMaintenance { get; set; }
+        public bool? PriorityRepair { get; set; }
         public string? PiceOfEquipment { get; set; }
         public int RepairOrderStatusId { get; set; }
         public ShippingMethod ShippingMethod { get; set; }
         public string? ShippingMethodDescription { get; set; }
+        public string? CustomerDescription { get; set; }
         public bool Warranty { get; set; }
         public PackagingType PackagingType { get; set; }
         public int? PackagingLength { get; set; }
@@ -21,6 +23,13 @@ namespace CamCare.Domain
         public int? PackagingHeight { get; set; }
         public string? PackagingComment { get; set; }
         public int? LogisticProviderId { get; set; }
+
+        /// <summary>
+        /// Ausgewählte Lieferanschrift des Auftrags. Die Anschrift selbst wird am Kunden
+        /// (<see cref="DeliveryAddress.CustomerId"/>) gespeichert und kann wiederverwendet werden.
+        /// </summary>
+        public int? DeliveryAddressId { get; set; }
+
         public string? OrderNumber { get; set; }
         public string? QuoteNumber { get; set; }
         public string? DeliveryNoteNumber { get; set; }
@@ -34,6 +43,7 @@ namespace CamCare.Domain
 
         public virtual RepairOrderStatus RepairOrderStatus { get; set; } = null!;
         public virtual LogisticProvider LogisticProvider { get; set; } = null!;
+        public virtual DeliveryAddress? DeliveryAddress { get; set; }
         public virtual ICollection<Defective> Defectives { get; set; } = [];
         public virtual ICollection<Work> Works { get; set; } = [];
         public virtual ICollection<IncludedComponent> IncludedComponents { get; set; } = [];
