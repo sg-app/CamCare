@@ -7,7 +7,8 @@
 
 @if (RepairOrder is not null)
 {
-    <RadzenTemplateForm @ref="_form" Data="@RepairOrder" TItem="RepairOrderVm" Submit="OnSaveClicked" InvalidSubmit="OnInvalidSubmit">
+    <RadzenTemplateForm @ref="_form" Data="@RepairOrder" TItem="RepairOrderVm" Submit="OnSaveClicked"
+                        InvalidSubmit="OnInvalidSubmit">
         <FluentValidator />
         <RadzenStack Orientation="Orientation.Horizontal">
 
@@ -22,6 +23,7 @@
                     <Items>
                         <RadzenRadioButtonListItem Text="Mit Seriennummer" Value="true" />
                         <RadzenRadioButtonListItem Text="Einzelteil" Value="false" />
+                        <RadzenRadioButtonListItem Text="Unbekannt" Value="@((bool?)null)" />
                     </Items>
                 </RadzenRadioButtonList>
 
@@ -80,6 +82,10 @@
                 }
             </RadzenFieldset>
         </RadzenStack>
+
+        <DeliveryAddressAssign RepairOrder="@RepairOrder" />
+
+        <EmailAddressAssign RepairOrder="@RepairOrder" />
 
         <RadzenFieldset Text="Beschreibung" Visible="@(RepairOrder.CustomerId != null)">
             <RepairOrderDescription RepairOrder="@RepairOrder" />

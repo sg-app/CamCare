@@ -48,6 +48,8 @@
                 <Columns>
                     <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.Seriennummer)" Title="Seriennummer"
                                           Width="150px" FilterPlaceholder="Filter" />
+                    <RadzenDataGridColumn TItem="Serials" Property="@nameof(Serials.Artikelnumber)" Title="Artikelnummer"
+                                          Width="150px" FilterPlaceholder="Filter" />
                     <RadzenDataGridColumn TItem="Serials" Title="Offener Auftrag" Width="100px" Sortable="false"
                                           Filterable="false">
                         <Template Context="serial">
@@ -64,8 +66,7 @@
                     <RadzenDataGridColumn Width="50px">
                         <Template Context="serial">
                             <RadzenButton Click="@(() => OnSerialSelected(customer, serial))" Icon="add_task"
-                                          Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Info"
-                                          Disabled="@serial.HasOpenOrder"
+                                          Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Info" Disabled="@serial.HasOpenOrder"
                                           MouseEnter="@(args => ShowTooltip(args, serial.HasOpenOrder
                                               ? "Für diese Seriennummer existiert bereits ein offener Auftrag."
                                               : "Auftrag mit Seriennummer erstellen."))" />

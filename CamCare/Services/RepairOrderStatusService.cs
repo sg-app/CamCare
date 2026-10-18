@@ -9,6 +9,13 @@ namespace CamCare.Services
 {
     public class RepairOrderStatusService : DbService<RepairOrderStatus, RepairOrderStatusVm>, IRepairOrderStatusService
     {
+        /// <summary>
+        /// Flags, die in der Statusliste nur von genau einem Datensatz gesetzt werden dürfen.
+        /// </summary>
+        private const string DefaultFlagName = "Standard";
+        private const string OrderCloseFlagName = "Abschluss";
+        private const string ArrivedFlagName = "Eingetroffen";
+
         public RepairOrderStatusService(
             IAppDbContextFactory contextFactory,
             IMapper mapper,
@@ -17,6 +24,103 @@ namespace CamCare.Services
             IMasterdataService masterdataService)
             : base(contextFactory, mapper, logger, notificationService, masterdataService)
         {
+        }
+
+        public override async Task<ServiceResponse<RepairOrderStatusVm>> CreateAsync(RepairOrderStatusVm vm)
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+                var entity = new RepairOrderStatus();
+                _mapper.Map(vm, entity);
+                context.RepairOrderStatuses.Add(entity);
+
+                // Einmalige Flags (Standard/Abschluss/Eingetroffen) aus allen anderen Datensätzen entfernen.
+                var removedFlags = await ClearExclusiveFlagsOnOtherStatusesAsync(context, entity.Id,
+                    entity.IsDefault, entity.IsOrderClose, entity.IsArrived);
+
+                await context.SaveChangesAsync();
+                await InvalidateMasterdataCacheAsync();
+
+                var resultVm = _mapper.Map<RepairOrderStatus, RepairOrderStatusVm>(entity);
+                return ServiceResponse.Success(resultVm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler in CreateAsync");
+                NotifyError("Fehler beim Erstellen des Datensatzes");
+                return ServiceResponse.Failure<RepairOrderStatusVm>("Fehler beim Erstellen des Datensatzes", ex);
+            }
+        }
+
+        public override async Task<ServiceResponse<RepairOrderStatusVm>> UpdateAsync(object id, RepairOrderStatusVm vm)
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+                var entity = await context.RepairOrderStatuses.FindAsync(Convert.ToInt32(id));
+                if (entity == null)
+                    return ServiceResponse.Failure<RepairOrderStatusVm>("Nicht gefunden");
+
+                _mapper.Map(vm, entity);
+
+                // Einmalige Flags (Standard/Abschluss/Eingetroffen) aus allen anderen Datensätzen entfernen.
+                var removedFlags = await ClearExclusiveFlagsOnOtherStatusesAsync(context, entity.Id,
+                    entity.IsDefault, entity.IsOrderClose, entity.IsArrived);
+
+                await context.SaveChangesAsync();
+                await InvalidateMasterdataCacheAsync();
+
+                var resultVm = _mapper.Map<RepairOrderStatus, RepairOrderStatusVm>(entity);
+                return ServiceResponse.Success(resultVm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler in UpdateAsync");
+                NotifyError("Fehler beim Aktualisieren des Datensatzes");
+                return ServiceResponse.Failure<RepairOrderStatusVm>("Fehler beim Aktualisieren des Datensatzes", ex);
+            }
+        }
+
+        /// <summary>
+        /// Entfernt die Flags, die der übergebene Datensatz gesetzt hat, aus allen anderen Datensätzen.
+        /// Dadurch kann jedes dieser Flags nur einem einzigen Datensatz zugeordnet sein.
+        /// </summary>
+        /// <returns>Die entfernten Flags inklusive des Datensatzes, bei dem sie entfernt wurden.</returns>
+        private async Task<List<(string StatusName, string FlagName)>> ClearExclusiveFlagsOnOtherStatusesAsync(
+            IAppDbContext context, int statusId, bool isDefault, bool isOrderClose, bool isArrived)
+        {
+            var removedFlags = new List<(string StatusName, string FlagName)>();
+
+            if (!isDefault && !isOrderClose && !isArrived)
+                return removedFlags;
+
+            var otherStatuses = await context.RepairOrderStatuses
+                .Where(s => s.Id != statusId && (s.IsDefault || s.IsOrderClose || s.IsArrived))
+                .ToListAsync();
+
+            foreach (var otherStatus in otherStatuses)
+            {
+                if (isDefault && otherStatus.IsDefault)
+                {
+                    otherStatus.IsDefault = false;
+                    removedFlags.Add((otherStatus.Name, DefaultFlagName));
+                }
+
+                if (isOrderClose && otherStatus.IsOrderClose)
+                {
+                    otherStatus.IsOrderClose = false;
+                    removedFlags.Add((otherStatus.Name, OrderCloseFlagName));
+                }
+
+                if (isArrived && otherStatus.IsArrived)
+                {
+                    otherStatus.IsArrived = false;
+                    removedFlags.Add((otherStatus.Name, ArrivedFlagName));
+                }
+            }
+
+            return removedFlags;
         }
 
         public async Task<ServiceResponse<bool>> UpdateOrderAsync(IList<RepairOrderStatusVm> vms)

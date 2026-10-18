@@ -16,6 +16,8 @@ namespace CamCare.Persistence
         public DbSet<RepairOrderStatusHistory> RepairOrderStatusHistories { get; set; }
         public DbSet<DataStore> DataStores { get; set; }
         public DbSet<UserGroup> UserGroups { get; set; }
+        public DbSet<DeliveryAddress> DeliveryAddresses { get; set; }
+        public DbSet<EmailAddress> EmailAddresses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -66,16 +68,38 @@ namespace CamCare.Persistence
                );
 
 
+            // Die E-Mail-Adressen gehören zum Kunden und können von mehreren Aufträgen
+            // verwendet werden. Beim Löschen eines Auftrags werden nur die Zuordnungen
+            // entfernt (Cascade); die Adressen selbst bleiben erhalten (Restrict).
+            modelBuilder.Entity<RepairOrder>()
+               .HasMany(e => e.EmailAddresses)
+               .WithMany(e => e.RepairOrders)
+               .UsingEntity(
+                   "EmailAddressRepairOrder",
+                   r => r.HasOne(typeof(EmailAddress)).WithMany().OnDelete(DeleteBehavior.Restrict),
+                   l => l.HasOne(typeof(RepairOrder)).WithMany().OnDelete(DeleteBehavior.Cascade)
+               );
+
+
             modelBuilder.Entity<RepairOrder>()
                .HasOne(ro => ro.RepairOrderStatus)
                .WithMany()
                .HasForeignKey(ro => ro.RepairOrderStatusId)
                .OnDelete(DeleteBehavior.Restrict);
 
+            // Die Lieferanschrift gehört zum Kunden und kann von mehreren Aufträgen
+            // verwendet werden. Ein Löschen der Anschrift bei verwendeten Aufträgen
+            // wird daher unterbunden (Restrict).
+            modelBuilder.Entity<RepairOrder>()
+               .HasOne(ro => ro.DeliveryAddress)
+               .WithMany(da => da.RepairOrders)
+               .HasForeignKey(ro => ro.DeliveryAddressId)
+               .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<RepairOrderStatus>()
                 .HasData(
                     new RepairOrderStatus { Id = 1, Order = 1, Name = "In Anlieferung", Description = "Reparatur wurde von Kunden angemeldet.", BackgroundColor = "rgb(206, 206, 206)", FontColor = "rgb(0, 0, 0)", IsDefault = true },
-                    new RepairOrderStatus { Id = 2, Order = 2, Name = "Eingetroffen", Description = "Reparatur ist im Lager eingetroffen." },
+                    new RepairOrderStatus { Id = 2, Order = 2, Name = "Eingetroffen", Description = "Reparatur ist im Lager eingetroffen.", IsArrived = true },
                     new RepairOrderStatus { Id = 3, Order = 3, Name = "Begutachtung", Description = "Reparatur wird von Mitarbeiter begutachtet." },
                     new RepairOrderStatus { Id = 4, Order = 4, Name = "Begutachtung abgeschlossen", Description = "Begutachtung wurde vom Mitarbeiter abgeschlosen.", BackgroundColor = "rgb(76, 170, 232)", FontColor = "rgb(0, 0, 0)" },
                     new RepairOrderStatus { Id = 5, Order = 5, Name = "Angebot erstellt", Description = "Angebot wurde erstellt." },

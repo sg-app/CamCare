@@ -1,0 +1,234 @@
+﻿@* Auswahl bzw. Erfassung der Lieferanschrift eines Reparaturauftrags.
+   Die Anschrift wird am Kunden (CustomerId) gespeichert und steht dadurch
+   für weitere Aufträge wieder zur Auswahl. *@
+@using FluentValidation
+
+<RadzenFieldset Text="Lieferanschrift" class="mt-2">
+    @if (RepairOrder.CustomerId is null)
+    {
+        <RadzenText class="d-block text-secondary">
+            Es ist kein Kunde zugeordnet. Es kann keine Lieferanschrift hinterlegt werden.
+        </RadzenText>
+    }
+    else
+    {
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.End" Gap="1rem" class="d-flex flex-wrap">
+            <RadzenFormField Text="Gespeicherte Lieferanschrift" Style="min-width:420px;flex-grow:1">
+                <RadzenDropDown TValue="int?" Value="@RepairOrder.DeliveryAddressId"
+                                ValueChanged="@(args => OnDeliveryAddressSelected(args))" Data="@_addresses"
+                                TextProperty="@nameof(DeliveryAddressVm.DisplayName)" ValueProperty="@nameof(DeliveryAddressVm.Id)"
+                                AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                FilterOperator="StringFilterOperator.Contains" AllowVirtualization="true"
+                                EmptyText="Keine Lieferanschrift für diesen Kunden hinterlegt" Style="width:100%" />
+            </RadzenFormField>
+            <RadzenButton Text="Neue Lieferanschrift" Icon="add_location_alt" ButtonStyle="ButtonStyle.Light"
+                          ButtonType="ButtonType.Button" Click="@(args => ToggleNewAddress())" Visible="@(!_showNewAddress)" />
+        </RadzenStack>
+
+        @if (!_showNewAddress && RepairOrder.DeliveryAddress is not null)
+        {
+            <RadzenStack Orientation="Orientation.Vertical" Gap="0" class="pt-2">
+                @foreach (var line in GetAddressLines(RepairOrder.DeliveryAddress))
+                {
+                    <RadzenText class="d-block">@line</RadzenText>
+                }
+                @if (RepairOrder.DeliveryAddress.IsNew)
+                {
+                    <RadzenText class="d-block text-secondary pt-1">
+                        Neue Lieferanschrift – wird beim Speichern des Auftrags für den Kunden hinterlegt.
+                    </RadzenText>
+                }
+            </RadzenStack>
+        }
+
+        @if (_showNewAddress)
+        {
+            <RadzenText class="d-block pt-2 text-secondary">
+                Die Anschrift wird beim Speichern des Auftrags für den Kunden hinterlegt und steht danach
+                für weitere Aufträge zur Auswahl.
+            </RadzenText>
+            <div class="d-flex flex-column">
+                <div class="flex-row flex-wrap gap-3 pt-2">
+                    <RadzenFormField Text="Empfänger" Style="min-width:400px">
+                        <RadzenTextBox @bind-Value="_newAddress.Recipient" Style="width:400px" />
+                    </RadzenFormField>
+                    <RadzenFormField Text="Ansprechpartner" Style="min-width:300px">
+                        <RadzenTextBox @bind-Value="_newAddress.ContactPerson" Style="width:300px" />
+                    </RadzenFormField>
+                </div>
+                <div class="flex-row flex-wrap gap-3 pt-2">
+                    <RadzenFormField Text="Straße / Hausnummer" Style="min-width:600px">
+                        <RadzenTextBox @bind-Value="_newAddress.Street" Style="width:600px" />
+                    </RadzenFormField>
+                </div>
+                <div class="flex-row flex-wrap gap-3 pt-2">
+                    <RadzenFormField Text="PLZ" Style="min-width:110px">
+                        <RadzenTextBox @bind-Value="_newAddress.PostalCode" Style="width:110px" />
+                    </RadzenFormField>
+                    <RadzenFormField Text="Ort" Style="min-width:350px">
+                        <RadzenTextBox @bind-Value="_newAddress.City" Style="width:350px" />
+                    </RadzenFormField>
+                    <RadzenFormField Text="Land" Style="min-width:160px">
+                        <RadzenTextBox @bind-Value="_newAddress.Country" Style="width:160px" />
+                    </RadzenFormField>
+                </div>
+            </div>
+
+            @if (_validationErrors.Count > 0)
+            {
+                <div class="pt-1">
+                    @foreach (var error in _validationErrors)
+                    {
+                        <RadzenText class="d-block text-danger">@error</RadzenText>
+                    }
+                </div>
+            }
+            <div class="pt-2 d-flex gap-2">
+                <RadzenButton Text="Übernehmen" Icon="check" ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Button"
+                              Click="@(args => OnApplyNewAddressClicked())" />
+                <RadzenButton Text="Abbrechen" ButtonStyle="ButtonStyle.Secondary" ButtonType="ButtonType.Button"
+                              Click="@(args => OnCancelNewAddressClicked())" />
+            </div>
+        }
+    }
+</RadzenFieldset>
+
+
+@code {
+    [Inject] protected ILogger<DeliveryAddressAssign> Logger { get; set; } = default!;
+    [Inject] protected IDeliveryAddressService DeliveryAddressService { get; set; } = default!;
+    [Inject] protected IValidator<DeliveryAddressVm> DeliveryAddressValidator { get; set; } = default!;
+
+    [Parameter] public RepairOrderVm RepairOrder { get; set; } = new();
+
+    private IList<DeliveryAddressVm> _addresses = new List<DeliveryAddressVm>();
+    private DeliveryAddressVm _newAddress = new();
+    private List<string> _validationErrors = [];
+    private int? _loadedCustomerId;
+    private bool _showNewAddress;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (RepairOrder is null)
+            throw new ArgumentNullException(nameof(RepairOrder), "RepairOrder cannot be null");
+
+        // Die Anschriften werden geladen, sobald (bzw. sofern) der Kunde feststeht.
+        if (_loadedCustomerId != RepairOrder.CustomerId)
+        {
+            _loadedCustomerId = RepairOrder.CustomerId;
+            await LoadAddressesAsync();
+        }
+    }
+
+    private async Task LoadAddressesAsync()
+    {
+        _addresses = new List<DeliveryAddressVm>();
+
+        if (RepairOrder.CustomerId is not int customerId)
+            return;
+
+        var response = await DeliveryAddressService.GetByCustomerIdAsync(customerId);
+        if (response.Success)
+        {
+            _addresses = response.Data ?? [];
+        }
+        else
+        {
+            Logger.LogWarning("Lieferanschriften für Kunde {CustomerId} konnten nicht geladen werden: {Message}",
+                customerId, response.Message);
+        }
+    }
+
+    private void OnDeliveryAddressSelected(int? deliveryAddressId)
+    {
+        RepairOrder.DeliveryAddressId = deliveryAddressId;
+        RepairOrder.DeliveryAddress = deliveryAddressId.HasValue
+            ? _addresses.FirstOrDefault(a => a.Id == deliveryAddressId.Value)
+            : null;
+    }
+
+    private void ToggleNewAddress()
+    {
+        _validationErrors = [];
+        _showNewAddress = !_showNewAddress;
+
+        if (_showNewAddress)
+            _newAddress = CreateNewAddressFromCustomer();
+    }
+
+    /// <summary>
+    /// Vorbelegung einer neuen Lieferanschrift mit den Adressdaten des Kunden
+    /// (Amicron-System). Die Werte können anschließend angepasst werden.
+    /// </summary>
+    private DeliveryAddressVm CreateNewAddressFromCustomer()
+    {
+        var customer = RepairOrder.Customer;
+
+        return new DeliveryAddressVm
+        {
+            CustomerId = RepairOrder.CustomerId ?? 0,
+            Recipient = customer?.FullName?.Trim() ?? string.Empty,
+            Street = customer?.Strasse?.Trim() ?? string.Empty,
+            PostalCode = customer?.Plz?.Trim() ?? string.Empty,
+            City = customer?.Ort?.Trim() ?? string.Empty,
+            Country = string.IsNullOrWhiteSpace(customer?.Land) ? null : customer!.Land!.Trim()
+        };
+    }
+
+    private void OnApplyNewAddressClicked()
+    {
+        _newAddress.CustomerId = RepairOrder.CustomerId ?? 0;
+
+        var validationResult = DeliveryAddressValidator.Validate(_newAddress);
+        if (!validationResult.IsValid)
+        {
+            _validationErrors = validationResult.Errors
+                .Select(e => e.ErrorMessage)
+                .Distinct()
+                .ToList();
+            return;
+        }
+
+        _validationErrors = [];
+
+        // Die Anschrift wird erst beim Speichern des Auftrags in der Datenbank angelegt
+        // (siehe RepairOrderService) und steht danach für weitere Aufträge zur Auswahl.
+        RepairOrder.DeliveryAddressId = null;
+        RepairOrder.DeliveryAddress = new DeliveryAddressVm
+        {
+            CustomerId = _newAddress.CustomerId,
+            Recipient = _newAddress.Recipient.Trim(),
+            ContactPerson = string.IsNullOrWhiteSpace(_newAddress.ContactPerson) ? null : _newAddress.ContactPerson.Trim(),
+            Street = _newAddress.Street.Trim(),
+            PostalCode = _newAddress.PostalCode.Trim(),
+            City = _newAddress.City.Trim(),
+            Country = string.IsNullOrWhiteSpace(_newAddress.Country) ? null : _newAddress.Country.Trim()
+        };
+
+        _showNewAddress = false;
+    }
+
+    private void OnCancelNewAddressClicked()
+    {
+        _validationErrors = [];
+        _showNewAddress = false;
+    }
+
+    /// <summary>
+    /// Liefert die Anschrift als einzelne Zeilen: Empfänger, Ansprechpartner (optional),
+    /// Straße, PLZ/Ort und Land (optional).
+    /// </summary>
+    private static IEnumerable<string> GetAddressLines(DeliveryAddressVm deliveryAddress)
+    {
+        yield return deliveryAddress.Recipient;
+
+        if (!string.IsNullOrWhiteSpace(deliveryAddress.ContactPerson))
+            yield return $"Ansprechpartner: {deliveryAddress.ContactPerson.Trim()}";
+
+        yield return deliveryAddress.Street;
+
+        var cityLine = $"{deliveryAddress.Country} {deliveryAddress.PostalCode} {deliveryAddress.City}".Trim();
+        if (!string.IsNullOrEmpty(cityLine))
+            yield return cityLine;
+    }
+}

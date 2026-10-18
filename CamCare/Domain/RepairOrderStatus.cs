@@ -21,6 +21,7 @@ namespace CamCare.Domain
         public bool IsActive { get; set; } = true;
         public bool IsDefault { get; set; } = false;
         public bool IsOrderClose { get; set; } = false;
+        public bool IsArrived { get; set; } = false;
 
 
         public override string ToString() => $"[{Id}] {Name}";

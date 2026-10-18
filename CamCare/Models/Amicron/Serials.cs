@@ -6,6 +6,7 @@
         public int ArtikelLfdNr { get; set; }
         public string? Seriennummer { get; set; }
         public int? KundenLfdNr { get; set; }
+        public string? Artikelnumber { get; set; }
         public string? Artikelbezeichnung { get; set; }
 
         public string? CustomerName { get; set; }
@@ -18,6 +19,6 @@
         /// </summary>
         public bool HasOpenOrder { get; set; }
 
-        public string DisplayName => $"{Seriennummer} - {Artikelbezeichnung}";
+        public string DisplayName => $"{Seriennummer} - {Artikelnumber} - {Artikelbezeichnung}";
     }
 }

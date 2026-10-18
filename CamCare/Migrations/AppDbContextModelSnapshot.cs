@@ -95,6 +95,82 @@ namespace CamCare.Migrations
                     b.ToTable("Defectives");
                 });
 
+            modelBuilder.Entity("CamCare.Domain.DeliveryAddress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContactPerson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Country")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PostalCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Recipient")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Street")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeliveryAddresses");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.EmailAddress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EmailAddresses");
+                });
+
             modelBuilder.Entity("CamCare.Domain.Employee", b =>
                 {
                     b.Property<int>("Id")
@@ -222,13 +298,22 @@ namespace CamCare.Migrations
                     b.Property<DateTime?>("ArchivedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("ArrivedAt")
+                    b.Property<DateTime?>("ArrivedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("CurrentStateAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CustomerDescription")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DeliveryAddressId")
                         .HasColumnType("int");
 
                     b.Property<string>("DeliveryNoteNumber")
@@ -261,6 +346,9 @@ namespace CamCare.Migrations
                     b.Property<string>("PiceOfEquipment")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool?>("PriorityRepair")
+                        .HasColumnType("bit");
+
                     b.Property<string>("QuoteNumber")
                         .HasColumnType("nvarchar(max)");
 
@@ -286,6 +374,8 @@ namespace CamCare.Migrations
                         .HasColumnType("bit");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DeliveryAddressId");
 
                     b.HasIndex("LogisticProviderId");
 
@@ -324,6 +414,9 @@ namespace CamCare.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsArrived")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsDefault")
                         .HasColumnType("bit");
 
@@ -354,6 +447,7 @@ namespace CamCare.Migrations
                             Description = "Reparatur wurde von Kunden angemeldet.",
                             FontColor = "rgb(0, 0, 0)",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = true,
                             IsOrderClose = false,
                             Name = "In Anlieferung",
@@ -365,6 +459,7 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Reparatur ist im Lager eingetroffen.",
                             IsActive = true,
+                            IsArrived = true,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Eingetroffen",
@@ -376,6 +471,7 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Reparatur wird von Mitarbeiter begutachtet.",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Begutachtung",
@@ -389,6 +485,7 @@ namespace CamCare.Migrations
                             Description = "Begutachtung wurde vom Mitarbeiter abgeschlosen.",
                             FontColor = "rgb(0, 0, 0)",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Begutachtung abgeschlossen",
@@ -400,6 +497,7 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Angebot wurde erstellt.",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Angebot erstellt",
@@ -411,6 +509,7 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Kamera befindet sich in der Reparatur.",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Reparatur",
@@ -422,6 +521,7 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Reparatur kann nicht fortgesetzt werden da Ersatzteile bestellt wurden.",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Warte auf Ersatzteile",
@@ -433,6 +533,7 @@ namespace CamCare.Migrations
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Kamera ist fertig repariert.",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Reparatur fertig",
@@ -446,6 +547,7 @@ namespace CamCare.Migrations
                             Description = "Kamera wurde versendet.",
                             FontColor = "rgb(0, 0, 0)",
                             IsActive = true,
+                            IsArrived = false,
                             IsDefault = false,
                             IsOrderClose = false,
                             Name = "Versendet",
@@ -599,6 +701,21 @@ namespace CamCare.Migrations
                     b.ToTable("DefectiveRepairOrder");
                 });
 
+            modelBuilder.Entity("EmailAddressRepairOrder", b =>
+                {
+                    b.Property<int>("EmailAddressesId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RepairOrdersId")
+                        .HasColumnType("int");
+
+                    b.HasKey("EmailAddressesId", "RepairOrdersId");
+
+                    b.HasIndex("RepairOrdersId");
+
+                    b.ToTable("EmailAddressRepairOrder");
+                });
+
             modelBuilder.Entity("EmployeeRepairOrder", b =>
                 {
                     b.Property<int>("EmployeesId")
@@ -675,6 +792,11 @@ namespace CamCare.Migrations
 
             modelBuilder.Entity("CamCare.Domain.RepairOrder", b =>
                 {
+                    b.HasOne("CamCare.Domain.DeliveryAddress", "DeliveryAddress")
+                        .WithMany("RepairOrders")
+                        .HasForeignKey("DeliveryAddressId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("CamCare.Domain.LogisticProvider", "LogisticProvider")
                         .WithMany("RepairOrders")
                         .HasForeignKey("LogisticProviderId");
@@ -684,6 +806,8 @@ namespace CamCare.Migrations
                         .HasForeignKey("RepairOrderStatusId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("DeliveryAddress");
 
                     b.Navigation("LogisticProvider");
 
@@ -710,6 +834,21 @@ namespace CamCare.Migrations
                     b.HasOne("CamCare.Domain.Defective", null)
                         .WithMany()
                         .HasForeignKey("DefectivesId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CamCare.Domain.RepairOrder", null)
+                        .WithMany()
+                        .HasForeignKey("RepairOrdersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EmailAddressRepairOrder", b =>
+                {
+                    b.HasOne("CamCare.Domain.EmailAddress", null)
+                        .WithMany()
+                        .HasForeignKey("EmailAddressesId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -782,6 +921,11 @@ namespace CamCare.Migrations
                         .HasForeignKey("WorksId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("CamCare.Domain.DeliveryAddress", b =>
+                {
+                    b.Navigation("RepairOrders");
                 });
 
             modelBuilder.Entity("CamCare.Domain.LogisticProvider", b =>

@@ -24,10 +24,12 @@ namespace CamCare.Services
                     rovm.IsCamera = ro.IsCamera ?? (string.IsNullOrEmpty(ro.SerialNumber) ? (bool?)null : true);
                     rovm.CameraSerialNumber = ro.SerialNumber;
                     rovm.SerialNumberNeedsMaintenance = ro.SerialNumberNeedsMaintenance;
+                    rovm.PriorityRepair = ro.PriorityRepair;
                     rovm.PiceOfEquipment = ro.PiceOfEquipment;
                     rovm.RepairOrderStatusId = ro.RepairOrderStatusId;
                     rovm.ShippingMethod = ro.ShippingMethod;
                     rovm.ShippingMethodDescription = ro.ShippingMethodDescription;
+                    rovm.CustomerDescription = ro.CustomerDescription;
                     rovm.Warranty = ro.Warranty;
                     rovm.PackagingType = ro.PackagingType;
                     rovm.PackagingLength = ro.PackagingLength;
@@ -35,10 +37,12 @@ namespace CamCare.Services
                     rovm.PackagingHeight = ro.PackagingHeight;
                     rovm.PackagingComment = ro.PackagingComment;
                     rovm.LogisticProviderId = ro.LogisticProviderId;
+                    rovm.DeliveryAddressId = ro.DeliveryAddressId;
                     rovm.OrderNumber = ro.OrderNumber;
                     rovm.QuoteNumber = ro.QuoteNumber;
                     rovm.DeliveryNoteNumber = ro.DeliveryNoteNumber;
-                    rovm.ArrivedAt = ro.ArrivedAt.ToLocalTime();
+                    rovm.ArrivedAt = ro.ArrivedAt?.ToLocalTime();
+                    rovm.CurrentStateAt = ro.CurrentStateAt?.ToLocalTime();
                     rovm.CreatedAt = ro.CreatedAt;
                     rovm.UpdatedAt = ro.UpdatedAt;
                     if (ro.RepairOrderStatus != null)
@@ -47,6 +51,13 @@ namespace CamCare.Services
                         rovm.RepairOrderStatusHistories = ro.RepairOrderStatusHistory.Select(Map<RepairOrderStatusHistory, RepairOrderStatusHistoryVm>).ToList();
                     if (ro.LogisticProvider != null)
                         rovm.LogisticProvider = Map<LogisticProvider, LogisticProviderVm>(ro.LogisticProvider);
+                    if (ro.DeliveryAddress != null)
+                    {
+                        rovm.DeliveryAddressId ??= ro.DeliveryAddress.Id;
+                        rovm.DeliveryAddress = Map<DeliveryAddress, DeliveryAddressVm>(ro.DeliveryAddress);
+                    }
+                    if (ro.EmailAddresses != null)
+                        rovm.EmailAddresses = ro.EmailAddresses.Select(Map<EmailAddress, EmailAddressVm>).ToList();
                     if (ro.Defectives != null)
                         rovm.Defectives = ro.Defectives.Select(Map<Defective, DefectiveVm>).ToList();
                     if (ro.Works != null)
@@ -64,10 +75,12 @@ namespace CamCare.Services
                     ro.IsCamera = rovm.IsCamera;
                     ro.SerialNumber = rovm.CameraSerialNumber;
                     ro.SerialNumberNeedsMaintenance = rovm.SerialNumberNeedsMaintenance;
+                    ro.PriorityRepair = rovm.PriorityRepair;
                     ro.PiceOfEquipment = rovm.PiceOfEquipment;
                     ro.RepairOrderStatusId = rovm.RepairOrderStatusId;
                     ro.ShippingMethod = rovm.ShippingMethod;
                     ro.ShippingMethodDescription = rovm.ShippingMethodDescription;
+                    ro.CustomerDescription = rovm.CustomerDescription;
                     ro.Warranty = rovm.Warranty;
                     ro.PackagingType = rovm.PackagingType;
                     ro.PackagingLength = rovm.PackagingLength;
@@ -75,10 +88,11 @@ namespace CamCare.Services
                     ro.PackagingHeight = rovm.PackagingHeight;
                     ro.PackagingComment = rovm.PackagingComment;
                     ro.LogisticProviderId = rovm.LogisticProviderId;
+                    ro.DeliveryAddressId = rovm.DeliveryAddressId;
                     ro.OrderNumber = rovm.OrderNumber;
                     ro.QuoteNumber = rovm.QuoteNumber;
                     ro.DeliveryNoteNumber = rovm.DeliveryNoteNumber;
-                    ro.ArrivedAt = rovm.ArrivedAt.ToUniversalTime();
+                    ro.ArrivedAt = rovm.ArrivedAt?.ToUniversalTime();
                     ro.CreatedAt = rovm.CreatedAt;
                     ro.UpdatedAt = rovm.UpdatedAt;
                     if (rovm.PackagingType == PackagingType.CustomersBox)
@@ -185,6 +199,7 @@ namespace CamCare.Services
                     rosvm.IsActive = ros.IsActive;
                     rosvm.IsDefault = ros.IsDefault;
                     rosvm.IsOrderClose = ros.IsOrderClose;
+                    rosvm.IsArrived = ros.IsArrived;
                     rosvm.CreatedAt = ros.CreatedAt;
                     rosvm.UpdatedAt = ros.UpdatedAt;
                     break;
@@ -197,6 +212,7 @@ namespace CamCare.Services
                     ros.IsActive = rosvm.IsActive;
                     ros.IsDefault = rosvm.IsDefault;
                     ros.IsOrderClose = rosvm.IsOrderClose;
+                    ros.IsArrived = rosvm.IsArrived;
                     ros.CreatedAt = rosvm.CreatedAt;
                     ros.UpdatedAt = rosvm.UpdatedAt;
                     break;
@@ -261,6 +277,44 @@ namespace CamCare.Services
                     vm.ArrivedAt = d.ArrivedAt;
                     vm.Kunde = d.Kunde;
                     vm.Techniker = d.Techniker;
+                    break;
+                case DeliveryAddress da when destination is DeliveryAddressVm davm:
+                    davm.Id = da.Id;
+                    davm.CustomerId = da.CustomerId;
+                    davm.Recipient = da.Recipient;
+                    davm.ContactPerson = da.ContactPerson;
+                    davm.Street = da.Street;
+                    davm.PostalCode = da.PostalCode;
+                    davm.City = da.City;
+                    davm.Country = da.Country;
+                    davm.CreatedAt = da.CreatedAt;
+                    davm.UpdatedAt = da.UpdatedAt;
+                    break;
+                case DeliveryAddressVm davm when destination is DeliveryAddress da:
+                    da.Id = davm.Id;
+                    da.CustomerId = davm.CustomerId;
+                    da.Recipient = davm.Recipient;
+                    da.ContactPerson = davm.ContactPerson;
+                    da.Street = davm.Street;
+                    da.PostalCode = davm.PostalCode;
+                    da.City = davm.City;
+                    da.Country = davm.Country;
+                    da.CreatedAt = davm.CreatedAt;
+                    da.UpdatedAt = davm.UpdatedAt;
+                    break;
+                case EmailAddress ea when destination is EmailAddressVm eavm:
+                    eavm.Id = ea.Id;
+                    eavm.CustomerId = ea.CustomerId;
+                    eavm.Address = ea.Address;
+                    eavm.CreatedAt = ea.CreatedAt;
+                    eavm.UpdatedAt = ea.UpdatedAt;
+                    break;
+                case EmailAddressVm eavm when destination is EmailAddress ea:
+                    ea.Id = eavm.Id;
+                    ea.CustomerId = eavm.CustomerId;
+                    ea.Address = eavm.Address;
+                    ea.CreatedAt = eavm.CreatedAt;
+                    ea.UpdatedAt = eavm.UpdatedAt;
                     break;
                 default:
                     throw new NotSupportedException($"Mapping from {typeof(TSource)} to {typeof(TDestination)} is not supported.");

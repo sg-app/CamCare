@@ -1,11 +1,30 @@
-﻿<RadzenFormField class="d-block pt-2" Text="Eingetroffen">
-    <RadzenDatePicker @bind-Value="RepairOrder.ArrivedAt" ShowTime="true" DateFormat="dd.MM.yyyy HH:mm" />
+﻿<RadzenStack Orientation="Orientation.Horizontal">
+    <RadzenLabel Text="Prioritätsreparatur" Component="Priority" />
+    <RadzenCheckBox @bind-Value="RepairOrder.PriorityRepair" Name="Priority" />
+</RadzenStack>
+<RadzenStack Orientation="Orientation.Horizontal">
+    <RadzenFormField class="d-block pt-2" Text="Auftragsnummer">
+        <RadzenTextBox @bind-Value="RepairOrder.OrderNumber" />
+    </RadzenFormField>
+</RadzenStack>
+<RadzenFormField class="d-block pt-2" Text="Kundenbemerkung">
+    <RadzenTextArea @bind-Value="RepairOrder.CustomerDescription" Rows="2" Cols="100" />
 </RadzenFormField>
 <RadzenFormField class="pt-2" Text="Status">
     <RadzenDropDown @bind-Value="RepairOrder.RepairOrderStatusId" Data="@(MasterdataService.Get<RepairOrderStatusVm>())"
                     AllowFiltering="true" AllowVirtualization="true" TextProperty="@nameof(RepairOrderStatusVm.Name)"
                     ValueProperty="@nameof(RepairOrderStatusVm.Id)" AllowClear="true" Style="width:500px" />
 </RadzenFormField>
+@if (RepairOrder.ArrivedAt is not null || _states.FirstOrDefault(f => f.Id ==
+RepairOrder.RepairOrderStatusId)?.IsArrived
+== true)
+{
+    var _arrivedAt = RepairOrder.ArrivedAt is null
+    ? DateTime.Now.ToLocalTime()
+    : RepairOrder.ArrivedAt?.ToLocalTime();
+
+    <RadzenText>Eingetroffen: @_arrivedAt?.ToString("dd.MM.yyyy HH:mm")</RadzenText>
+}
 <RadzenRadioButtonList class="pt-2" @bind-Value="RepairOrder.ShippingMethod">
     <Items>
         <RadzenRadioButtonListItem Text="@ShippingMethod.PickedUp.GetDisplayDescription()"
@@ -34,18 +53,13 @@
         <RadzenRadioButtonListItem Text="@PackagingType.Pallet.GetDisplayDescription()" Value="PackagingType.Pallet" />
     </Items>
 </RadzenRadioButtonList>
-@if (RepairOrder.PackagingType == PackagingType.NewBox || RepairOrder.PackagingType == PackagingType.Pallet)
+@if (RepairOrder.PackagingType == PackagingType.CustomersBox || RepairOrder.PackagingType == PackagingType.Pallet)
 {
     <div>
         <RadzenLabel Text="Kartonmaße in cm (L x B x H)" class="pe-2" />
-        <RadzenNumeric @bind-Value="RepairOrder.PackagingLength" Style="width:100px" Min="1" />
-        <RadzenNumeric @bind-Value="RepairOrder.PackagingHeight" Style="width:100px" Min="1" />
-        <RadzenNumeric @bind-Value="RepairOrder.PackagingWidth" Style="width:100px" Min="1" />
-    </div>
-    <div>
-        <ValidationMessage For="@(() => RepairOrder.PackagingLength)" />
-        <ValidationMessage For="@(() => RepairOrder.PackagingHeight)" />
-        <ValidationMessage For="@(() => RepairOrder.PackagingWidth)" />
+        <RadzenNumeric @bind-Value="RepairOrder.PackagingLength" Style="width:100px" />
+        <RadzenNumeric @bind-Value="RepairOrder.PackagingHeight" Style="width:100px" />
+        <RadzenNumeric @bind-Value="RepairOrder.PackagingWidth" Style="width:100px" />
     </div>
 }
 <RadzenFormField class="d-block" Text="Verpackungsbemerkung">
@@ -57,4 +71,7 @@
     [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
 
     [Parameter] public RepairOrderVm RepairOrder { get; set; } = default!;
+
+    private IEnumerable<RepairOrderStatusVm> _states => MasterdataService.Get<RepairOrderStatusVm>();
+
 }

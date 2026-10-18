@@ -47,12 +47,14 @@ namespace CamCare.Services
                 .Include(i => i.RepairOrderStatusHistory)
                     .ThenInclude(i => i.RepairOrderStatus)
                 .Include(i => i.LogisticProvider)
+                .Include(i => i.DeliveryAddress)
                 .Include(i => i.Employees)
                 .Include(i => i.Defectives)
                 .Include(i => i.Works)
                 .Include(i => i.IncludedComponents)
                 .Include(i => i.RepairOrderRepairPositions)
-                    .ThenInclude(rp => rp.RepairPosition);
+                    .ThenInclude(rp => rp.RepairPosition)
+                .Include(i => i.EmailAddresses);
 
             if (viewCurrentOrders)
                 query = query.Where(f => !f.RepairOrderStatus.IsOrderClose);
@@ -116,6 +118,8 @@ namespace CamCare.Services
                     .Include(i => i.IncludedComponents)
                     .Include(i => i.RepairOrderRepairPositions)
                         .ThenInclude(rp => rp.RepairPosition)
+                    .Include(i => i.DeliveryAddress)
+                    .Include(i => i.EmailAddresses)
                     .OrderByDescending(i => i.ArrivedAt)
                     .ToListAsync();
 
@@ -207,11 +211,29 @@ namespace CamCare.Services
                 var entity = new RepairOrder();
                 _mapper.Map(vm, entity);
 
+                // Lieferanschrift zuordnen bzw. neu zum Kunden speichern.
+                await ApplyDeliveryAddressAsync(context, vm, entity);
+
+                // E-Mail-Adressen zuordnen bzw. neu zum Kunden speichern.
+                await ApplyEmailAddressesAsync(context, vm, entity);
+
                 entity.Defectives = new List<Defective>();
                 entity.Works = new List<Work>();
                 entity.IncludedComponents = new List<IncludedComponent>();
                 entity.Employees = new List<Employee>();
                 entity.RepairOrderRepairPositions = new List<RepairOrderRepairPosition>();
+
+                // Beim Anlegen eines Auftrags entspricht der Statuszeitstempel dem initialen Status.
+                entity.CurrentStateAt = DateTime.UtcNow;
+
+                // Wird der Auftrag direkt mit dem als "Eingetroffen" markierten Status angelegt,
+                // wird der Eingetroffen-Zeitstempel auf den aktuellen Zeitpunkt gesetzt.
+                if (await context.RepairOrderStatuses
+                        .AsNoTracking()
+                        .AnyAsync(s => s.Id == entity.RepairOrderStatusId && s.IsArrived))
+                {
+                    entity.ArrivedAt = DateTime.UtcNow;
+                }
 
                 // Defectives zuordnen oder anlegen
                 if (vm.Defectives != null)
@@ -384,6 +406,7 @@ namespace CamCare.Services
                     .Include(r => r.RepairOrderRepairPositions)
                         .ThenInclude(rp => rp.RepairPosition)
                     .Include(r => r.Employees)
+                    .Include(r => r.EmailAddresses)
                     .FirstOrDefaultAsync(r => r.Id == (int)id);
 
                 if (entity == null)
@@ -404,11 +427,13 @@ namespace CamCare.Services
                 }
 
                 // --- Statushistorie aktualisieren ---
-                if (entity.RepairOrderStatusId != vm.RepairOrderStatusId)
+                var statusChanged = entity.RepairOrderStatusId != vm.RepairOrderStatusId;
+                RepairOrderStatus? newStatus = null;
+                if (statusChanged)
                 {
                     // Statusnamen und Farben zum Zeitpunkt der Änderung als Snapshot sichern,
                     // damit die Historie auch nach dem Löschen eines Status nachvollziehbar bleibt.
-                    var newStatus = await context.RepairOrderStatuses
+                    newStatus = await context.RepairOrderStatuses
                         .AsNoTracking()
                         .FirstOrDefaultAsync(s => s.Id == vm.RepairOrderStatusId);
 
@@ -425,7 +450,23 @@ namespace CamCare.Services
 
                 // Update Haupt-Entity
                 _mapper.Map(vm, entity);
+
+                // Lieferanschrift zuordnen bzw. neu zum Kunden speichern.
+                await ApplyDeliveryAddressAsync(context, vm, entity);
+
+                // E-Mail-Adressen zuordnen bzw. neu zum Kunden speichern.
+                await ApplyEmailAddressesAsync(context, vm, entity);
+
                 entity.UpdatedAt = DateTime.UtcNow;
+
+                // Wird der Status geändert, wird der Zeitstempel der aktuellen Statusänderung gesetzt.
+                if (statusChanged)
+                    entity.CurrentStateAt = DateTime.UtcNow;
+
+                // Wird der Auftrag in den als "Eingetroffen" markierten Status gesetzt,
+                // wird der Eingetroffen-Zeitstempel auf den aktuellen Zeitpunkt gesetzt.
+                if (statusChanged && newStatus?.IsArrived == true)
+                    entity.ArrivedAt = DateTime.UtcNow;
 
                 // --- Defectives synchronisieren ---
                 var vmDefectives = vm.Defectives ?? new List<DefectiveVm>();
@@ -607,6 +648,125 @@ namespace CamCare.Services
             }
         }
 
+        /// <summary>
+        /// Ordnet dem Auftrag die ausgewählte Lieferanschrift zu. Wurde im Formular eine
+        /// neue Anschrift erfasst, wird diese für den Kunden gespeichert. Eine bereits
+        /// vorhandene, identische Anschrift des Kunden wird wiederverwendet, um Duplikate
+        /// zu vermeiden.
+        /// </summary>
+        private static async Task ApplyDeliveryAddressAsync(IAppDbContext context, RepairOrderVm vm, RepairOrder entity)
+        {
+            var selected = vm.DeliveryAddress;
+
+            // Keine Anschrift erfasst → die Zuordnung aus dem ViewModel (bzw. keine
+            // Zuordnung) bleibt unverändert bestehen.
+            if (selected is null)
+                return;
+
+            // Eine bereits gespeicherte Lieferanschrift wurde ausgewählt.
+            if (selected.Id > 0)
+            {
+                entity.DeliveryAddressId = selected.Id;
+                return;
+            }
+
+            // Unvollständig erfasste Anschriften werden nicht gespeichert.
+            if (string.IsNullOrWhiteSpace(selected.Recipient)
+                || string.IsNullOrWhiteSpace(selected.Street)
+                || string.IsNullOrWhiteSpace(selected.PostalCode)
+                || string.IsNullOrWhiteSpace(selected.City))
+            {
+                return;
+            }
+
+            var recipient = selected.Recipient.Trim();
+            var street = selected.Street.Trim();
+            var postalCode = selected.PostalCode.Trim();
+            var city = selected.City.Trim();
+
+            // Existiert die Anschrift beim Kunden bereits, wird sie wiederverwendet.
+            var existing = await context.DeliveryAddresses
+                .FirstOrDefaultAsync(a => a.CustomerId == entity.CustomerId
+                                          && a.Recipient == recipient
+                                          && a.Street == street
+                                          && a.PostalCode == postalCode
+                                          && a.City == city);
+
+            if (existing is not null)
+            {
+                entity.DeliveryAddressId = existing.Id;
+                return;
+            }
+
+            // Neue Lieferanschrift zum Kunden speichern. Die Id wird beim Speichern des
+            // Auftrags über die Navigation gesetzt.
+            entity.DeliveryAddress = new DeliveryAddress
+            {
+                CustomerId = entity.CustomerId,
+                Recipient = recipient,
+                ContactPerson = string.IsNullOrWhiteSpace(selected.ContactPerson) ? null : selected.ContactPerson.Trim(),
+                Street = street,
+                PostalCode = postalCode,
+                City = city,
+                Country = string.IsNullOrWhiteSpace(selected.Country) ? null : selected.Country.Trim(),
+                CreatedAt = DateTime.UtcNow
+            };
+        }
+
+        /// <summary>
+        /// Ordnet dem Auftrag die ausgewählten E-Mail-Adressen zu. Wurde im Formular eine
+        /// neue Adresse erfasst, wird diese für den Kunden gespeichert. Eine bereits beim
+        /// Kunden hinterlegte, identische Adresse wird wiederverwendet, um Duplikate zu
+        /// vermeiden. Die Auswahl im Formular ist maßgeblich – nicht (mehr) ausgewählte
+        /// Adressen werden vom Auftrag entfernt (die Adresse beim Kunden bleibt erhalten).
+        /// </summary>
+        private static async Task ApplyEmailAddressesAsync(IAppDbContext context, RepairOrderVm vm, RepairOrder entity)
+        {
+            var selected = vm.EmailAddresses?.ToList() ?? [];
+
+            // Die Zuordnung erfolgt ausschließlich über die Auswahl im Formular.
+            entity.EmailAddresses.Clear();
+
+            if (selected.Count == 0 || entity.CustomerId <= 0)
+                return;
+
+            // Bereits beim Kunden hinterlegte Adressen einmalig laden (Groß-/Kleinschreibung
+            // spielt bei E-Mail-Adressen keine Rolle).
+            var customerAddresses = await context.EmailAddresses
+                .Where(a => a.CustomerId == entity.CustomerId && a.ArchivedAt == null)
+                .ToListAsync();
+
+            var added = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var selectedAddress in selected)
+            {
+                var address = selectedAddress.Address?.Trim();
+                if (string.IsNullOrWhiteSpace(address))
+                    continue;
+
+                var saved = selectedAddress.Id > 0
+                    ? customerAddresses.FirstOrDefault(a => a.Id == selectedAddress.Id)
+                    : customerAddresses.FirstOrDefault(a => string.Equals(a.Address, address, StringComparison.OrdinalIgnoreCase));
+
+                if (saved is null)
+                {
+                    // Neue E-Mail-Adresse zum Kunden speichern. Die Zuordnung zum Auftrag
+                    // erfolgt über die Navigation und wird beim Speichern gesetzt.
+                    saved = new EmailAddress
+                    {
+                        CustomerId = entity.CustomerId,
+                        Address = address,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    context.EmailAddresses.Add(saved);
+                    customerAddresses.Add(saved);
+                }
+
+                if (added.Add(saved.Address.Trim()))
+                    entity.EmailAddresses.Add(saved);
+            }
+        }
+
         public override async Task<ServiceResponse<RepairOrderVm>> GetByIdAsync(object id)
         {
             try
@@ -624,6 +784,8 @@ namespace CamCare.Services
                     .Include(i => i.IncludedComponents)
                     .Include(i => i.RepairOrderRepairPositions)
                         .ThenInclude(rp => rp.RepairPosition)
+                    .Include(i => i.DeliveryAddress)
+                    .Include(i => i.EmailAddresses)
                     .Where(f => f.Id == (int)id)
                     .FirstOrDefaultAsync();
                 if (entity == null)
