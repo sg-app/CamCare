@@ -5,90 +5,92 @@
 <InsertButton InsertClick="OnInsertClicked" />
 <RadzenText>Die Sortierung kann über Drag & Drop der Zeilen durchgeführt werden.</RadzenText>
 <RadzenStack Gap="0rem">
-    <RadzenText TextStyle="TextStyle.Subtitle2">Standard: Auswahl bei neu erstellen Aufträgen (nur einmalig zuweisbar)</RadzenText>
+    <RadzenText TextStyle="TextStyle.Subtitle2">Standard: Auswahl bei neu erstellen Aufträgen (nur einmalig zuweisbar)
+    </RadzenText>
     <RadzenText TextStyle="TextStyle.Subtitle2">Aktiv: Werden in den DropDowns angezeigt</RadzenText>
     <RadzenText TextStyle="TextStyle.Subtitle2">Abschluss: Archiviert den Auftrag (nur einmalig zuweisbar)</RadzenText>
-    <RadzenText TextStyle="TextStyle.Subtitle2">Eingetroffen: Setzt beim Zuweisen des Status den Eingetroffen-Zeitstempel (nur einmalig zuweisbar)</RadzenText>
-</RadzenStack>
-<RadzenDataGrid @ref="_grid" TItem="RepairOrderStatusVm" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
-                Count="_totalCount" AllowPaging="true" PageSize="20" RowUpdate="OnRowUpdate" RowCreate="OnRowCreate"
-                RowRender="OnRowRender" Density="Density.Compact" AllowColumnResize="true" ShowEmptyMessage="false">
-    <Columns>
-        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Name)" Title="Name"
-                              MinWidth="200px">
-            <EditTemplate Context="item">
-                <RadzenTextBox @bind-Value="item.Name" Style="width:100%" />
-            </EditTemplate>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Order)" Title="Order"
-                              Width="60px" SortOrder="SortOrder.Ascending" TextAlign="TextAlign.Right" Visible="false" />
-        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.BackgroundColor)"
-                              Title="Hintergrundfarbe" Width="120px">
-            <Template Context="item">
-                <div
-                    style="width:20px;height:20px;border-radius:50%;border:2px solid black;background-color:@item.BackgroundColor;display:inline-block;">
-                </div>
-            </Template>
-            <EditTemplate Context="item">
-                <RadzenColorPicker @bind-Value="item.BackgroundColor" />
-            </EditTemplate>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.FontColor)"
-                              Title="Textfarbe" Width="120px">
-            <Template Context="item">
-                <div
-                    style="width:20px;height:20px;border-radius:50%;border:2px solid black;background-color:@item.FontColor;display:inline-block;">
-                </div>
-            </Template>
-            <EditTemplate Context="item">
-                <RadzenColorPicker @bind-Value="item.FontColor" />
-            </EditTemplate>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Title="Beispiel" Width="80px">
-            <Template Context="item">
-                <RadzenBadge Text="Text" IsPill="true" Style="@item.BadageStyle" />
-            </Template>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.IsDefault)"
-                              Title="Standard" Width="80px">
-            <Template Context="item">
-                <RadzenIcon Icon="@(item.IsDefault ? "check_circle" : "circle")" />
-            </Template>
-            <EditTemplate Context="item">
-                <RadzenCheckBox @bind-Value="item.IsDefault" />
-            </EditTemplate>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.IsActive)" Title="Aktiv"
-                              Width="80px">
-            <Template Context="item">
-                <RadzenIcon Icon="@(item.IsActive ? "check_circle" : "circle")" />
-            </Template>
-            <EditTemplate Context="item">
-                <RadzenCheckBox @bind-Value="item.IsActive" />
-            </EditTemplate>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.IsOrderClose)"
-                              Title="Abschluss" Width="80px">
-            <Template Context="item">
-                <RadzenIcon Icon="@(item.IsOrderClose ? "check_circle" : "circle")" />
-            </Template>
-            <EditTemplate Context="item">
-                <RadzenCheckBox @bind-Value="item.IsOrderClose" />
-            </EditTemplate>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.IsArrived)"
-                              Title="Eingetroffen" Width="80px">
-            <Template Context="item">
-                <RadzenIcon Icon="@(item.IsArrived ? "check_circle" : "circle")" />
-            </Template>
-            <EditTemplate Context="item">
-                <RadzenCheckBox @bind-Value="item.IsArrived" />
-            </EditTemplate>
-        </RadzenDataGridColumn>
-        <RadzenDataGridInlineEditColumn TItem="RepairOrderStatusVm" EditRow="OnEditRowClicked"
-                                        DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
-    </Columns>
-</RadzenDataGrid>
+    <RadzenText TextStyle="TextStyle.Subtitle2">Eingetroffen: Setzt beim Zuweisen des Status den
+        Eingetroffen-Zeitstempel (nur einmalig zuweisbar)</RadzenText>
+    </RadzenStack>
+    <RadzenDataGrid @ref="_grid" TItem="RepairOrderStatusVm" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
+                    Count="_totalCount" AllowPaging="true" PageSize="20" RowUpdate="OnRowUpdate" RowCreate="OnRowCreate"
+                    RowRender="OnRowRender" Density="Density.Compact" AllowColumnResize="true" ShowEmptyMessage="false">
+        <Columns>
+            <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Name)" Title="Name"
+                                  MinWidth="200px">
+                <EditTemplate Context="item">
+                    <RadzenTextBox @bind-Value="item.Name" Style="width:100%" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.Order)" Title="Order"
+                                  Width="60px" SortOrder="SortOrder.Ascending" TextAlign="TextAlign.Right" Visible="false" />
+            <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.BackgroundColor)"
+                                  Title="Hintergrundfarbe" Width="120px">
+                <Template Context="item">
+                    <div
+                        style="width:20px;height:20px;border-radius:50%;border:2px solid black;background-color:@item.BackgroundColor;display:inline-block;">
+                    </div>
+                </Template>
+                <EditTemplate Context="item">
+                    <RadzenColorPicker @bind-Value="item.BackgroundColor" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.FontColor)"
+                                  Title="Textfarbe" Width="120px">
+                <Template Context="item">
+                    <div
+                        style="width:20px;height:20px;border-radius:50%;border:2px solid black;background-color:@item.FontColor;display:inline-block;">
+                    </div>
+                </Template>
+                <EditTemplate Context="item">
+                    <RadzenColorPicker @bind-Value="item.FontColor" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="RepairOrderStatusVm" Title="Beispiel" Width="80px">
+                <Template Context="item">
+                    <RadzenBadge Text="Text" IsPill="true" Style="@item.BadageStyle" />
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.IsDefault)"
+                                  Title="Standard" Width="80px">
+                <Template Context="item">
+                    <RadzenIcon Icon="@(item.IsDefault ? "check_circle" : "circle")" />
+                </Template>
+                <EditTemplate Context="item">
+                    <RadzenCheckBox @bind-Value="item.IsDefault" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.IsActive)" Title="Aktiv"
+                                  Width="80px">
+                <Template Context="item">
+                    <RadzenIcon Icon="@(item.IsActive ? "check_circle" : "circle")" />
+                </Template>
+                <EditTemplate Context="item">
+                    <RadzenCheckBox @bind-Value="item.IsActive" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.IsArrived)"
+                                  Title="Eingetroffen" Width="80px">
+                <Template Context="item">
+                    <RadzenIcon Icon="@(item.IsArrived ? "check_circle" : "circle")" />
+                </Template>
+                <EditTemplate Context="item">
+                    <RadzenCheckBox @bind-Value="item.IsArrived" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="RepairOrderStatusVm" Property="@nameof(RepairOrderStatusVm.IsOrderClose)"
+                                  Title="Abschluss" Width="80px">
+                <Template Context="item">
+                    <RadzenIcon Icon="@(item.IsOrderClose ? "check_circle" : "circle")" />
+                </Template>
+                <EditTemplate Context="item">
+                    <RadzenCheckBox @bind-Value="item.IsOrderClose" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridInlineEditColumn TItem="RepairOrderStatusVm" EditRow="OnEditRowClicked"
+                                            DeleteRow="OnDeleteRowClicked" CancelEditRow="OnCancelEditRowClicked" SaveRow="OnSaveRowClicked" />
+        </Columns>
+    </RadzenDataGrid>
 
 @code {
     [Inject] protected IRepairOrderStatusService RepairOrderStatusService { get; set; } = default!;

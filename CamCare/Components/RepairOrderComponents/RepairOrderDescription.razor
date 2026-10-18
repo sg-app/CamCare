@@ -1,14 +1,11 @@
 ﻿<RadzenStack Orientation="Orientation.Horizontal">
-    <RadzenFormField class="d-block pt-2" Text="Eingetroffen">
-        <RadzenDatePicker @bind-Value="RepairOrder.ArrivedAt" ShowTime="true" DateFormat="dd.MM.yyyy HH:mm" />
-    </RadzenFormField>
+    <RadzenLabel Text="Prioritätsreparatur" Component="Priority" />
+    <RadzenCheckBox @bind-Value="RepairOrder.PriorityRepair" Name="Priority" />
+</RadzenStack>
+<RadzenStack Orientation="Orientation.Horizontal">
     <RadzenFormField class="d-block pt-2" Text="Auftragsnummer">
         <RadzenTextBox @bind-Value="RepairOrder.OrderNumber" />
     </RadzenFormField>
-</RadzenStack>
-<RadzenStack Orientation="Orientation.Horizontal" class="pt-2">
-    <RadzenLabel Text="Prioritätsreparatur" Component="Priority" />
-    <RadzenCheckBox @bind-Value="RepairOrder.PriorityRepair" Name="Priority" />
 </RadzenStack>
 <RadzenFormField class="d-block pt-2" Text="Kundenbemerkung">
     <RadzenTextArea @bind-Value="RepairOrder.CustomerDescription" Rows="2" Cols="100" />
