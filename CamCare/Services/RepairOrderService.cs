@@ -213,6 +213,9 @@ namespace CamCare.Services
                 entity.Employees = new List<Employee>();
                 entity.RepairOrderRepairPositions = new List<RepairOrderRepairPosition>();
 
+                // Beim Anlegen eines Auftrags entspricht der Statuszeitstempel dem initialen Status.
+                entity.CurrentStateAt = DateTime.UtcNow;
+
                 // Wird der Auftrag direkt mit dem als "Eingetroffen" markierten Status angelegt,
                 // wird der Eingetroffen-Zeitstempel auf den aktuellen Zeitpunkt gesetzt.
                 if (await context.RepairOrderStatuses
@@ -437,6 +440,10 @@ namespace CamCare.Services
                 // Update Haupt-Entity
                 _mapper.Map(vm, entity);
                 entity.UpdatedAt = DateTime.UtcNow;
+
+                // Wird der Status geändert, wird der Zeitstempel der aktuellen Statusänderung gesetzt.
+                if (statusChanged)
+                    entity.CurrentStateAt = DateTime.UtcNow;
 
                 // Wird der Auftrag in den als "Eingetroffen" markierten Status gesetzt,
                 // wird der Eingetroffen-Zeitstempel auf den aktuellen Zeitpunkt gesetzt.

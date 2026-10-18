@@ -24,6 +24,10 @@ namespace CamCare.Models
         public string? QuoteNumber { get; set; }
         public string? DeliveryNoteNumber { get; set; }
         public DateTime? ArrivedAt { get; set; }
+        /// <summary>
+        /// Zeitstempel der letzten Statusänderung (lokale Zeit).
+        /// </summary>
+        public DateTime? CurrentStateAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 

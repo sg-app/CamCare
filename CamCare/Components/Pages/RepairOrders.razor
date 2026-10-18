@@ -23,6 +23,12 @@
                 <RadzenBadge Style="@item.RepairOrderStatus?.BadageStyle">@item.RepairOrderStatus?.Name</RadzenBadge>
             </Template>
         </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status vom" Property="@nameof(RepairOrderVm.CurrentStateAt)"
+                              Width="150px">
+            <Template Context="item">
+                @item.ArrivedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+            </Template>
+        </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Kunde">
             <Template Context="item">
                 @item.Customer?.DisplayName
@@ -60,7 +66,7 @@
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eingetroffen" Property="@nameof(RepairOrderVm.ArrivedAt)"
                               Width="150px" SortOrder="SortOrder.Ascending">
             <Template Context="item">
-                @item.ArrivedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
+                @item.ArrivedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridInlineEditColumn TItem="RepairOrderVm" EditRow="OnEditRowClicked" CanDelete="(_) => false" />

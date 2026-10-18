@@ -26,6 +26,12 @@ namespace CamCare.Domain
         public string? DeliveryNoteNumber { get; set; }
         public DateTime? ArrivedAt { get; set; }
 
+        /// <summary>
+        /// Zeitstempel der letzten Statusänderung. Wird bei jeder Änderung des
+        /// <see cref="RepairOrderStatusId"/> auf den aktuellen Zeitpunkt gesetzt.
+        /// </summary>
+        public DateTime? CurrentStateAt { get; set; }
+
         public virtual RepairOrderStatus RepairOrderStatus { get; set; } = null!;
         public virtual LogisticProvider LogisticProvider { get; set; } = null!;
         public virtual ICollection<Defective> Defectives { get; set; } = [];

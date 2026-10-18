@@ -39,6 +39,7 @@ namespace CamCare.Services
                     rovm.QuoteNumber = ro.QuoteNumber;
                     rovm.DeliveryNoteNumber = ro.DeliveryNoteNumber;
                     rovm.ArrivedAt = ro.ArrivedAt?.ToLocalTime();
+                    rovm.CurrentStateAt = ro.CurrentStateAt?.ToLocalTime();
                     rovm.CreatedAt = ro.CreatedAt;
                     rovm.UpdatedAt = ro.UpdatedAt;
                     if (ro.RepairOrderStatus != null)
