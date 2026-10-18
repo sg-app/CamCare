@@ -142,6 +142,35 @@ namespace CamCare.Migrations
                     b.ToTable("DeliveryAddresses");
                 });
 
+            modelBuilder.Entity("CamCare.Domain.EmailAddress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EmailAddresses");
+                });
+
             modelBuilder.Entity("CamCare.Domain.Employee", b =>
                 {
                     b.Property<int>("Id")
@@ -672,6 +701,21 @@ namespace CamCare.Migrations
                     b.ToTable("DefectiveRepairOrder");
                 });
 
+            modelBuilder.Entity("EmailAddressRepairOrder", b =>
+                {
+                    b.Property<int>("EmailAddressesId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RepairOrdersId")
+                        .HasColumnType("int");
+
+                    b.HasKey("EmailAddressesId", "RepairOrdersId");
+
+                    b.HasIndex("RepairOrdersId");
+
+                    b.ToTable("EmailAddressRepairOrder");
+                });
+
             modelBuilder.Entity("EmployeeRepairOrder", b =>
                 {
                     b.Property<int>("EmployeesId")
@@ -790,6 +834,21 @@ namespace CamCare.Migrations
                     b.HasOne("CamCare.Domain.Defective", null)
                         .WithMany()
                         .HasForeignKey("DefectivesId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CamCare.Domain.RepairOrder", null)
+                        .WithMany()
+                        .HasForeignKey("RepairOrdersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EmailAddressRepairOrder", b =>
+                {
+                    b.HasOne("CamCare.Domain.EmailAddress", null)
+                        .WithMany()
+                        .HasForeignKey("EmailAddressesId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 

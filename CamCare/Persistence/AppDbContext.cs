@@ -17,6 +17,7 @@ namespace CamCare.Persistence
         public DbSet<DataStore> DataStores { get; set; }
         public DbSet<UserGroup> UserGroups { get; set; }
         public DbSet<DeliveryAddress> DeliveryAddresses { get; set; }
+        public DbSet<EmailAddress> EmailAddresses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -63,6 +64,19 @@ namespace CamCare.Persistence
                .UsingEntity(
                    "EmployeeRepairOrder",
                    r => r.HasOne(typeof(Employee)).WithMany().OnDelete(DeleteBehavior.Restrict),
+                   l => l.HasOne(typeof(RepairOrder)).WithMany().OnDelete(DeleteBehavior.Cascade)
+               );
+
+
+            // Die E-Mail-Adressen gehören zum Kunden und können von mehreren Aufträgen
+            // verwendet werden. Beim Löschen eines Auftrags werden nur die Zuordnungen
+            // entfernt (Cascade); die Adressen selbst bleiben erhalten (Restrict).
+            modelBuilder.Entity<RepairOrder>()
+               .HasMany(e => e.EmailAddresses)
+               .WithMany(e => e.RepairOrders)
+               .UsingEntity(
+                   "EmailAddressRepairOrder",
+                   r => r.HasOne(typeof(EmailAddress)).WithMany().OnDelete(DeleteBehavior.Restrict),
                    l => l.HasOne(typeof(RepairOrder)).WithMany().OnDelete(DeleteBehavior.Cascade)
                );
 

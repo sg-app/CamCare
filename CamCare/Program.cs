@@ -69,6 +69,7 @@ builder.Services.AddScoped<IRepairOrderStatusService, RepairOrderStatusService>(
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<ILogisticProviderService, LogisticProviderService>();
 builder.Services.AddScoped<IDeliveryAddressService, DeliveryAddressService>();
+builder.Services.AddScoped<IEmailAddressService, EmailAddressService>();
 builder.Services.AddScoped<IRepairPositionService, RepairPositionService>();
 builder.Services.AddScoped<IDefectiveService, DefectiveService>();
 builder.Services.AddScoped<IWorkService, WorkService>();

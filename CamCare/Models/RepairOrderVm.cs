@@ -50,6 +50,12 @@ namespace CamCare.Models
         /// </summary>
         public DeliveryAddressVm? DeliveryAddress { get; set; }
 
+        /// <summary>
+        /// Ausgewählte bzw. neu erfasste E-Mail-Adressen des Auftrags. Neu erfasste
+        /// Adressen (Id = 0) werden beim Speichern des Auftrags für den Kunden hinterlegt.
+        /// </summary>
+        public ICollection<EmailAddressVm>? EmailAddresses { get; set; }
+
         public ICollection<DefectiveVm>? Defectives { get; set; }
         public ICollection<WorkVm>? Works { get; set; }
         public ICollection<IncludedComponentVm>? IncludedComponents { get; set; }

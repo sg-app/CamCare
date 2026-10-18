@@ -53,7 +53,8 @@ namespace CamCare.Services
                 .Include(i => i.Works)
                 .Include(i => i.IncludedComponents)
                 .Include(i => i.RepairOrderRepairPositions)
-                    .ThenInclude(rp => rp.RepairPosition);
+                    .ThenInclude(rp => rp.RepairPosition)
+                .Include(i => i.EmailAddresses);
 
             if (viewCurrentOrders)
                 query = query.Where(f => !f.RepairOrderStatus.IsOrderClose);
@@ -118,6 +119,7 @@ namespace CamCare.Services
                     .Include(i => i.RepairOrderRepairPositions)
                         .ThenInclude(rp => rp.RepairPosition)
                     .Include(i => i.DeliveryAddress)
+                    .Include(i => i.EmailAddresses)
                     .OrderByDescending(i => i.ArrivedAt)
                     .ToListAsync();
 
@@ -211,6 +213,9 @@ namespace CamCare.Services
 
                 // Lieferanschrift zuordnen bzw. neu zum Kunden speichern.
                 await ApplyDeliveryAddressAsync(context, vm, entity);
+
+                // E-Mail-Adressen zuordnen bzw. neu zum Kunden speichern.
+                await ApplyEmailAddressesAsync(context, vm, entity);
 
                 entity.Defectives = new List<Defective>();
                 entity.Works = new List<Work>();
@@ -401,6 +406,7 @@ namespace CamCare.Services
                     .Include(r => r.RepairOrderRepairPositions)
                         .ThenInclude(rp => rp.RepairPosition)
                     .Include(r => r.Employees)
+                    .Include(r => r.EmailAddresses)
                     .FirstOrDefaultAsync(r => r.Id == (int)id);
 
                 if (entity == null)
@@ -447,6 +453,9 @@ namespace CamCare.Services
 
                 // Lieferanschrift zuordnen bzw. neu zum Kunden speichern.
                 await ApplyDeliveryAddressAsync(context, vm, entity);
+
+                // E-Mail-Adressen zuordnen bzw. neu zum Kunden speichern.
+                await ApplyEmailAddressesAsync(context, vm, entity);
 
                 entity.UpdatedAt = DateTime.UtcNow;
 
@@ -704,6 +713,60 @@ namespace CamCare.Services
             };
         }
 
+        /// <summary>
+        /// Ordnet dem Auftrag die ausgewählten E-Mail-Adressen zu. Wurde im Formular eine
+        /// neue Adresse erfasst, wird diese für den Kunden gespeichert. Eine bereits beim
+        /// Kunden hinterlegte, identische Adresse wird wiederverwendet, um Duplikate zu
+        /// vermeiden. Die Auswahl im Formular ist maßgeblich – nicht (mehr) ausgewählte
+        /// Adressen werden vom Auftrag entfernt (die Adresse beim Kunden bleibt erhalten).
+        /// </summary>
+        private static async Task ApplyEmailAddressesAsync(IAppDbContext context, RepairOrderVm vm, RepairOrder entity)
+        {
+            var selected = vm.EmailAddresses?.ToList() ?? [];
+
+            // Die Zuordnung erfolgt ausschließlich über die Auswahl im Formular.
+            entity.EmailAddresses.Clear();
+
+            if (selected.Count == 0 || entity.CustomerId <= 0)
+                return;
+
+            // Bereits beim Kunden hinterlegte Adressen einmalig laden (Groß-/Kleinschreibung
+            // spielt bei E-Mail-Adressen keine Rolle).
+            var customerAddresses = await context.EmailAddresses
+                .Where(a => a.CustomerId == entity.CustomerId && a.ArchivedAt == null)
+                .ToListAsync();
+
+            var added = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var selectedAddress in selected)
+            {
+                var address = selectedAddress.Address?.Trim();
+                if (string.IsNullOrWhiteSpace(address))
+                    continue;
+
+                var saved = selectedAddress.Id > 0
+                    ? customerAddresses.FirstOrDefault(a => a.Id == selectedAddress.Id)
+                    : customerAddresses.FirstOrDefault(a => string.Equals(a.Address, address, StringComparison.OrdinalIgnoreCase));
+
+                if (saved is null)
+                {
+                    // Neue E-Mail-Adresse zum Kunden speichern. Die Zuordnung zum Auftrag
+                    // erfolgt über die Navigation und wird beim Speichern gesetzt.
+                    saved = new EmailAddress
+                    {
+                        CustomerId = entity.CustomerId,
+                        Address = address,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    context.EmailAddresses.Add(saved);
+                    customerAddresses.Add(saved);
+                }
+
+                if (added.Add(saved.Address.Trim()))
+                    entity.EmailAddresses.Add(saved);
+            }
+        }
+
         public override async Task<ServiceResponse<RepairOrderVm>> GetByIdAsync(object id)
         {
             try
@@ -722,6 +785,7 @@ namespace CamCare.Services
                     .Include(i => i.RepairOrderRepairPositions)
                         .ThenInclude(rp => rp.RepairPosition)
                     .Include(i => i.DeliveryAddress)
+                    .Include(i => i.EmailAddresses)
                     .Where(f => f.Id == (int)id)
                     .FirstOrDefaultAsync();
                 if (entity == null)

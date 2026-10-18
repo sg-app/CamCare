@@ -30,6 +30,13 @@ namespace CamCare.Domain
         /// </summary>
         public int? DeliveryAddressId { get; set; }
 
+        /// <summary>
+        /// E-Mail-Adressen des Auftrags. Die Adressen selbst werden am Kunden
+        /// (<see cref="EmailAddress.CustomerId"/>) gespeichert und können daher für
+        /// weitere Aufträge wiederverwendet werden.
+        /// </summary>
+        public virtual ICollection<EmailAddress> EmailAddresses { get; set; } = [];
+
         public string? OrderNumber { get; set; }
         public string? QuoteNumber { get; set; }
         public string? DeliveryNoteNumber { get; set; }

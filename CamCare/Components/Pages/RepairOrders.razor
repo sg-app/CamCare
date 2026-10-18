@@ -114,6 +114,16 @@
             <div class="d-block">@item.DeliveryAddress.Country @item.DeliveryAddress.PostalCode @item.DeliveryAddress.City
             </div>
         }
+        @if (item.EmailAddresses?.Any() == true)
+        {
+            <RadzenText TextStyle="TextStyle.H5" class="d-block pt-2">
+                E-Mail-Adressen:
+            </RadzenText>
+            @foreach (var emailAddress in item.EmailAddresses)
+            {
+                <div class="d-block">@emailAddress.DisplayName</div>
+            }
+        }
         <RadzenText TextStyle="TextStyle.H5" class="d-block pt-2">
             Defekt:
         </RadzenText>

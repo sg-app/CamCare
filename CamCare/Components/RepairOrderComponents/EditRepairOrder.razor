@@ -85,6 +85,8 @@
 
         <DeliveryAddressAssign RepairOrder="@RepairOrder" />
 
+        <EmailAddressAssign RepairOrder="@RepairOrder" />
+
         <RadzenFieldset Text="Beschreibung" Visible="@(RepairOrder.CustomerId != null)">
             <RepairOrderDescription RepairOrder="@RepairOrder" />
             <EmployeeAssign RepairOrder="@RepairOrder" />

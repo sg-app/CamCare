@@ -1,0 +1,234 @@
+﻿@* Auswahl bzw. Erfassung der E-Mail-Adressen eines Reparaturauftrags.
+   Die Adressen werden am Kunden (CustomerId) gespeichert und stehen dadurch
+   für weitere Aufträge wieder zur Auswahl. *@
+@using FluentValidation
+
+<RadzenFieldset Text="E-Mail-Adressen" class="mt-2">
+    @if (RepairOrder.CustomerId is null)
+    {
+        <RadzenText class="d-block text-secondary">
+            Es ist kein Kunde zugeordnet. Es können keine E-Mail-Adressen hinterlegt werden.
+        </RadzenText>
+    }
+    else
+    {
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.End" Gap="1rem" class="d-flex flex-wrap">
+            <RadzenFormField Text="Gespeicherte E-Mail-Adressen" Style="min-width:420px;flex-grow:1">
+                <RadzenDropDown TValue="IEnumerable<int>" Multiple="true" Chips="true"
+                                Value="@_selectedAddressIds" ValueChanged="@(args => OnSavedAddressesSelected(args))"
+                                Data="@_addresses" TextProperty="@nameof(EmailAddressVm.DisplayName)"
+                                ValueProperty="@nameof(EmailAddressVm.Id)" AllowClear="true" AllowFiltering="true"
+                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                FilterOperator="StringFilterOperator.Contains" AllowVirtualization="true"
+                                Placeholder="E-Mail-Adresse auswählen" Style="width:100%" />
+            </RadzenFormField>
+            <RadzenButton Text="Neue E-Mail-Adresse" Icon="add_comment" ButtonStyle="ButtonStyle.Light"
+                          ButtonType="ButtonType.Button" Click="@(args => ToggleNewAddress())" Visible="@(!_showNewAddress)" />
+        </RadzenStack>
+
+        @if (_showNewAddress)
+        {
+            <RadzenText class="d-block pt-2 text-secondary">
+                Die E-Mail-Adresse wird beim Speichern des Auftrags für den Kunden hinterlegt und steht danach
+                für weitere Aufträge zur Auswahl.
+            </RadzenText>
+            <div class="d-flex flex-column">
+                <div class="flex-row flex-wrap gap-3 pt-2">
+                    <RadzenFormField Text="E-Mail-Adresse" Style="min-width:400px">
+                        <RadzenTextBox @bind-Value="_newAddress.Address" Style="width:400px"
+                                       Placeholder="z. B. name@firma.de" />
+                    </RadzenFormField>
+                </div>
+            </div>
+
+            @if (_validationErrors.Count > 0)
+            {
+                <div class="pt-1">
+                    @foreach (var error in _validationErrors)
+                    {
+                        <RadzenText class="d-block text-danger">@error</RadzenText>
+                    }
+                </div>
+            }
+            <div class="pt-2 d-flex gap-2">
+                <RadzenButton Text="Übernehmen" Icon="check" ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Button"
+                              Click="@(args => OnApplyNewAddressClicked())" />
+                <RadzenButton Text="Abbrechen" ButtonStyle="ButtonStyle.Secondary" ButtonType="ButtonType.Button"
+                              Click="@(args => OnCancelNewAddressClicked())" />
+            </div>
+        }
+
+        @if (RepairOrder.EmailAddresses?.Count > 0)
+        {
+            <RadzenStack Orientation="Orientation.Vertical" Gap="0" class="pt-2">
+                @foreach (var address in RepairOrder.EmailAddresses)
+                {
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                        <RadzenText class="d-block">@address.Address</RadzenText>
+                        @if (address.IsNew)
+                        {
+                            <RadzenText class="d-block text-secondary">– wird beim Speichern für den Kunden hinterlegt</RadzenText>
+                        }
+                        <RadzenButton Icon="delete" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Light"
+                                      ButtonType="ButtonType.Button"
+                                      Click="@(args => OnRemoveAddressClicked(address))" />
+                    </RadzenStack>
+                }
+            </RadzenStack>
+        }
+    }
+</RadzenFieldset>
+
+@code {
+    [Inject] protected ILogger<EmailAddressAssign> Logger { get; set; } = default!;
+    [Inject] protected IEmailAddressService EmailAddressService { get; set; } = default!;
+    [Inject] protected IValidator<EmailAddressVm> EmailAddressValidator { get; set; } = default!;
+
+    [Parameter] public RepairOrderVm RepairOrder { get; set; } = new();
+
+    private IList<EmailAddressVm> _addresses = new List<EmailAddressVm>();
+    private EmailAddressVm _newAddress = new();
+    private List<string> _validationErrors = [];
+    private IEnumerable<int> _selectedAddressIds = new List<int>();
+    private int? _loadedCustomerId;
+    private bool _showNewAddress;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (RepairOrder is null)
+            throw new ArgumentNullException(nameof(RepairOrder), "RepairOrder cannot be null");
+
+        RepairOrder.EmailAddresses ??= [];
+        SyncSelectedAddressIds();
+
+        // Die Adressen werden geladen, sobald (bzw. sofern) der Kunde feststeht.
+        if (_loadedCustomerId != RepairOrder.CustomerId)
+        {
+            _loadedCustomerId = RepairOrder.CustomerId;
+            await LoadAddressesAsync();
+        }
+    }
+
+    private async Task LoadAddressesAsync()
+    {
+        _addresses = new List<EmailAddressVm>();
+
+        if (RepairOrder.CustomerId is not int customerId)
+            return;
+
+        var response = await EmailAddressService.GetByCustomerIdAsync(customerId);
+        if (response.Success)
+        {
+            _addresses = response.Data ?? [];
+        }
+        else
+        {
+            Logger.LogWarning("E-Mail-Adressen für Kunde {CustomerId} konnten nicht geladen werden: {Message}",
+                customerId, response.Message);
+        }
+    }
+
+    /// <summary>
+    /// Übernimmt die dem Auftrag zugeordneten (gespeicherten) Adressen in die Auswahl.
+    /// </summary>
+    private void SyncSelectedAddressIds()
+        => _selectedAddressIds = RepairOrder.EmailAddresses?
+            .Where(a => !a.IsNew)
+            .Select(a => a.Id)
+            .Distinct()
+            .ToList() ?? new List<int>();
+
+    private void OnSavedAddressesSelected(IEnumerable<int> addressIds)
+    {
+        // Beim Clear (✕) liefert Radzen bei Mehrfachauswahl null statt einer leeren Liste.
+        addressIds ??= [];
+        _selectedAddressIds = addressIds;
+        RepairOrder.EmailAddresses ??= [];
+
+        // Neu erfasste Adressen (Id = 0) bleiben erhalten, die Zuordnung der gespeicherten
+        // Adressen wird aus der Auswahl neu aufgebaut.
+        var newAddresses = RepairOrder.EmailAddresses.Where(a => a.IsNew).ToList();
+        RepairOrder.EmailAddresses.Clear();
+        foreach (var newAddress in newAddresses)
+            RepairOrder.EmailAddresses.Add(newAddress);
+
+        foreach (var address in _addresses.Where(a => addressIds.Contains(a.Id)))
+        {
+            if (RepairOrder.EmailAddresses.Any(a => string.Equals(a.Address, address.Address, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            RepairOrder.EmailAddresses.Add(address);
+        }
+    }
+
+    private void OnRemoveAddressClicked(EmailAddressVm address)
+    {
+        RepairOrder.EmailAddresses?.Remove(address);
+        SyncSelectedAddressIds();
+    }
+
+    private void ToggleNewAddress()
+    {
+        _validationErrors = [];
+        _showNewAddress = !_showNewAddress;
+
+        if (_showNewAddress)
+            _newAddress = new EmailAddressVm { CustomerId = RepairOrder.CustomerId ?? 0 };
+    }
+
+    private void OnApplyNewAddressClicked()
+    {
+        _newAddress.CustomerId = RepairOrder.CustomerId ?? 0;
+
+        var validationResult = EmailAddressValidator.Validate(_newAddress);
+        if (!validationResult.IsValid)
+        {
+            _validationErrors = validationResult.Errors
+                .Select(e => e.ErrorMessage)
+                .Distinct()
+                .ToList();
+            return;
+        }
+
+        var address = _newAddress.Address.Trim();
+        RepairOrder.EmailAddresses ??= [];
+
+        // Ist die Adresse beim Kunden bereits hinterlegt, wird sie nur ausgewählt.
+        var savedAddress = _addresses.FirstOrDefault(a => string.Equals(a.Address, address, StringComparison.OrdinalIgnoreCase));
+        if (savedAddress is not null)
+        {
+            if (RepairOrder.EmailAddresses.All(a => a.Id != savedAddress.Id))
+                RepairOrder.EmailAddresses.Add(savedAddress);
+
+            SyncSelectedAddressIds();
+            _validationErrors = [];
+            _showNewAddress = false;
+            return;
+        }
+
+        // Ist die Adresse dem Auftrag bereits zugeordnet, ist nichts zu tun.
+        if (RepairOrder.EmailAddresses.Any(a => string.Equals(a.Address, address, StringComparison.OrdinalIgnoreCase)))
+        {
+            _validationErrors = [];
+            _showNewAddress = false;
+            return;
+        }
+
+        // Die Adresse wird erst beim Speichern des Auftrags beim Kunden angelegt
+        // (siehe RepairOrderService) und steht danach für weitere Aufträge zur Auswahl.
+        RepairOrder.EmailAddresses.Add(new EmailAddressVm
+        {
+            CustomerId = _newAddress.CustomerId,
+            Address = address
+        });
+
+        _validationErrors = [];
+        _showNewAddress = false;
+    }
+
+    private void OnCancelNewAddressClicked()
+    {
+        _validationErrors = [];
+        _showNewAddress = false;
+    }
+}

@@ -56,6 +56,8 @@ namespace CamCare.Services
                         rovm.DeliveryAddressId ??= ro.DeliveryAddress.Id;
                         rovm.DeliveryAddress = Map<DeliveryAddress, DeliveryAddressVm>(ro.DeliveryAddress);
                     }
+                    if (ro.EmailAddresses != null)
+                        rovm.EmailAddresses = ro.EmailAddresses.Select(Map<EmailAddress, EmailAddressVm>).ToList();
                     if (ro.Defectives != null)
                         rovm.Defectives = ro.Defectives.Select(Map<Defective, DefectiveVm>).ToList();
                     if (ro.Works != null)
@@ -299,6 +301,20 @@ namespace CamCare.Services
                     da.Country = davm.Country;
                     da.CreatedAt = davm.CreatedAt;
                     da.UpdatedAt = davm.UpdatedAt;
+                    break;
+                case EmailAddress ea when destination is EmailAddressVm eavm:
+                    eavm.Id = ea.Id;
+                    eavm.CustomerId = ea.CustomerId;
+                    eavm.Address = ea.Address;
+                    eavm.CreatedAt = ea.CreatedAt;
+                    eavm.UpdatedAt = ea.UpdatedAt;
+                    break;
+                case EmailAddressVm eavm when destination is EmailAddress ea:
+                    ea.Id = eavm.Id;
+                    ea.CustomerId = eavm.CustomerId;
+                    ea.Address = eavm.Address;
+                    ea.CreatedAt = eavm.CreatedAt;
+                    ea.UpdatedAt = eavm.UpdatedAt;
                     break;
                 default:
                     throw new NotSupportedException($"Mapping from {typeof(TSource)} to {typeof(TDestination)} is not supported.");
