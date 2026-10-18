@@ -15,17 +15,24 @@
 <RadzenDataGrid @ref="_grid" Render="@OnRender" TItem="RepairOrderVm" Data="_data" LoadData="OnLoadData"
                 IsLoading="_isLoading" Count="_totalCount" AllowPaging="true" PageSizeOptions="@pageSizeOptions" PageSize="50"
                 Density="Density.Compact" AllowColumnResize="true" AllowSorting="true" AllowMultiColumnSorting="true"
-                ShowMultiColumnSortingIndex="true" ShowEmptyMessage="false">
+                ShowMultiColumnSortingIndex="true" ShowEmptyMessage="false" FilterMode="FilterMode.Simple"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
     <Columns>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftrag" Property="Id" Width="80px"></RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftrag" Property="Id" Width="80px" Filterable="false" />
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status" Property="@nameof(RepairOrderVm.RepairOrderStatus)"
-                              Width="180px">
+                              FilterValue="@_selectedStates" FilterOperator="FilterOperator.In"
+                              LogicalFilterOperator="LogicalFilterOperator.Or" Width="180px">
+            <FilterTemplate>
+                <RadzenDropDown @bind-Value=@_selectedStates Multiple="true" AllowSelectAll=false Style="width:100%;"
+                                Data=@(MasterdataService.Get<RepairOrderStatusVm>())
+                                TextProperty="@nameof(RepairOrderStatusVm.Name)" />
+            </FilterTemplate>
             <Template Context="item">
                 <RadzenBadge Style="@item.RepairOrderStatus?.BadageStyle">@item.RepairOrderStatus?.Name</RadzenBadge>
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status vom" Property="@nameof(RepairOrderVm.CurrentStateAt)"
-                              Width="150px">
+                              Width="150px" Filterable="false">
             <Template Context="item">
                 @item.CurrentStateAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
             </Template>
@@ -37,8 +44,7 @@
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftragsnummer" Property="@nameof(RepairOrderVm.OrderNumber)"
                               Width="150px" />
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Seriennummer"
-                              Property="@nameof(RepairOrderVm.CameraSerialNumber)" Width="220px">
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Seriennummer" Property="SerialNumber" Width="220px">
             <Template Context="item">
                 <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
                     @if (item.SerialNumberNeedsMaintenance || item.IsCamera is null)
@@ -54,7 +60,7 @@
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Priorität" Property="@nameof(RepairOrderVm.PriorityRepair)"
-                              Width="100px">
+                              Width="100px" Filterable="false">
             <Template Context="item">
                 @{
                     var icon = item.PriorityRepair ?? false ? "check_box" :
@@ -64,7 +70,7 @@
                 <RadzenIcon Icon="@icon" IconColor="@color" />
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Garantie" Width="100px">
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Garantie" Width="100px" Filterable="false">
             <Template Context="item">
                 @{
                     var icon = item.Warranty ? "check_box" :
@@ -188,6 +194,7 @@
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
     [Inject] protected IDispatcher Dispatcher { get; set; } = default!;
     [Inject] protected IRepairOrderChangeSubscriber RepairOrderChangeSubscriber { get; set; } = default!;
+    [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
     [Inject] protected ILogger<RepairOrders> Logger { get; set; } = default!;
 
     private RadzenDataGrid<RepairOrderVm> _grid = default!;
@@ -196,6 +203,7 @@
     private int _totalCount;
     private bool _isLoading;
     private bool _archiveOrders;
+    private IEnumerable<RepairOrderStatusVm> _selectedStates;
 
     private async Task OnLoadData(LoadDataArgs args)
     {

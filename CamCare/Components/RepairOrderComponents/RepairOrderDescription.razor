@@ -15,6 +15,16 @@
                     AllowFiltering="true" AllowVirtualization="true" TextProperty="@nameof(RepairOrderStatusVm.Name)"
                     ValueProperty="@nameof(RepairOrderStatusVm.Id)" AllowClear="true" Style="width:500px" />
 </RadzenFormField>
+@if (RepairOrder.ArrivedAt is not null || _states.FirstOrDefault(f => f.Id ==
+RepairOrder.RepairOrderStatusId)?.IsArrived
+== true)
+{
+    var _arrivedAt = RepairOrder.ArrivedAt is null
+    ? DateTime.Now.ToLocalTime()
+    : RepairOrder.ArrivedAt?.ToLocalTime();
+
+    <RadzenText>Eingetroffen: @_arrivedAt?.ToString("dd.MM.yyyy HH:mm")</RadzenText>
+}
 <RadzenRadioButtonList class="pt-2" @bind-Value="RepairOrder.ShippingMethod">
     <Items>
         <RadzenRadioButtonListItem Text="@ShippingMethod.PickedUp.GetDisplayDescription()"
@@ -61,4 +71,7 @@
     [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
 
     [Parameter] public RepairOrderVm RepairOrder { get; set; } = default!;
+
+    private IEnumerable<RepairOrderStatusVm> _states => MasterdataService.Get<RepairOrderStatusVm>();
+
 }
