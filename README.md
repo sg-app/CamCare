@@ -35,7 +35,7 @@
   - Reparaturpositionen (Artikelnummern, Beschreibungen)
   - Defekte
   - Mitgelieferte Komponenten
-  - Reparaturauftrags-Status
+  - Reparaturauftrags-Status (die Flags „Standard", „Abschluss" und „Eingetroffen" können jeweils nur einem Status zugeordnet werden)
 
 - **Logistik & Verpackung**
   - Versandart (Eigenversand durch Kunden oder Versandunternehmen)

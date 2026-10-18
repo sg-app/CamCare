@@ -5,10 +5,10 @@
 <InsertButton InsertClick="OnInsertClicked" />
 <RadzenText>Die Sortierung kann über Drag & Drop der Zeilen durchgeführt werden.</RadzenText>
 <RadzenStack Gap="0rem">
-    <RadzenText TextStyle="TextStyle.Subtitle2">Standard: Auswahl bei neu erstellen Aufträgen</RadzenText>
+    <RadzenText TextStyle="TextStyle.Subtitle2">Standard: Auswahl bei neu erstellen Aufträgen (nur einmalig zuweisbar)</RadzenText>
     <RadzenText TextStyle="TextStyle.Subtitle2">Aktiv: Werden in den DropDowns angezeigt</RadzenText>
-    <RadzenText TextStyle="TextStyle.Subtitle2">Abschluss: Archiviert den Auftrag</RadzenText>
-    <RadzenText TextStyle="TextStyle.Subtitle2">Eingetroffen: Setzt beim Zuweisen des Status den Eingetroffen-Zeitstempel</RadzenText>
+    <RadzenText TextStyle="TextStyle.Subtitle2">Abschluss: Archiviert den Auftrag (nur einmalig zuweisbar)</RadzenText>
+    <RadzenText TextStyle="TextStyle.Subtitle2">Eingetroffen: Setzt beim Zuweisen des Status den Eingetroffen-Zeitstempel (nur einmalig zuweisbar)</RadzenText>
 </RadzenStack>
 <RadzenDataGrid @ref="_grid" TItem="RepairOrderStatusVm" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
                 Count="_totalCount" AllowPaging="true" PageSize="20" RowUpdate="OnRowUpdate" RowCreate="OnRowCreate"
