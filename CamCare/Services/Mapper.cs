@@ -68,6 +68,12 @@ namespace CamCare.Services
                         rovm.RepairPositions = ro.RepairOrderRepairPositions.Select(Map<RepairOrderRepairPosition, RepairPositionVm>).ToList();
                     if (ro.Employees != null)
                         rovm.Employees = ro.Employees.Select(Map<Employee, EmployeeVm>).ToList();
+                    if (ro.RepairOrderSerials != null)
+                        rovm.RepairOrderSerials = ro.RepairOrderSerials
+                            .OrderByDescending(s => s.IsPrimary)
+                            .ThenBy(s => s.Id)
+                            .Select(Map<RepairOrderSerial, RepairOrderSerialVm>)
+                            .ToList();
                     break;
                 case RepairOrderVm rovm when destination is RepairOrder ro:
                     ro.Id = rovm.Id;
@@ -235,6 +241,32 @@ namespace CamCare.Services
                     history.BackgroundColor = vm.BackgroundColor;
                     history.FontColor = vm.FontColor;
                     history.ChangedAt = vm.ChangedAt.ToUniversalTime();
+                    break;
+                case RepairOrderSerial serial when destination is RepairOrderSerialVm serialVm:
+                    serialVm.Id = serial.Id;
+                    serialVm.RepairOrderId = serial.RepairOrderId;
+                    serialVm.SerialNumber = serial.SerialNumber;
+                    serialVm.NeedsMaintenance = serial.NeedsMaintenance;
+                    serialVm.IsForeignCustomer = serial.IsForeignCustomer;
+                    serialVm.ArticleNumber = serial.ArticleNumber;
+                    serialVm.ArticleDescription = serial.ArticleDescription;
+                    serialVm.OwnerCustomerNumber = serial.OwnerCustomerNumber;
+                    serialVm.OwnerCustomerName = serial.OwnerCustomerName;
+                    serialVm.IsPrimary = serial.IsPrimary;
+                    serialVm.CreatedAt = serial.CreatedAt;
+                    serialVm.UpdatedAt = serial.UpdatedAt;
+                    break;
+                case RepairOrderSerialVm serialVm when destination is RepairOrderSerial serial:
+                    serial.Id = serialVm.Id;
+                    serial.RepairOrderId = serialVm.RepairOrderId;
+                    serial.SerialNumber = serialVm.SerialNumber;
+                    serial.NeedsMaintenance = serialVm.NeedsMaintenance;
+                    serial.IsForeignCustomer = serialVm.IsForeignCustomer;
+                    serial.ArticleNumber = serialVm.ArticleNumber;
+                    serial.ArticleDescription = serialVm.ArticleDescription;
+                    serial.OwnerCustomerNumber = serialVm.OwnerCustomerNumber;
+                    serial.OwnerCustomerName = serialVm.OwnerCustomerName;
+                    serial.IsPrimary = serialVm.IsPrimary;
                     break;
                 case LogisticProvider lp when destination is LogisticProviderVm lpvm:
                     lpvm.Id = lp.Id;

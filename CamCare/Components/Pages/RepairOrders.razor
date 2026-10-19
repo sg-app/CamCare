@@ -37,7 +37,8 @@
                 @item.CurrentStateAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Kunde" Property="@nameof(RepairOrderVm.CustomerId)">
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Kunde" Property="@nameof(RepairOrderVm.CustomerId)"
+                              MinWidth="300px">
             <Template Context="item">
                 @item.Customer?.DisplayName
             </Template>
@@ -88,6 +89,43 @@
         <RadzenDataGridInlineEditColumn TItem="RepairOrderVm" EditRow="OnEditRowClicked" CanDelete="(_) => false" />
     </Columns>
     <Template Context="item">
+        @{
+            var serials = GetSerials(item);
+        }
+        @if (serials.Count > 0)
+        {
+            <RadzenText TextStyle="TextStyle.H5" class="d-block">
+                Seriennummern
+            </RadzenText>
+            <div class="pt-1 pb-2">
+                @foreach (var serial in serials)
+                {
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        @if (serial.NeedsMaintenance)
+                        {
+                            <RadzenIcon Icon="warning" IconColor="@Colors.Warning" />
+                        }
+                        <span>@serial.SerialNumber</span>
+                        @if (serial.IsPrimary)
+                        {
+                            <RadzenBadge Text="Hauptseriennummer" BadgeStyle="BadgeStyle.Light" Variant="Variant.Flat" />
+                        }
+                        @if (GetArticleText(serial) is string articleText)
+                        {
+                            <span class="text-secondary">@articleText</span>
+                        }
+                    </div>
+                    @if (serial.IsForeignCustomer)
+                    {
+                        <div class="text-warning">@GetForeignCustomerText(serial)</div>
+                    }
+                    @if (serial.NeedsMaintenance)
+                    {
+                        <div class="text-danger">Seriennummer muss gepflegt werden.</div>
+                    }
+                }
+            </div>
+        }
         @if (item.IncludedComponents?.Any() == true && item.IncludedComponents.Count >= 1)
         {
             <RadzenText TextStyle="TextStyle.H5" class="d-block">
@@ -243,6 +281,60 @@ SortOrder.Descending
                 SortOrder = SortOrder.Ascending
             });
         }
+    }
+
+    /// <summary>
+    /// Liefert die dem Auftrag zugeordneten Seriennummern für die Detailansicht. Bei
+    /// Bestandsaufträgen (vor Einführung der Mehrfach-Seriennummern) existieren noch keine
+    /// Einträge – dann wird die Hauptseriennummer des Auftrags angezeigt.
+    /// </summary>
+    private static IReadOnlyList<RepairOrderSerialVm> GetSerials(RepairOrderVm item)
+    {
+        if (item.RepairOrderSerials is { Count: > 0 })
+            return item.RepairOrderSerials
+                .OrderByDescending(s => s.IsPrimary)
+                .ThenBy(s => s.Id)
+                .ToList();
+
+        if (string.IsNullOrWhiteSpace(item.CameraSerialNumber))
+            return [];
+
+        return
+        [
+            new RepairOrderSerialVm
+            {
+                SerialNumber = item.CameraSerialNumber,
+                NeedsMaintenance = item.SerialNumberNeedsMaintenance,
+                IsPrimary = true
+            }
+        ];
+    }
+
+    /// <summary>
+    /// Artikelangaben ("Artikelnummer – Bezeichnung") einer dem Auftrag zugewiesenen
+    /// Seriennummer. Liefert null, wenn keine Angaben hinterlegt sind.
+    /// </summary>
+    private static string? GetArticleText(RepairOrderSerialVm serial)
+    {
+        var parts = new[] { serial.ArticleNumber, serial.ArticleDescription }
+            .Where(part => !string.IsNullOrWhiteSpace(part));
+
+        return parts.Any() ? string.Join(" – ", parts) : null;
+    }
+
+    /// <summary>
+    /// Hinweistext für eine Seriennummer, die in Amicron einem anderen Kunden als dem
+    /// Auftragskunden zugeordnet ist.
+    /// </summary>
+    private static string GetForeignCustomerText(RepairOrderSerialVm serial)
+    {
+        var customer = string.IsNullOrWhiteSpace(serial.OwnerCustomerNumber)
+            ? serial.OwnerCustomerName
+            : $"{serial.OwnerCustomerNumber} – {serial.OwnerCustomerName}";
+
+        return string.IsNullOrWhiteSpace(customer)
+            ? "Diese Seriennummer ist einem anderen Kunden zugeordnet."
+            : $"Diese Seriennummer ist dem Kunden {customer} zugeordnet.";
     }
 
     private void OnInsertClicked(MouseEventArgs args)

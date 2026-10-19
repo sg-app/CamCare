@@ -286,7 +286,7 @@ namespace CamCare.Services
 
             using var connection = new FbConnection(ConnectionString);
             await connection.OpenAsync();
-            var query = "SELECT FIRST @Top SKIP @Skip MIN(ser.LFDNR), MIN(ser.ARTIKELLFDNR), ser.SERIENNR, MIN(ser.KUNDENLFDNR), MIN(a.BEZEICHNUNG) " +
+            var query = "SELECT FIRST @Top SKIP @Skip MIN(ser.LFDNR), MIN(ser.ARTIKELLFDNR), ser.SERIENNR, MIN(ser.KUNDENLFDNR), MIN(a.BEZEICHNUNG), MIN(a.ARTIKELNR) " +
                 "FROM ARTSERNR ser " +
                 "LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
                 "WHERE ser.KUNDENLFDNR = @CustomerId";
@@ -320,6 +320,7 @@ namespace CamCare.Services
                     Seriennummer = reader.GetString(2),
                     KundenLfdNr = reader.GetInt32(3),
                     Artikelbezeichnung = reader.GetString(4),
+                    Artikelnumber = reader.IsDBNull(5) ? null : reader.GetString(5),
                 });
             }
 
@@ -347,7 +348,7 @@ namespace CamCare.Services
 
                 using var connection = new FbConnection(ConnectionString);
                 await connection.OpenAsync();
-                var query = new StringBuilder("SELECT FIRST @Top SKIP @Skip MIN(ser.LFDNR), ser.SERIENNR, MIN(a.BEZEICHNUNG), MIN(a.ARTIKELNR), MIN(ad.NR), MIN(ad.NAME), MIN(ad.PLZ)" +
+                var query = new StringBuilder("SELECT FIRST @Top SKIP @Skip MIN(ser.LFDNR), ser.SERIENNR, MIN(a.BEZEICHNUNG), MIN(a.ARTIKELNR), MIN(ad.NR), MIN(ad.NAME), MIN(ad.PLZ), MIN(ser.KUNDENLFDNR)" +
                     " FROM ARTSERNR ser " +
                     " LEFT JOIN ARTIKEL a ON ser.ARTIKELLFDNR = a.LFDNR " +
                     " LEFT JOIN ADRESSEN ad ON ser.KUNDENLFDNR = ad.LFDNR " +
@@ -406,6 +407,7 @@ namespace CamCare.Services
                         CustomerNumber = reader.GetString(4),
                         CustomerName = reader.GetString(5),
                         CustomerPlz = reader.GetString(6),
+                        KundenLfdNr = reader.IsDBNull(7) ? null : reader.GetInt32(7),
                     });
                 }
 

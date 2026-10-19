@@ -54,7 +54,8 @@ namespace CamCare.Services
                 .Include(i => i.IncludedComponents)
                 .Include(i => i.RepairOrderRepairPositions)
                     .ThenInclude(rp => rp.RepairPosition)
-                .Include(i => i.EmailAddresses);
+                .Include(i => i.EmailAddresses)
+                .Include(i => i.RepairOrderSerials);
 
             if (viewCurrentOrders)
                 query = query.Where(f => !f.RepairOrderStatus.IsOrderClose);
@@ -105,9 +106,17 @@ namespace CamCare.Services
             {
                 using var context = _contextFactory.CreateDbContext();
 
+                // Die Suche muss sowohl die Hauptseriennummer (gespiegelt in
+                // RepairOrder.SerialNumber) als auch alle zusätzlich zugeordneten
+                // Seriennummern (RepairOrderSerials) berücksichtigen, damit Aufträge
+                // gefunden werden, bei denen die gesuchte Nummer z. B. als zweite oder
+                // dritte Seriennummer zugewiesen ist.
+                var normalized = serialNumber.Trim().ToLower();
+
                 var items = await context.RepairOrders
                     .AsNoTracking()
-                    .Where(f => f.SerialNumber == serialNumber)
+                    .Where(f => (f.SerialNumber != null && f.SerialNumber.Trim().ToLower() == normalized)
+                        || f.RepairOrderSerials.Any(s => s.SerialNumber.Trim().ToLower() == normalized))
                     .Include(i => i.RepairOrderStatus)
                     .Include(i => i.RepairOrderStatusHistory)
                         .ThenInclude(i => i.RepairOrderStatus)
@@ -120,6 +129,7 @@ namespace CamCare.Services
                         .ThenInclude(rp => rp.RepairPosition)
                     .Include(i => i.DeliveryAddress)
                     .Include(i => i.EmailAddresses)
+                    .Include(i => i.RepairOrderSerials)
                     .OrderByDescending(i => i.ArrivedAt)
                     .ToListAsync();
 
@@ -179,6 +189,16 @@ namespace CamCare.Services
                     .Distinct()
                     .ToListAsync();
 
+                // Zusätzlich alle zugeordneten (weiteren) Seriennummern offener Aufträge berücksichtigen.
+                var childSerialNumbers = await context.Set<RepairOrderSerial>()
+                    .AsNoTracking()
+                    .Where(s => !s.RepairOrder.RepairOrderStatus.IsOrderClose)
+                    .Select(s => s.SerialNumber.Trim())
+                    .Distinct()
+                    .ToListAsync();
+
+                serialNumbers.AddRange(childSerialNumbers);
+
                 return ServiceResponse.Success(new HashSet<string>(serialNumbers, StringComparer.OrdinalIgnoreCase));
             }
             catch (Exception ex)
@@ -196,16 +216,18 @@ namespace CamCare.Services
 
             try
             {
-                // Verhindern, dass für eine Seriennummer ein zweiter offener Auftrag erstellt wird.
-                if (!string.IsNullOrWhiteSpace(vm.CameraSerialNumber)
-                    && await context.RepairOrders
-                        .AnyAsync(o => o.SerialNumber != null
-                                       && o.SerialNumber.Trim().ToLower() == vm.CameraSerialNumber.Trim().ToLower()
-                                       && !o.RepairOrderStatus.IsOrderClose))
+                // Alle am Auftrag erfassten Seriennummern (bereinigt, eindeutig).
+                var requestedSerials = GetRequestedSerialNumbers(vm);
+
+                // Verhindern, dass für eine der Seriennummern ein zweiter offener Auftrag erstellt wird.
+                foreach (var serialNumber in requestedSerials)
                 {
-                    await transaction.RollbackAsync();
-                    return ServiceResponse.Failure<RepairOrderVm>(
-                        $"Für die Seriennummer {vm.CameraSerialNumber} existiert bereits ein offener Auftrag. Es kann kein weiterer Auftrag erstellt werden.");
+                    if (await HasOpenOrderForSerialAsync(context, serialNumber))
+                    {
+                        await transaction.RollbackAsync();
+                        return ServiceResponse.Failure<RepairOrderVm>(
+                            $"Für die Seriennummer {serialNumber} existiert bereits ein offener Auftrag. Es kann kein weiterer Auftrag erstellt werden.");
+                    }
                 }
 
                 var entity = new RepairOrder();
@@ -222,6 +244,12 @@ namespace CamCare.Services
                 entity.IncludedComponents = new List<IncludedComponent>();
                 entity.Employees = new List<Employee>();
                 entity.RepairOrderRepairPositions = new List<RepairOrderRepairPosition>();
+                entity.RepairOrderSerials = vm.IsCamera == true
+                    ? BuildRepairOrderSerials(vm)
+                    : new List<RepairOrderSerial>();
+
+                // Hauptseriennummer aus der ersten Seriennummer ableiten.
+                ApplyPrimarySerialNumber(entity);
 
                 // Beim Anlegen eines Auftrags entspricht der Statuszeitstempel dem initialen Status.
                 entity.CurrentStateAt = DateTime.UtcNow;
@@ -407,23 +435,23 @@ namespace CamCare.Services
                         .ThenInclude(rp => rp.RepairPosition)
                     .Include(r => r.Employees)
                     .Include(r => r.EmailAddresses)
+                    .Include(r => r.RepairOrderSerials)
                     .FirstOrDefaultAsync(r => r.Id == (int)id);
 
                 if (entity == null)
                     return ServiceResponse.Failure<RepairOrderVm>("Nicht gefunden");
 
-                // Verhindern, dass die Seriennummer auf eine Seriennummer geändert wird,
-                // für die bereits ein anderer offener Auftrag existiert.
-                if (!string.IsNullOrWhiteSpace(vm.CameraSerialNumber)
-                    && await context.RepairOrders
-                        .AnyAsync(o => o.Id != entity.Id
-                                       && o.SerialNumber != null
-                                       && o.SerialNumber.Trim().ToLower() == vm.CameraSerialNumber.Trim().ToLower()
-                                       && !o.RepairOrderStatus.IsOrderClose))
+                // Verhindern, dass eine Seriennummer auf eine Seriennummer geändert wird,
+                // für die bereits ein anderer offener Auftrag existiert. Geprüft werden alle
+                // am Auftrag erfassten Seriennummern.
+                foreach (var serialNumber in GetRequestedSerialNumbers(vm))
                 {
-                    await transaction.RollbackAsync();
-                    return ServiceResponse.Failure<RepairOrderVm>(
-                        $"Für die Seriennummer {vm.CameraSerialNumber} existiert bereits ein anderer offener Auftrag. Die Seriennummer kann nicht verwendet werden.");
+                    if (await HasOpenOrderForSerialAsync(context, serialNumber, entity.Id))
+                    {
+                        await transaction.RollbackAsync();
+                        return ServiceResponse.Failure<RepairOrderVm>(
+                            $"Für die Seriennummer {serialNumber} existiert bereits ein anderer offener Auftrag. Die Seriennummer kann nicht verwendet werden.");
+                    }
                 }
 
                 // --- Statushistorie aktualisieren ---
@@ -633,6 +661,20 @@ namespace CamCare.Services
                 foreach (var employee in newEmployees)
                     entity.Employees.Add(employee);
 
+                // --- Seriennummern synchronisieren ---
+                entity.RepairOrderSerials.Clear();
+                if (vm.IsCamera == true)
+                {
+                    foreach (var serial in BuildRepairOrderSerials(vm))
+                    {
+                        serial.RepairOrderId = entity.Id;
+                        entity.RepairOrderSerials.Add(serial);
+                    }
+                }
+
+                // Hauptseriennummer aus der ersten Seriennummer ableiten.
+                ApplyPrimarySerialNumber(entity);
+
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
@@ -786,6 +828,7 @@ namespace CamCare.Services
                         .ThenInclude(rp => rp.RepairPosition)
                     .Include(i => i.DeliveryAddress)
                     .Include(i => i.EmailAddresses)
+                    .Include(i => i.RepairOrderSerials)
                     .Where(f => f.Id == (int)id)
                     .FirstOrDefaultAsync();
                 if (entity == null)
@@ -813,6 +856,98 @@ namespace CamCare.Services
                 NotifyError("Fehler beim Abrufen des Datensatzes");
                 return ServiceResponse.Failure<RepairOrderVm>("Fehler beim Abrufen des Datensatzes", ex);
             }
+        }
+
+        /// <summary>
+        /// Liefert die bereinigten, eindeutigen Seriennummern eines Auftrags aus dem ViewModel.
+        /// Leere Einträge (z. B. eine noch nicht ausgefüllte Zeile) werden ignoriert.
+        /// </summary>
+        private static List<string> GetRequestedSerialNumbers(RepairOrderVm vm)
+        {
+            if (vm.IsCamera != true || vm.RepairOrderSerials is null)
+                return [];
+
+            return vm.RepairOrderSerials
+                .Select(s => s.SerialNumber?.Trim())
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s!)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Erzeugt die Seriennummern-Entitäten aus dem ViewModel. Die erste Seriennummer wird
+        /// als Hauptseriennummer (<see cref="RepairOrderSerial.IsPrimary"/>) markiert.
+        /// </summary>
+        private static List<RepairOrderSerial> BuildRepairOrderSerials(RepairOrderVm vm)
+        {
+            var result = new List<RepairOrderSerial>();
+            var index = 0;
+
+            foreach (var serialVm in vm.RepairOrderSerials ?? [])
+            {
+                var serialNumber = serialVm.SerialNumber?.Trim();
+                if (string.IsNullOrWhiteSpace(serialNumber))
+                    continue;
+
+                result.Add(new RepairOrderSerial
+                {
+                    SerialNumber = serialNumber,
+                    NeedsMaintenance = serialVm.NeedsMaintenance,
+                    IsForeignCustomer = serialVm.IsForeignCustomer,
+                    ArticleNumber = serialVm.ArticleNumber,
+                    ArticleDescription = serialVm.ArticleDescription,
+                    OwnerCustomerNumber = serialVm.OwnerCustomerNumber,
+                    OwnerCustomerName = serialVm.OwnerCustomerName,
+                    IsPrimary = index == 0
+                });
+                index++;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Spiegelt die Hauptseriennummer und das Pflegekennzeichen aus den zugeordneten
+        /// Seriennummern in den Auftrag, damit bestehende Abfragen (z. B. offene Aufträge)
+        /// unverändert weiter funktionieren.
+        /// </summary>
+        private static void ApplyPrimarySerialNumber(RepairOrder entity)
+        {
+            var primary = entity.RepairOrderSerials.FirstOrDefault(s => s.IsPrimary)
+                ?? entity.RepairOrderSerials.FirstOrDefault();
+
+            entity.SerialNumber = primary?.SerialNumber;
+            entity.SerialNumberNeedsMaintenance = entity.RepairOrderSerials.Any(s => s.NeedsMaintenance);
+        }
+
+        /// <summary>
+        /// Prüft, ob für die angegebene Seriennummer bereits ein offener (nicht abgeschlossener)
+        /// Reparaturauftrag existiert. Berücksichtigt sowohl die Hauptseriennummer als auch alle
+        /// zusätzlich zugeordneten Seriennummern. Ein optionaler Auftrag kann ausgenommen werden
+        /// (z. B. beim Bearbeiten).
+        /// </summary>
+        private static async Task<bool> HasOpenOrderForSerialAsync(IAppDbContext context, string serialNumber, int? excludeRepairOrderId = null)
+        {
+            var normalized = serialNumber.Trim().ToLower();
+
+            var orderQuery = context.RepairOrders
+                .AsNoTracking()
+                .Where(o => !o.RepairOrderStatus.IsOrderClose)
+                .Where(o => o.SerialNumber != null && o.SerialNumber.Trim().ToLower() == normalized);
+
+            var serialQuery = context.Set<RepairOrderSerial>()
+                .AsNoTracking()
+                .Where(s => !s.RepairOrder.RepairOrderStatus.IsOrderClose)
+                .Where(s => s.SerialNumber.Trim().ToLower() == normalized);
+
+            if (excludeRepairOrderId.HasValue)
+            {
+                orderQuery = orderQuery.Where(o => o.Id != excludeRepairOrderId.Value);
+                serialQuery = serialQuery.Where(s => s.RepairOrderId != excludeRepairOrderId.Value);
+            }
+
+            return await orderQuery.AnyAsync() || await serialQuery.AnyAsync();
         }
     }
 }

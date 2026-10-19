@@ -37,6 +37,13 @@ namespace CamCare.Domain
         /// </summary>
         public virtual ICollection<EmailAddress> EmailAddresses { get; set; } = [];
 
+        /// <summary>
+        /// Alle dem Auftrag zugeordneten Seriennummern. Die Hauptseriennummer
+        /// (<see cref="SerialNumber"/>) wird aus der als <see cref="RepairOrderSerial.IsPrimary"/>
+        /// markierten Zeile abgeleitet.
+        /// </summary>
+        public virtual ICollection<RepairOrderSerial> RepairOrderSerials { get; set; } = [];
+
         public string? OrderNumber { get; set; }
         public string? QuoteNumber { get; set; }
         public string? DeliveryNoteNumber { get; set; }

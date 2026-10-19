@@ -14,9 +14,9 @@ namespace CamCare.Models
                 .GreaterThan(0)
                 .WithMessage("Bearbeitungsstatus muss ausgewählt sein.");
 
-            RuleFor(r => r.CameraSerialNumber)
-                .NotEmpty()
-                .WithMessage("Seriennummer muss angegeben werden.")
+            RuleFor(r => r.RepairOrderSerials)
+                .Must(serials => serials is not null && serials.Any(s => !string.IsNullOrWhiteSpace(s.SerialNumber)))
+                .WithMessage("Mindestens eine Seriennummer muss angegeben werden.")
                 .When(r => r.IsCamera == true);
 
             RuleFor(r => r.PiceOfEquipment)

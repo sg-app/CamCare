@@ -1,0 +1,333 @@
+@* Einzelne Seriennummer-Zeile eines Reparaturauftrags.
+   Standard: Auswahl aus den Seriennummern des Auftragskunden.
+   "Alle Seriennummern": Suche über alle Seriennummern. Wird dabei eine Seriennummer
+   gewählt, die einem anderen Kunden zugeordnet ist, wird dies kenntlich gemacht.
+   "Manuell erfassen": freie Eingabe der Seriennummer (wird als nachzupflegen markiert). *@
+@using CamCare.Models.Amicron
+
+<RadzenFormField Text="Seriennummer" class="pt-3" Style="min-width:480px;flex-grow:1">
+    @if (_manual)
+    {
+        <RadzenTextBox Value="@Serial.SerialNumber" ValueChanged="@OnManualChanged" Style="width:100%"
+                       Placeholder="Seriennummer manuell erfassen" />
+    }
+    else
+    {
+        @* Eigene Instanz je Suchmodus (@key): Radzen ruft LoadData nur beim ersten
+               Rendern einer Dropdown-Instanz auf. Ohne unterschiedlichen Key würde beim
+               Umschalten "Kundenseriennummern" <-> "Alle Seriennummern" dieselbe Instanz
+               wiederverwendet und die Daten nie nachgeladen (insbesondere wenn der Kunde
+               selbst keine Seriennummern hat und die Liste daher leer bleibt). *@
+        <RadzenDropDown @key="DropDownKey" TValue="string" Value="@Serial.SerialNumber" ValueChanged="@OnSerialChanged"
+                        Data="@_serials" LoadData="@OnLoadSerials" Count="@_totalCount"
+                        TextProperty="@nameof(Serials.SelectionDisplayName)" ValueProperty="@nameof(Serials.Seriennummer)"
+                        DisabledProperty="@nameof(Serials.HasOpenOrder)" AllowClear="true" AllowFiltering="true"
+                        AllowVirtualization="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                        FilterOperator="StringFilterOperator.Contains" EmptyText="@EmptyText" Style="width:100%" />
+    }
+</RadzenFormField>
+
+@if (Serial.IsForeignCustomer)
+{
+    <RadzenText class="d-block text-warning">@ForeignCustomerText</RadzenText>
+}
+@if (Serial.NeedsMaintenance)
+{
+    <RadzenText class="d-block text-danger">
+        Seriennummer muss gepflegt werden.
+    </RadzenText>
+}
+<div class="d-flex flex-wrap align-items-center gap-3">
+    <div class="d-flex align-items-center gap-1">
+        <RadzenCheckBox TValue="bool" Value="@_allSerials" ValueChanged="@OnAllSerialsChanged"
+                        Name="@_allSerialsName" />
+        <RadzenLabel Text="Alle Seriennummern" Component="@_allSerialsName" />
+    </div>
+
+    <div class="d-flex align-items-center gap-1">
+        <RadzenCheckBox TValue="bool" Value="@_manual" ValueChanged="@OnManualModeChanged" Name="@_manualName" />
+        <RadzenLabel Text="Manuell erfassen" Component="@_manualName" />
+    </div>
+
+    @if (ShowRemove)
+    {
+        <RadzenButton Icon="remove_circle_outline" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.ExtraSmall" class=""
+                      Click="@(args => OnRemove.InvokeAsync(Serial))"
+                      MouseEnter="@(args => ShowTooltip(args, "Seriennummer entfernen"))" />
+    }
+</div>
+
+
+
+@code {
+    [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
+    [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
+    [Inject] protected TooltipService TooltipService { get; set; } = default!;
+
+    /// <summary>Gebundene Seriennummer (wird direkt verändert).</summary>
+    [Parameter] public RepairOrderSerialVm Serial { get; set; } = new();
+
+    /// <summary>Kunde des Auftrags. Bestimmt, welche Seriennummern als "kundeneigen" gelten.</summary>
+    [Parameter] public int? CustomerId { get; set; }
+
+    /// <summary>Zeigt den Entfernen-Button an (aus, wenn nur eine Zeile vorhanden ist).</summary>
+    [Parameter] public bool ShowRemove { get; set; }
+
+    [Parameter] public EventCallback<RepairOrderSerialVm> OnRemove { get; set; }
+
+    private readonly string _allSerialsName = $"allSerials_{Guid.NewGuid():N}";
+    private readonly string _manualName = $"manualSerial_{Guid.NewGuid():N}";
+
+    private IList<Serials>? _serials;
+    private int _totalCount;
+    private bool _allSerials;
+    private bool _manual;
+    private HashSet<string>? _openOrderSerials;
+    private RepairOrderSerialVm? _initializedFor;
+
+    /// <summary>
+    /// Key der Dropdown-Instanz. Ändert sich mit dem Suchmodus, damit Radzen beim Umschalten
+    /// eine neue Instanz erzeugt und deren LoadData ausgeführt wird.
+    /// </summary>
+    private string DropDownKey => _allSerials ? "serials-all" : "serials-customer";
+
+    private string EmptyText => _allSerials
+        ? "Keine Seriennummern gefunden"
+        : "Keine Seriennummern für diesen Kunden gefunden";
+
+    private string ForeignCustomerText
+    {
+        get
+        {
+            var customer = string.IsNullOrWhiteSpace(Serial.OwnerCustomerNumber)
+                ? Serial.OwnerCustomerName
+                : $"{Serial.OwnerCustomerNumber} – {Serial.OwnerCustomerName}";
+
+            return $"Diese Seriennummer ist dem Kunden {customer} zugeordnet.";
+        }
+    }
+
+    protected override Task OnParametersSetAsync()
+    {
+        // Nur beim ersten Binden der Seriennummer initialisieren. Bei späteren Re-Renders
+        // (z. B. durch Änderungen an anderen Feldern) bleibt die getroffene Auswahl erhalten.
+        if (!ReferenceEquals(_initializedFor, Serial))
+        {
+            _initializedFor = Serial;
+            _manual = Serial.NeedsMaintenance;
+
+            // Seriennummern eines fremden Kunden sind in der Kundenauswahl nicht enthalten,
+            // daher wird hier automatisch die Suche über alle Seriennummern aktiviert.
+            _allSerials = !_manual && Serial.IsForeignCustomer;
+        }
+
+        return base.OnParametersSetAsync();
+    }
+
+    private async Task OnLoadSerials(LoadDataArgs args)
+    {
+        if (_manual)
+            return;
+
+        ServiceResponse<Paginated<Serials>> response = _allSerials || CustomerId is null
+            ? await AmicronDataService.GetAllSerialsAsync(args)
+            : await AmicronDataService.GetSerialsFromCustomerIdAsync(args, CustomerId.Value);
+
+        if (!response.Success)
+            return;
+
+        var items = MergeSelected(response.Data?.Items);
+
+        // Wichtig: Radzen rendert die Dropdown-Items nur, wenn "Data" Einträge enthält –
+        // nur dann wird die (virtualisierte) Liste aufgebaut, die ihrerseits LoadData
+        // auslöst. Eine *leere* Liste würde diesen Mechanismus dauerhaft blockieren
+        // (z. B. wenn der Kunde keine Seriennummern hat und danach auf "Alle
+        // Seriennummern" umgeschaltet wird). Deshalb bei leerem Ergebnis null setzen.
+        _serials = items.Count > 0 ? items : null;
+        _totalCount = response.Data?.TotalCount ?? 0;
+        EnrichSerialFromItems(items);
+        await MarkOpenOrdersAsync();
+    }
+
+    /// <summary>
+    /// Ergänzt fehlende Artikelinformationen der zugeordneten Seriennummer aus der geladenen
+    /// Auswahlliste (z. B. bei Bestandsaufträgen, deren Seriennummer ohne Artikelinfo gespeichert
+    /// wurde). Dadurch werden die Angaben beim nächsten Speichern mitgeschrieben.
+    /// </summary>
+    private void EnrichSerialFromItems(IList<Serials> items)
+    {
+        if (string.IsNullOrWhiteSpace(Serial.SerialNumber))
+            return;
+
+        if (!string.IsNullOrWhiteSpace(Serial.ArticleNumber)
+            && !string.IsNullOrWhiteSpace(Serial.ArticleDescription))
+        {
+            return;
+        }
+
+        var match = items.FirstOrDefault(s =>
+            string.Equals(s.Seriennummer?.Trim(), Serial.SerialNumber.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        if (match is null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(Serial.ArticleNumber))
+            Serial.ArticleNumber = match.Artikelnumber;
+
+        if (string.IsNullOrWhiteSpace(Serial.ArticleDescription))
+            Serial.ArticleDescription = match.Artikelbezeichnung;
+    }
+
+    /// <summary>
+    /// Ergänzt die aktuell gewählte Seriennummer, falls sie nicht in der geladenen Seite
+    /// enthalten ist (Virtualisierung), damit die Auswahl korrekt angezeigt wird.
+    /// </summary>
+    private IList<Serials> MergeSelected(IEnumerable<Serials>? items)
+    {
+        var list = items?.ToList() ?? [];
+
+        if (!string.IsNullOrWhiteSpace(Serial.SerialNumber)
+            && !list.Any(s => string.Equals(s.Seriennummer, Serial.SerialNumber, StringComparison.OrdinalIgnoreCase)))
+        {
+            list.Insert(0, new Serials
+            {
+                Seriennummer = Serial.SerialNumber,
+                Artikelnumber = Serial.ArticleNumber,
+                Artikelbezeichnung = Serial.ArticleDescription,
+                KundenLfdNr = CustomerId,
+                CustomerNumber = Serial.OwnerCustomerNumber,
+                CustomerName = Serial.OwnerCustomerName
+            });
+        }
+
+        return list;
+    }
+
+    private async Task MarkOpenOrdersAsync()
+    {
+        if (_openOrderSerials is null)
+        {
+            var response = await RepairOrderService.GetOpenOrderSerialNumbersAsync();
+            _openOrderSerials = response.Success && response.Data is not null
+                ? response.Data
+                : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var current = Serial.SerialNumber?.Trim();
+
+        foreach (var serial in _serials ?? [])
+        {
+            var value = serial.Seriennummer?.Trim();
+            serial.HasOpenOrder = !string.IsNullOrEmpty(value)
+                                  && _openOrderSerials.Contains(value)
+                                  && !string.Equals(value, current, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private void OnSerialChanged(string? serialNumber)
+    {
+        if (string.IsNullOrWhiteSpace(serialNumber))
+        {
+            Serial.SerialNumber = string.Empty;
+            ClearSerialMeta();
+            return;
+        }
+
+        Serial.SerialNumber = serialNumber;
+
+        var match = _serials?.FirstOrDefault(s =>
+            string.Equals(s.Seriennummer, serialNumber, StringComparison.OrdinalIgnoreCase));
+
+        if (match is not null)
+            ApplySerial(match);
+        else
+            ClearSerialMeta();
+    }
+
+    private void ApplySerial(Serials serial)
+    {
+        Serial.SerialNumber = serial.Seriennummer ?? string.Empty;
+        Serial.ArticleNumber = serial.Artikelnumber;
+        Serial.ArticleDescription = serial.Artikelbezeichnung;
+        Serial.NeedsMaintenance = false;
+        Serial.IsForeignCustomer = IsForeign(serial);
+        Serial.OwnerCustomerNumber = Serial.IsForeignCustomer ? serial.CustomerNumber : null;
+        Serial.OwnerCustomerName = Serial.IsForeignCustomer ? serial.CustomerName : null;
+    }
+
+    /// <summary>
+    /// True, wenn die Seriennummer einem anderen Kunden als dem Auftragskunden zugeordnet ist.
+    /// </summary>
+    private bool IsForeign(Serials serial)
+        => serial.KundenLfdNr.HasValue
+           && CustomerId.HasValue
+           && serial.KundenLfdNr.Value != CustomerId.Value;
+
+    private void ClearSerialMeta()
+    {
+        Serial.ArticleNumber = null;
+        Serial.ArticleDescription = null;
+        Serial.NeedsMaintenance = false;
+        Serial.IsForeignCustomer = false;
+        Serial.OwnerCustomerNumber = null;
+        Serial.OwnerCustomerName = null;
+    }
+
+    private void OnManualChanged(string? value)
+    {
+        Serial.SerialNumber = value ?? string.Empty;
+        Serial.ArticleNumber = null;
+        Serial.ArticleDescription = null;
+        Serial.IsForeignCustomer = false;
+        Serial.OwnerCustomerNumber = null;
+        Serial.OwnerCustomerName = null;
+        Serial.NeedsMaintenance = !string.IsNullOrWhiteSpace(value);
+    }
+
+    private void OnAllSerialsChanged(bool value)
+    {
+        if (_allSerials == value)
+            return;
+
+        _allSerials = value;
+
+        if (value)
+            _manual = false;
+
+        ResetSerialData();
+    }
+
+    private void OnManualModeChanged(bool value)
+    {
+        if (_manual == value)
+            return;
+
+        _manual = value;
+
+        if (value)
+        {
+            _allSerials = false;
+            // Manuell erfasste Seriennummern müssen von einem Mitarbeiter nachgepflegt werden.
+            Serial.NeedsMaintenance = !string.IsNullOrWhiteSpace(Serial.SerialNumber);
+        }
+        else if (string.IsNullOrWhiteSpace(Serial.SerialNumber))
+        {
+            Serial.NeedsMaintenance = false;
+        }
+
+        ResetSerialData();
+    }
+
+    /// <summary>
+    /// Verwirft die geladenen Auswahllisten. Beim Wechsel des Suchmodus wird die Dropdown-
+    /// Instanz neu erzeugt (siehe <see cref="DropDownKey"/>) und lädt ihre Daten selbst.
+    /// </summary>
+    private void ResetSerialData()
+    {
+        _serials = null;
+        _totalCount = 0;
+    }
+
+    private void ShowTooltip(ElementReference elementReference, string text)
+        => TooltipService.Open(elementReference, text, new TooltipOptions { Duration = 1000 });
+}
