@@ -19,13 +19,16 @@
                 FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
     <Columns>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftrag" Property="Id" Width="80px" Filterable="false" />
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status" Property="@nameof(RepairOrderVm.RepairOrderStatus)"
-                              FilterValue="@_selectedStates" FilterOperator="FilterOperator.In"
+        @* Gefiltert wird über den Fremdschlüssel (int). Ein "In"-Filter auf der
+           Navigationseigenschaft "RepairOrderStatus" erzeugt einen Entity-Vergleich,
+           den EF Core nicht in SQL übersetzen kann. *@
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status" Property="@nameof(RepairOrderVm.RepairOrderStatusId)"
+                              FilterValue="@SelectedStateIds" FilterOperator="FilterOperator.In"
                               LogicalFilterOperator="LogicalFilterOperator.Or" Width="180px">
             <FilterTemplate>
-                <RadzenDropDown @bind-Value=@_selectedStates Multiple="true" AllowSelectAll=false Style="width:100%;"
+                <RadzenDropDown @bind-Value=@SelectedStateIds Multiple="true" AllowSelectAll=false Style="width:100%;"
                                 Data=@(MasterdataService.Get<RepairOrderStatusVm>())
-                                TextProperty="@nameof(RepairOrderStatusVm.Name)" />
+                                TextProperty="@nameof(RepairOrderStatusVm.Name)" ValueProperty="@nameof(RepairOrderStatusVm.Id)" />
             </FilterTemplate>
             <Template Context="item">
                 <RadzenBadge Style="@item.RepairOrderStatus?.BadageStyle">@item.RepairOrderStatus?.Name</RadzenBadge>
@@ -37,7 +40,8 @@
                 @item.CurrentStateAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Kunde" Property="@nameof(RepairOrderVm.CustomerId)">
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Kunde" Property="@nameof(RepairOrderVm.CustomerId)"
+                              MinWidth="300px">
             <Template Context="item">
                 @item.Customer?.DisplayName
             </Template>
@@ -62,21 +66,19 @@
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Priorität" Property="@nameof(RepairOrderVm.PriorityRepair)"
                               Width="100px" Filterable="false">
             <Template Context="item">
-                @{
-                    var icon = item.PriorityRepair ?? false ? "check_box" :
-                "check_box_outline_blank";
-                    var color = item.PriorityRepair ?? false ? "orange" : "black";
-                }
-                <RadzenIcon Icon="@icon" IconColor="@color" />
+                <RadzenIcon Icon="check_circle" IconColor="Green" Visible="@(item.PriorityRepair ?? false)" />
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Garantie" Width="100px" Filterable="false">
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Ohne KV"
+                              Property="@nameof(RepairOrderVm.WithoutCostestimate)" Width="100px" Filterable="false">
             <Template Context="item">
-                @{
-                    var icon = item.Warranty ? "check_box" :
-                "check_box_outline_blank";
-                }
-                <RadzenIcon Icon="@icon" />
+                <RadzenIcon Icon="check_circle" IconColor="Green" Visible="@item.WithoutCostestimate" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Garantie" Property="@nameof(RepairOrderVm.Warranty)"
+                              Width="100px" Filterable="false">
+            <Template Context="item">
+                <RadzenIcon Icon="check_circle" IconColor="Green" Visible="@item.Warranty" />
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Eingetroffen" Property="@nameof(RepairOrderVm.ArrivedAt)"
@@ -85,117 +87,11 @@
                 @item.ArrivedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridInlineEditColumn TItem="RepairOrderVm" EditRow="OnEditRowClicked" CanDelete="(_) => false" />
+        <RadzenDataGridInlineEditColumn TItem="RepairOrderVm" EditRow="OnEditRowClicked" DeleteRow="OnDeleteRowClicked"
+                                        CanDelete="(_) => _isAdmin" />
     </Columns>
     <Template Context="item">
-        @if (item.IncludedComponents?.Any() == true && item.IncludedComponents.Count >= 1)
-        {
-            <RadzenText TextStyle="TextStyle.H5" class="d-block">
-                Mitgelieferte Komponenten
-            </RadzenText>
-            @foreach (var includedComonents in item.IncludedComponents ?? [])
-            {
-                <RadzenText class="d-block">
-                    @includedComonents.Description
-                </RadzenText>
-            }
-        }
-        @if (item.DeliveryAddress is not null)
-        {
-            <RadzenText TextStyle="TextStyle.H5" class="d-block">
-                Lieferanschrift:
-            </RadzenText>
-            <div class="d-block">@item.DeliveryAddress.Recipient</div>
-            @if (!string.IsNullOrWhiteSpace(item.DeliveryAddress.ContactPerson))
-            {
-                <div class="d-block">Ansprechpartner: @item.DeliveryAddress.ContactPerson</div>
-            }
-            <div class="d-block">@item.DeliveryAddress.Street</div>
-            <div class="d-block">@item.DeliveryAddress.Country @item.DeliveryAddress.PostalCode @item.DeliveryAddress.City
-            </div>
-        }
-        @if (item.EmailAddresses?.Any() == true)
-        {
-            <RadzenText TextStyle="TextStyle.H5" class="d-block pt-2">
-                E-Mail-Adressen:
-            </RadzenText>
-            @foreach (var emailAddress in item.EmailAddresses)
-            {
-                <div class="d-block">@emailAddress.DisplayName</div>
-            }
-        }
-        <RadzenText TextStyle="TextStyle.H5" class="d-block pt-2">
-            Defekt:
-        </RadzenText>
-        @foreach (var defective in item.Defectives ?? [])
-        {
-            <div class="d-block">- @defective.Description</div>
-        }
-        <RadzenText TextStyle="TextStyle.H5" class="d-block">
-            Ausgeführte Arbeiten:
-        </RadzenText>
-        @foreach (var work in item.Works ?? [])
-        {
-            <div class="d-block">- @work.Description</div>
-        }
-        <RadzenFieldset Text="Zu berechnende Artikel">
-            @if (item.RepairPositions?.Any() == true && item.RepairPositions.Count >= 1)
-            {
-                <RadzenTable AllowAlternatingRows="true">
-                    <RadzenTableHeader>
-                        <RadzenTableHeaderRow>
-                            <RadzenTableHeaderCell Style="width:150px">
-                                Artikelnummer
-                            </RadzenTableHeaderCell>
-                            <RadzenTableHeaderCell Style="width:100px">
-                                Anzahl
-                            </RadzenTableHeaderCell>
-                            <RadzenTableHeaderCell>
-                                Beschreibung
-                            </RadzenTableHeaderCell>
-                        </RadzenTableHeaderRow>
-                    </RadzenTableHeader>
-                    <RadzenTableBody>
-                        @foreach (var repair in item.RepairPositions ?? [])
-                        {
-                            <RadzenTableRow>
-                                <RadzenTableCell>
-                                    @repair.Artikelnummer
-                                </RadzenTableCell>
-                                <RadzenTableCell>
-                                    @repair.Quantity
-                                </RadzenTableCell>
-                                <RadzenTableCell>
-                                    @repair.Description
-                                </RadzenTableCell>
-                            </RadzenTableRow>
-                        }
-                    </RadzenTableBody>
-                </RadzenTable>
-            }
-            else
-            {
-                <RadzenText TextStyle="TextStyle.H6">Keine Reparaturen durchgeführt.</RadzenText>
-            }
-        </RadzenFieldset>
-        <RadzenFieldset Text="Status Historie">
-            @if (item.RepairOrderStatusHistories?.Any() == true)
-            {
-                <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
-                    @foreach (var history in item.RepairOrderStatusHistories)
-                    {
-                        <RadzenStack Orientation="Orientation.Horizontal">
-                            <RadzenText>
-                                @history.ChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
-                            </RadzenText>
-                            <RadzenBadge Style="@history.BadageStyle">
-                                @history.DisplayStatusName
-                            </RadzenBadge>
-                        </RadzenStack>
-                    }
-                </RadzenStack>
-            }
-        </RadzenFieldset>
+        <RepairOrdersDetail RepairOrder="item" />
     </Template>
 </RadzenDataGrid>
 
@@ -206,6 +102,8 @@
     [Inject] protected IRepairOrderChangeSubscriber RepairOrderChangeSubscriber { get; set; } = default!;
     [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
     [Inject] protected ILogger<RepairOrders> Logger { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+    [Inject] protected AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
 
     private RadzenDataGrid<RepairOrderVm> _grid = default!;
     private IEnumerable<int> pageSizeOptions = new int[] { 20, 50, 100 };
@@ -213,7 +111,20 @@
     private int _totalCount;
     private bool _isLoading;
     private bool _archiveOrders;
-    private IEnumerable<RepairOrderStatusVm> _selectedStates;
+    private bool _isAdmin;
+
+    /// <summary>
+    /// Ausgewählte Status-Ids des Spaltenfilters. Eine leere Auswahl wird als
+    /// <c>null</c> abgelegt, damit Radzen gar keinen Filter erzeugt – sonst würde
+    /// ein "In"-Filter ohne Werte (WHERE 0 = 1) alle Aufträge ausblenden.
+    /// </summary>
+    private IEnumerable<int>? SelectedStateIds
+    {
+        get => _selectedStateIds;
+        set => _selectedStateIds = value?.Any() == true ? value : null;
+    }
+
+    private IEnumerable<int>? _selectedStateIds;
 
     private async Task OnLoadData(LoadDataArgs args)
     {
@@ -245,6 +156,7 @@ SortOrder.Descending
         }
     }
 
+
     private void OnInsertClicked(MouseEventArgs args)
     {
         NavigationManager.NavigateTo("/Customers");
@@ -256,10 +168,36 @@ SortOrder.Descending
         NavigationManager.NavigateTo($"/EditRepairOrder/{item.Id}");
     }
 
-    protected override void OnInitialized()
+    /// <summary>
+    /// Löscht einen Auftrag nach vorheriger Bestätigung durch den Benutzer. Der Aufruf ist
+    /// zusätzlich zur Sichtbarkeit des Buttons auf die Benutzergruppe "admin" beschränkt.
+    /// </summary>
+    private async Task OnDeleteRowClicked(RepairOrderVm item)
     {
-        base.OnInitialized();
+        if (!_isAdmin)
+            return;
+
+        var dialogResult = await DialogService.Confirm(
+            $"Soll der Auftrag {item.Id} wirklich gelöscht werden?",
+            "Auftrag löschen",
+            new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
+        if (dialogResult != true)
+            return;
+
+        var response = await RepairOrderService.DeleteAsync(item.Id, false);
+        if (response.Success)
+            await _grid.Reload();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
         RepairOrderChangeSubscriber.Changed += OnRepairOrdersChanged;
+
+        // Der Löschen-Button ist ausschließlich für die Benutzergruppe "admin" sichtbar.
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isAdmin = authState.User.Identity?.IsAuthenticated == true
+            && authState.User.IsInRole(UserGroupRoles.Admin);
     }
 
     public void Dispose()

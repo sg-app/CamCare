@@ -1,7 +1,13 @@
-﻿<RadzenStack Orientation="Orientation.Horizontal">
-    <RadzenLabel Text="Prioritätsreparatur" Component="Priority" />
-    <RadzenCheckBox @bind-Value="RepairOrder.PriorityRepair" Name="Priority" />
-</RadzenStack>
+﻿<RadzenRow Gap="3rem" AlignItems="AlignItems.Center">
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem">
+        <RadzenLabel Text="Prioritätsreparatur" Component="Priority" />
+        <RadzenCheckBox @bind-Value="RepairOrder.PriorityRepair" Name="Priority" />
+    </RadzenStack>
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem">
+        <RadzenLabel Text="Ohne Kostenvoranschlag" Component="WithoutCostestimate" />
+        <RadzenCheckBox @bind-Value="RepairOrder.WithoutCostestimate" Name="WithoutCostestimate" />
+    </RadzenStack>
+</RadzenRow>
 <RadzenStack Orientation="Orientation.Horizontal">
     <RadzenFormField class="d-block pt-2" Text="Auftragsnummer">
         <RadzenTextBox @bind-Value="RepairOrder.OrderNumber" />

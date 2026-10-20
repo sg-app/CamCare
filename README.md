@@ -24,6 +24,7 @@
 - **Reparaturauftragsverwaltung**
   - Erfassung und Bearbeitung von Reparaturaufträgen
   - Zuordnung von Kunden, Seriennummern und Geräten
+  - Nachträgliche Änderung des Auftragskunden durch `admin` (Lieferanschrift und E-Mail-Adressen werden dabei zurückgesetzt)
   - Erfassung von Defekten, mitgelieferten Komponenten und Reparaturpositionen
   - Statusverwaltung mit vollständigem Statusverlauf (History)
   - Archivierung von abgeschlossenen Aufträgen
@@ -141,7 +142,7 @@ Die Anwendung nutzt eine einfache Gruppenanmeldung (ohne einzelne Benutzerkonten
 
 | Benutzergruppe | Standard-Passwort | Rechte |
 |---|---|---|
-| `admin` | `admin` | Volle Sicht und alle Rechte (inkl. Auftragserstellung); kann Passwörter aller Gruppen unter **Stammdaten → Benutzergruppen** ändern |
+| `admin` | `admin` | Volle Sicht und alle Rechte (inkl. Auftragserstellung, nachträglicher Änderung des Auftragskunden und Löschen von Aufträgen); kann Passwörter aller Gruppen unter **Stammdaten → Benutzergruppen** ändern |
 | `buero` | `buero` | Kann neue Aufträge anlegen („Auftrag erstellen") |
 | `werkstatt` | `werk` | Zugriff auf Aufträge und Stammdaten, keine Auftragserstellung |
 

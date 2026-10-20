@@ -1,7 +1,7 @@
 ﻿@typeparam TItem where TItem : notnull
 
-<RadzenDataGridColumn TItem="TItem" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="100px"
-                      Frozen="Frozen" FrozenPosition="FrozenPosition">
+<RadzenDataGridColumn TItem="TItem" Filterable="false" Sortable="false" TextAlign="TextAlign.Center"
+                      Width="@(DeleteRow.HasDelegate ? "100px" : "60px")" Frozen="Frozen" FrozenPosition="FrozenPosition">
     <Template Context="item">
         <RadzenButtonGroup>
             <RadzenButton class="px-2" Click="() => EditRow.InvokeAsync(item)" Icon="edit_square"

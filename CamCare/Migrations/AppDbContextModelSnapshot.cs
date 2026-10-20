@@ -373,6 +373,9 @@ namespace CamCare.Migrations
                     b.Property<bool>("Warranty")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("WithoutCostestimate")
+                        .HasColumnType("bit");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DeliveryAddressId");
@@ -382,6 +385,58 @@ namespace CamCare.Migrations
                     b.HasIndex("RepairOrderStatusId");
 
                     b.ToTable("RepairOrders");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.RepairOrderSerial", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ArticleDescription")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ArticleNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsForeignCustomer")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("NeedsMaintenance")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OwnerCustomerName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OwnerCustomerNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RepairOrderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SerialNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RepairOrderId");
+
+                    b.ToTable("RepairOrderSerials");
                 });
 
             modelBuilder.Entity("CamCare.Domain.RepairOrderStatus", b =>
@@ -814,6 +869,17 @@ namespace CamCare.Migrations
                     b.Navigation("RepairOrderStatus");
                 });
 
+            modelBuilder.Entity("CamCare.Domain.RepairOrderSerial", b =>
+                {
+                    b.HasOne("CamCare.Domain.RepairOrder", "RepairOrder")
+                        .WithMany("RepairOrderSerials")
+                        .HasForeignKey("RepairOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RepairOrder");
+                });
+
             modelBuilder.Entity("CamCare.Domain.RepairOrderStatusHistory", b =>
                 {
                     b.HasOne("CamCare.Domain.RepairOrder", null)
@@ -938,6 +1004,8 @@ namespace CamCare.Migrations
                     b.Navigation("DataStores");
 
                     b.Navigation("RepairOrderRepairPositions");
+
+                    b.Navigation("RepairOrderSerials");
 
                     b.Navigation("RepairOrderStatusHistory");
                 });

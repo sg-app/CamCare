@@ -18,6 +18,7 @@ namespace CamCare.Persistence
         public DbSet<UserGroup> UserGroups { get; set; }
         public DbSet<DeliveryAddress> DeliveryAddresses { get; set; }
         public DbSet<EmailAddress> EmailAddresses { get; set; }
+        public DbSet<RepairOrderSerial> RepairOrderSerials { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -95,6 +96,13 @@ namespace CamCare.Persistence
                .WithMany(da => da.RepairOrders)
                .HasForeignKey(ro => ro.DeliveryAddressId)
                .OnDelete(DeleteBehavior.Restrict);
+
+            // Die Seriennummern gehören zum Auftrag und werden mit ihm gelöscht.
+            modelBuilder.Entity<RepairOrder>()
+               .HasMany(ro => ro.RepairOrderSerials)
+               .WithOne(s => s.RepairOrder)
+               .HasForeignKey(s => s.RepairOrderId)
+               .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<RepairOrderStatus>()
                 .HasData(

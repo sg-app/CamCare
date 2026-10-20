@@ -11,6 +11,7 @@ namespace CamCare.Domain
         public string? SerialNumber { get; set; }
         public bool SerialNumberNeedsMaintenance { get; set; }
         public bool? PriorityRepair { get; set; }
+        public bool WithoutCostestimate { get; set; }
         public string? PiceOfEquipment { get; set; }
         public int RepairOrderStatusId { get; set; }
         public ShippingMethod ShippingMethod { get; set; }
@@ -36,6 +37,13 @@ namespace CamCare.Domain
         /// weitere Aufträge wiederverwendet werden.
         /// </summary>
         public virtual ICollection<EmailAddress> EmailAddresses { get; set; } = [];
+
+        /// <summary>
+        /// Alle dem Auftrag zugeordneten Seriennummern. Die Hauptseriennummer
+        /// (<see cref="SerialNumber"/>) wird aus der als <see cref="RepairOrderSerial.IsPrimary"/>
+        /// markierten Zeile abgeleitet.
+        /// </summary>
+        public virtual ICollection<RepairOrderSerial> RepairOrderSerials { get; set; } = [];
 
         public string? OrderNumber { get; set; }
         public string? QuoteNumber { get; set; }

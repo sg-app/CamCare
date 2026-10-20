@@ -10,6 +10,7 @@ namespace CamCare.Models
         public string? CameraSerialNumber { get; set; }
         public bool SerialNumberNeedsMaintenance { get; set; }
         public bool? PriorityRepair { get; set; } = false;
+        public bool WithoutCostestimate { get; set; } = false;
         public string? PiceOfEquipment { get; set; }
         public int RepairOrderStatusId { get; set; }
         public ShippingMethod ShippingMethod { get; set; }
@@ -38,6 +39,12 @@ namespace CamCare.Models
         public DateTime? CurrentStateAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        /// <summary>
+        /// Alle dem Auftrag zugeordneten Seriennummern. Die Hauptseriennummer
+        /// (<see cref="CameraSerialNumber"/>) wird beim Speichern aus der ersten Zeile abgeleitet.
+        /// </summary>
+        public ICollection<RepairOrderSerialVm>? RepairOrderSerials { get; set; }
 
         public Adressen? Customer { get; set; }
         public Serials? Serials { get; set; }

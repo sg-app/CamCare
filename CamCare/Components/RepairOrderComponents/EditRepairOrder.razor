@@ -13,8 +13,7 @@
         <RadzenStack Orientation="Orientation.Horizontal">
 
             <RadzenFieldset Text="Kunde" class="w-50">
-                <RadzenText>@RepairOrder.Customer?.KdNummer - @RepairOrder.Customer?.FullName</RadzenText>
-                <RadzenText>@RepairOrder.Customer?.Plz @RepairOrder.Customer?.Ort</RadzenText>
+                <CustomerAssign RepairOrder="@RepairOrder" OnCustomerChanged="@OnCustomerChanged" />
             </RadzenFieldset>
 
             <RadzenFieldset Text="Reparaturgegenstand" class="w-50">
@@ -29,44 +28,7 @@
 
                 @if (RepairOrder.IsCamera == true)
                 {
-                    <RadzenFormField class="d-block pt-2" Text="Seriennummer">
-                        @if (_serialNotListed)
-                        {
-                            <RadzenTextBox @bind-Value="RepairOrder.CameraSerialNumber" Style="width:100%"
-                                           Placeholder="Seriennummer manuell erfassen" />
-                        }
-                        else
-                        {
-                            <RadzenDropDown TValue="string" Value="@RepairOrder.CameraSerialNumber"
-                                            ValueChanged="@(args => OnCameraSerialChanged(args))" Data="@_customerSerials"
-                                            TextProperty="@nameof(Serials.DisplayName)" ValueProperty="@nameof(Serials.Seriennummer)"
-                                            DisabledProperty="@nameof(Serials.HasOpenOrder)" AllowClear="true" AllowFiltering="true"
-                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                            FilterOperator="StringFilterOperator.Contains" AllowVirtualization="true"
-                                            EmptyText="Keine Seriennummern für diesen Kunden gefunden" Style="width:100%" />
-                        }
-                    </RadzenFormField>
-
-                    @if (_disabledSerialsCount > 0)
-                    {
-                        <RadzenText class="d-block text-secondary pt-1 pb-2">
-                            @_disabledSerialsCount Seriennummer(n) sind deaktiviert, da für sie bereits ein anderer offener Auftrag
-                            existiert.
-                        </RadzenText>
-                    }
-
-                    @if (RepairOrder.SerialNumberNeedsMaintenance == true)
-                    {
-                        <RadzenText class="d-block text-danger pt-2">
-                            Die Seriennummer ist nicht für den Kunden hinterlegt und muss von einem Mitarbeiter nachgepflegt werden.
-                        </RadzenText>
-                    }
-                    <div class="pt-2">
-                        <RadzenCheckBox TValue="bool" Value="@_serialNotListed"
-                                        ValueChanged="@(args => OnSerialNotListedChanged(args))" Name="_serialNotListed" />
-                        <RadzenLabel Text="Seriennummer nicht gelistet – Seriennummer manuell erfassen"
-                                     Component="_serialNotListed" class="rz-ms-2" />
-                    </div>
+                    <SerialAssign RepairOrder="@RepairOrder" />
                 }
                 else if (RepairOrder.IsCamera == false)
                 {
@@ -112,7 +74,6 @@ else
     [Inject] protected IState<RepairOrderState> RepairOrderState { get; set; } = default!;
 
     [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
-    [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
     [Inject] protected NavigationManager NavigationManager { get; set; } = default!;
     [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
     [Inject] protected NotificationService NotificationService { get; set; } = default!;
@@ -122,9 +83,6 @@ else
     [Parameter] public int RepairOrderId { get; set; }
 
     private RepairOrderVm? RepairOrder => RepairOrderState.Value.CurrentRepairOrder;
-    private IList<Serials> _customerSerials = new List<Serials>();
-    private bool _serialNotListed;
-    private int _disabledSerialsCount;
     private RadzenTemplateForm<RepairOrderVm> _form = default!;
     private bool _enterGuardAttached;
 
@@ -161,10 +119,7 @@ else
         if (RepairOrder is null)
             return;
 
-        await LoadCustomerSerialsAsync();
-        _serialNotListed = RepairOrder.SerialNumberNeedsMaintenance == true
-            || (!string.IsNullOrEmpty(RepairOrder.CameraSerialNumber)
-                && _customerSerials.All(s => s.Seriennummer != RepairOrder.CameraSerialNumber));
+        PrepareSerialNumbers();
     }
 
     private async Task LoadRepairOrderAsync(int id)
@@ -186,39 +141,40 @@ else
         Dispatcher.Dispatch(new SetCurrentRepairOrderAction(response.Data));
     }
 
-    private async Task LoadCustomerSerialsAsync()
+    /// <summary>
+    /// Stellt sicher, dass die Seriennummern-Zeilen aus dem geladenen Auftrag vorliegen.
+    /// Bei älteren Aufträgen (nur Hauptseriennummer vorhanden) wird die Zeile daraus abgeleitet.
+    /// </summary>
+    private void PrepareSerialNumbers()
     {
-        if (RepairOrder is null || RepairOrder.CustomerId is not int customerId)
+        if (RepairOrder is null)
             return;
 
-        var response = await AmicronDataService.GetSerialsFromCustomerIdAsync(customerId);
-        if (response.Success)
+        if (RepairOrder.RepairOrderSerials is { Count: > 0 })
+            return;
+
+        if (!string.IsNullOrWhiteSpace(RepairOrder.CameraSerialNumber))
         {
-            var allSerials = response.Data ?? new List<Serials>();
-
-            var openOrdersResponse = await RepairOrderService.GetOpenOrderSerialNumbersAsync();
-            if (openOrdersResponse.Success && openOrdersResponse.Data is not null)
-            {
-                var currentSerial = RepairOrder.CameraSerialNumber?.Trim();
-
-                foreach (var serial in allSerials)
+            RepairOrder.RepairOrderSerials =
+            [
+                new RepairOrderSerialVm
                 {
-                    // Seriennummern mit offenem Auftrag werden über DisabledProperty deaktiviert,
-                    // die aktuell diesem Auftrag zugeordnete Seriennummer bleibt auswählbar.
-                    serial.HasOpenOrder = openOrdersResponse.Data.Contains(serial.Seriennummer?.Trim() ?? string.Empty)
-                                          && serial.Seriennummer?.Trim() != currentSerial;
+                    SerialNumber = RepairOrder.CameraSerialNumber,
+                    ArticleNumber = RepairOrder.Serials?.Artikelnumber,
+                    ArticleDescription = RepairOrder.Serials?.Artikelbezeichnung,
+                    NeedsMaintenance = RepairOrder.SerialNumberNeedsMaintenance
                 }
-
-                _disabledSerialsCount = allSerials.Count(s => s.HasOpenOrder);
-            }
-
-            _customerSerials = allSerials;
+            ];
+        }
+        else
+        {
+            RepairOrder.RepairOrderSerials = [new RepairOrderSerialVm()];
         }
     }
 
     private void OnItemTypeChanged(bool? isCamera)
     {
-        if (RepairOrder.IsCamera == isCamera)
+        if (RepairOrder == null || RepairOrder.IsCamera == isCamera)
             return;
 
         RepairOrder.IsCamera = isCamera;
@@ -226,26 +182,25 @@ else
         RepairOrder.Serials = null;
         RepairOrder.PiceOfEquipment = null;
         RepairOrder.SerialNumberNeedsMaintenance = false;
-        _serialNotListed = false;
+        RepairOrder.RepairOrderSerials = [new RepairOrderSerialVm()];
     }
 
-    private void OnCameraSerialChanged(string? serialNumber)
+    /// <summary>
+    /// Übernimmt einen nachträglich geänderten Kunden (nur für Administratoren möglich,
+    /// siehe <see cref="CustomerAssign"/>). Lieferanschrift und E-Mail-Adressen sind am
+    /// bisherigen Kunden gespeichert und werden deshalb verworfen; die abhängigen Komponenten
+    /// laden ihre Auswahllisten für den neuen Kunden selbstständig neu.
+    /// </summary>
+    private void OnCustomerChanged(Adressen customer)
     {
-        RepairOrder.CameraSerialNumber = serialNumber;
-        RepairOrder.Serials = _customerSerials.FirstOrDefault(s => s.Seriennummer == serialNumber);
-        if (!string.IsNullOrEmpty(serialNumber))
-        {
-            RepairOrder.SerialNumberNeedsMaintenance = false;
-            _serialNotListed = false;
-        }
-    }
+        if (RepairOrder is null)
+            return;
 
-    private void OnSerialNotListedChanged(bool isNotListed)
-    {
-        _serialNotListed = isNotListed;
-        RepairOrder.CameraSerialNumber = null;
-        RepairOrder.Serials = null;
-        RepairOrder.SerialNumberNeedsMaintenance = isNotListed;
+        RepairOrder.CustomerId = customer.LfdNr;
+        RepairOrder.Customer = customer;
+        RepairOrder.DeliveryAddressId = null;
+        RepairOrder.DeliveryAddress = null;
+        RepairOrder.EmailAddresses = [];
     }
 
     private void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
@@ -287,6 +242,8 @@ else
 
     private async Task OnSaveClicked(RepairOrderVm item)
     {
+        if (RepairOrder == null) return;
+
         var response = await RepairOrderService.UpdateAsync(RepairOrder.Id, RepairOrder);
         if (response.Success)
         {

@@ -14,9 +14,9 @@ namespace CamCare.Models
                 .GreaterThan(0)
                 .WithMessage("Bearbeitungsstatus muss ausgewählt sein.");
 
-            RuleFor(r => r.CameraSerialNumber)
-                .NotEmpty()
-                .WithMessage("Seriennummer muss angegeben werden.")
+            RuleFor(r => r.RepairOrderSerials)
+                .Must(serials => serials is not null && serials.Any(s => !string.IsNullOrWhiteSpace(s.SerialNumber)))
+                .WithMessage("Mindestens eine Seriennummer muss angegeben werden.")
                 .When(r => r.IsCamera == true);
 
             RuleFor(r => r.PiceOfEquipment)
@@ -29,27 +29,6 @@ namespace CamCare.Models
                 .GreaterThan(0)
                 .When(r => r.ShippingMethod == ShippingMethod.PickedUp)
                 .WithMessage("Logistikdienstleister muss ausgewählt sein, wenn die Kamera abgeholt wurde.");
-
-            RuleFor(r => r.PackagingHeight)
-                .NotNull()
-                .WithMessage("Kartonhöhe muss angegeben sein, wenn ein neuer Karton verwendet wird.")
-                .GreaterThan(0)
-                .WithMessage("Kartonhöhe muss größer als 0 sein, wenn ein neuer Karton verwendet wird.")
-                .When(r => r.PackagingType == PackagingType.NewBox);
-
-            RuleFor(r => r.PackagingLength)
-                .NotNull()
-                .WithMessage("Kartonlänge muss angegeben sein, wenn ein neuer Karton verwendet wird.")
-                .GreaterThan(0)
-                .WithMessage("Kartonlänge muss größer als 0 sein, wenn ein neuer Karton verwendet wird.")
-                .When(r => r.PackagingType == PackagingType.NewBox);
-
-            RuleFor(r => r.PackagingWidth)
-                .NotNull()
-                .WithMessage("Kartonbreite muss angegeben sein, wenn ein neuer Karton verwendet wird.")
-                .GreaterThan(0)
-                .WithMessage("Kartonbreite muss größer als 0 sein, wenn ein neuer Karton verwendet wird.")
-                .When(r => r.PackagingType == PackagingType.NewBox);
         }
     }
 }

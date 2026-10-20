@@ -20,5 +20,14 @@
         public bool HasOpenOrder { get; set; }
 
         public string DisplayName => $"{Seriennummer} - {Artikelnumber} - {Artikelbezeichnung}";
+
+        /// <summary>
+        /// Anzeigename für die Seriennummern-Auswahl im Reparaturauftrag. Fehlende Bestandteile
+        /// (z. B. bei Bestandsdaten ohne gepflegte Artikelnummer/Bezeichnung) werden ausgelassen,
+        /// damit keine leeren " - " entstehen.
+        /// </summary>
+        public string SelectionDisplayName => string.Join(" - ",
+            new[] { Seriennummer, Artikelnumber, Artikelbezeichnung }
+                .Where(part => !string.IsNullOrWhiteSpace(part)));
     }
 }

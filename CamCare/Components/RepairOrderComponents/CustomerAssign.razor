@@ -1,0 +1,165 @@
+@* Anzeige des Auftragskunden. Administratoren können über „Kunde ändern“ einen anderen
+   Kunden auswählen und mit „Kunde speichern“ übernehmen. Die Änderung wird erst mit dem
+   Speichern des Auftrags dauerhaft gespeichert. *@
+@using CamCare.Models.Amicron
+
+<RadzenText>@RepairOrder.Customer?.KdNummer - @RepairOrder.Customer?.FullName</RadzenText>
+<RadzenText>@RepairOrder.Customer?.Plz @RepairOrder.Customer?.Ort</RadzenText>
+
+<AuthorizeView Policy="@AuthPolicies.AdminOnly">
+    <Authorized>
+        @if (!_showCustomerSelection)
+        {
+            <div class="pt-3">
+                <RadzenButton Text="Kunde ändern" Icon="manage_accounts" ButtonStyle="ButtonStyle.Light"
+                              ButtonType="ButtonType.Button" Click="@(args => ShowCustomerSelection())" />
+            </div>
+        }
+        else
+        {
+            <RadzenFormField class="d-block pt-3" Text="Neuer Kunde" Style="width:100%">
+                <RadzenDropDown TValue="int?" Value="@_selectedCustomerId" ValueChanged="@OnCustomerSelected"
+                                Data="@_customers" LoadData="@OnLoadCustomers" Count="@_totalCount"
+                                TextProperty="@nameof(Adressen.DisplayName)" ValueProperty="@nameof(Adressen.LfdNr)"
+                                AllowClear="false" AllowFiltering="true" AllowVirtualization="true"
+                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                FilterOperator="StringFilterOperator.Contains"
+                                Placeholder="Kunde suchen (Kd-Nr, Name, PLZ oder Ort)" Style="width:100%" />
+            </RadzenFormField>
+
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem"
+                         class="pt-2">
+                <RadzenButton Text="Kunde speichern" Icon="save" ButtonStyle="ButtonStyle.Primary"
+                              ButtonType="ButtonType.Button" Disabled="@(_pendingCustomer is null)"
+                              Click="@(args => ApplyCustomer())" />
+                <RadzenButton Text="Abbrechen" ButtonStyle="ButtonStyle.Secondary"
+                              ButtonType="ButtonType.Button" Click="@(args => CancelCustomerSelection())" />
+            </RadzenStack>
+
+            <RadzenText class="d-block pt-2 text-secondary">
+                Mit „Kunde speichern“ wird der Kunde übernommen. Lieferanschrift und E-Mail-Adressen
+                gehören zum bisherigen Kunden, werden zurückgesetzt und anschließend für den neuen
+                Kunden zur Auswahl geladen.
+            </RadzenText>
+        }
+
+        @if (_customerChanged)
+        {
+            <RadzenText class="d-block pt-2 text-success">
+                Kunde geändert. Lieferanschrift und E-Mail-Adressen können jetzt für den neuen Kunden
+                ausgewählt werden. Übernommen wird die Änderung mit dem Speichern des Auftrags.
+            </RadzenText>
+        }
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    [Inject] protected ILogger<CustomerAssign> Logger { get; set; } = default!;
+    [Inject] protected IAmicronDataService AmicronDataService { get; set; } = default!;
+
+    /// <summary>Auftrag, dessen Kunde angezeigt bzw. geändert wird.</summary>
+    [Parameter] public RepairOrderVm RepairOrder { get; set; } = new();
+
+    /// <summary>
+    /// Wird ausgelöst, wenn der ausgewählte Kunde mit „Kunde speichern“ übernommen werden soll.
+    /// Die Übernahme in den Auftrag erfolgt durch die übergeordnete Seite (siehe EditRepairOrder),
+    /// damit die vom Kunden abhängigen Komponenten (Lieferanschrift, E-Mail-Adressen) neu geladen
+    /// werden.
+    /// </summary>
+    [Parameter] public EventCallback<Adressen> OnCustomerChanged { get; set; }
+
+    private IList<Adressen>? _customers;
+    private int _totalCount;
+    private int? _selectedCustomerId;
+    private Adressen? _pendingCustomer;
+    private bool _showCustomerSelection;
+    private bool _customerChanged;
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (RepairOrder is null)
+            throw new ArgumentNullException(nameof(RepairOrder), "RepairOrder cannot be null");
+
+        return base.OnParametersSetAsync();
+    }
+
+    /// <summary>Blendet die Kundenauswahl ein (übernommen wird erst mit „Kunde speichern“).</summary>
+    private void ShowCustomerSelection()
+    {
+        _customerChanged = false;
+        _selectedCustomerId = null;
+        _pendingCustomer = null;
+        _showCustomerSelection = true;
+    }
+
+    /// <summary>Verwirft die Auswahl, ohne den Auftragskunden zu ändern.</summary>
+    private void CancelCustomerSelection()
+    {
+        _selectedCustomerId = null;
+        _pendingCustomer = null;
+        _showCustomerSelection = false;
+    }
+
+    private async Task OnLoadCustomers(LoadDataArgs args)
+    {
+        var filter = string.IsNullOrWhiteSpace(args.Filter)
+            ? null
+            : new AdressenFilter { SearchText = args.Filter };
+
+        var response = await AmicronDataService.GetAllAddressAsync(args, filter);
+        if (!response.Success)
+            return;
+
+        var items = MergeSelectedCustomer(response.Data?.Items);
+
+        // Wichtig: Radzen rendert die (virtualisierte) Liste nur, wenn "Data" Einträge enthält –
+        // nur dann wird LoadData erneut ausgelöst. Eine leere Liste würde das Nachladen dauerhaft
+        // blockieren (siehe SerialSelectRow).
+        _customers = items.Count > 0 ? items : null;
+        _totalCount = response.Data?.TotalCount ?? 0;
+    }
+
+    /// <summary>
+    /// Ergänzt den ausgewählten Kunden, falls er nicht in der geladenen Seite enthalten ist
+    /// (Virtualisierung), damit die Auswahl korrekt angezeigt wird.
+    /// </summary>
+    private IList<Adressen> MergeSelectedCustomer(IEnumerable<Adressen>? items)
+    {
+        var list = items?.ToList() ?? [];
+
+        if (_pendingCustomer is not null && list.All(c => c.LfdNr != _pendingCustomer.LfdNr))
+            list.Insert(0, _pendingCustomer);
+
+        return list;
+    }
+
+    private void OnCustomerSelected(int? customerId)
+    {
+        _selectedCustomerId = customerId;
+        _pendingCustomer = customerId is null
+            ? null
+            : _customers?.FirstOrDefault(c => c.LfdNr == customerId.Value);
+    }
+
+    /// <summary>
+    /// Übernimmt den ausgewählten Kunden in den Auftrag. Anschließend laden die vom Kunden
+    /// abhängigen Komponenten ihre Lieferanschriften und E-Mail-Adressen neu.
+    /// </summary>
+    private async Task ApplyCustomer()
+    {
+        if (_pendingCustomer is null)
+            return;
+
+        Logger.LogInformation("Kunde des Auftrags {repairOrder} auf {customer} geändert.", RepairOrder,
+            _pendingCustomer.DisplayName);
+
+        var customer = _pendingCustomer;
+
+        _customerChanged = true;
+        _showCustomerSelection = false;
+        _selectedCustomerId = null;
+        _pendingCustomer = null;
+
+        await OnCustomerChanged.InvokeAsync(customer);
+    }
+}

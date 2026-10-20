@@ -1,0 +1,46 @@
+@* Zuordnung der Seriennummern zu einem Reparaturauftrag.
+   Es wird immer mindestens eine Zeile angezeigt. Über den Plus-Button können
+   weitere Seriennummern hinzugefügt werden. *@
+
+<div class="pt-1">
+    @foreach (var serial in RepairOrder.RepairOrderSerials!)
+    {
+        <SerialSelectRow @key="serial" Serial="serial" CustomerId="@RepairOrder.CustomerId"
+                         ShowRemove="@(RepairOrder.RepairOrderSerials!.Count > 1)" OnRemove="@OnRemoveSerial" />
+    }
+
+    <div class="pt-2">
+        @* Icon bewusst "control_point" (Plus im Kreis) statt "add": Der Radzen-Icon-Text "add"
+           wird in den e2e-Tests für die Einfügen-Buttons der Grids verwendet. *@
+        <RadzenButton Icon="control_point" Text="Weitere Seriennummer" ButtonStyle="ButtonStyle.Light"
+                      ButtonSize="ButtonSize.Small" Click="@(args => OnAddSerial())" />
+    </div>
+</div>
+
+@code {
+    [Parameter] public RepairOrderVm RepairOrder { get; set; } = new();
+
+    protected override Task OnParametersSetAsync()
+    {
+        RepairOrder.RepairOrderSerials ??= [];
+
+        // Es wird immer mindestens eine Seriennummer-Zeile angezeigt.
+        if (RepairOrder.RepairOrderSerials.Count == 0)
+            RepairOrder.RepairOrderSerials.Add(new RepairOrderSerialVm());
+
+        return base.OnParametersSetAsync();
+    }
+
+    private void OnAddSerial()
+        => RepairOrder.RepairOrderSerials!.Add(new RepairOrderSerialVm());
+
+    private Task OnRemoveSerial(RepairOrderSerialVm serial)
+    {
+        RepairOrder.RepairOrderSerials?.Remove(serial);
+
+        if (RepairOrder.RepairOrderSerials is { Count: 0 })
+            RepairOrder.RepairOrderSerials.Add(new RepairOrderSerialVm());
+
+        return Task.CompletedTask;
+    }
+}
