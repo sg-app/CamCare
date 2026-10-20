@@ -103,7 +103,7 @@ namespace CamCare.Services
                     ro.ArrivedAt = rovm.ArrivedAt?.ToUniversalTime();
                     ro.CreatedAt = rovm.CreatedAt;
                     ro.UpdatedAt = rovm.UpdatedAt;
-                    if (rovm.PackagingType == PackagingType.CustomersBox)
+                    if (rovm.PackagingType == PackagingType.NewBox)
                     {
                         ro.PackagingLength = null;
                         ro.PackagingWidth = null;
