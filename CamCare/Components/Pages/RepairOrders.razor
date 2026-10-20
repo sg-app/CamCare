@@ -19,13 +19,17 @@
                 FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
     <Columns>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftrag" Property="Id" Width="80px" Filterable="false" />
-        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status" Property="@nameof(RepairOrderVm.RepairOrderStatus)"
-                              FilterValue="@_selectedStates" FilterOperator="FilterOperator.In"
+        @* Gefiltert wird über den Fremdschlüssel (int). Ein "In"-Filter auf der
+           Navigationseigenschaft "RepairOrderStatus" erzeugt einen Entity-Vergleich,
+           den EF Core nicht in SQL übersetzen kann. *@
+        <RadzenDataGridColumn TItem="RepairOrderVm" Title="Status" Property="@nameof(RepairOrderVm.RepairOrderStatusId)"
+                              FilterValue="@SelectedStateIds" FilterOperator="FilterOperator.In"
                               LogicalFilterOperator="LogicalFilterOperator.Or" Width="180px">
             <FilterTemplate>
-                <RadzenDropDown @bind-Value=@_selectedStates Multiple="true" AllowSelectAll=false Style="width:100%;"
+                <RadzenDropDown @bind-Value=@SelectedStateIds Multiple="true" AllowSelectAll=false Style="width:100%;"
                                 Data=@(MasterdataService.Get<RepairOrderStatusVm>())
-                                TextProperty="@nameof(RepairOrderStatusVm.Name)" />
+                                TextProperty="@nameof(RepairOrderStatusVm.Name)"
+                                ValueProperty="@nameof(RepairOrderStatusVm.Id)" />
             </FilterTemplate>
             <Template Context="item">
                 <RadzenBadge Style="@item.RepairOrderStatus?.BadageStyle">@item.RepairOrderStatus?.Name</RadzenBadge>
@@ -255,7 +259,19 @@
     private bool _isLoading;
     private bool _archiveOrders;
     private bool _isAdmin;
-    private IEnumerable<RepairOrderStatusVm> _selectedStates = [];
+
+    /// <summary>
+    /// Ausgewählte Status-Ids des Spaltenfilters. Eine leere Auswahl wird als
+    /// <c>null</c> abgelegt, damit Radzen gar keinen Filter erzeugt – sonst würde
+    /// ein "In"-Filter ohne Werte (WHERE 0 = 1) alle Aufträge ausblenden.
+    /// </summary>
+    private IEnumerable<int>? SelectedStateIds
+    {
+        get => _selectedStateIds;
+        set => _selectedStateIds = value?.Any() == true ? value : null;
+    }
+
+    private IEnumerable<int>? _selectedStateIds;
 
     private async Task OnLoadData(LoadDataArgs args)
     {
