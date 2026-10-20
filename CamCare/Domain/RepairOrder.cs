@@ -11,6 +11,7 @@ namespace CamCare.Domain
         public string? SerialNumber { get; set; }
         public bool SerialNumberNeedsMaintenance { get; set; }
         public bool? PriorityRepair { get; set; }
+        public bool WithoutCostestimate { get; set; }
         public string? PiceOfEquipment { get; set; }
         public int RepairOrderStatusId { get; set; }
         public ShippingMethod ShippingMethod { get; set; }

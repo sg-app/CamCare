@@ -25,6 +25,7 @@ namespace CamCare.Services
                     rovm.CameraSerialNumber = ro.SerialNumber;
                     rovm.SerialNumberNeedsMaintenance = ro.SerialNumberNeedsMaintenance;
                     rovm.PriorityRepair = ro.PriorityRepair;
+                    rovm.WithoutCostestimate = ro.WithoutCostestimate;
                     rovm.PiceOfEquipment = ro.PiceOfEquipment;
                     rovm.RepairOrderStatusId = ro.RepairOrderStatusId;
                     rovm.ShippingMethod = ro.ShippingMethod;
@@ -82,6 +83,7 @@ namespace CamCare.Services
                     ro.SerialNumber = rovm.CameraSerialNumber;
                     ro.SerialNumberNeedsMaintenance = rovm.SerialNumberNeedsMaintenance;
                     ro.PriorityRepair = rovm.PriorityRepair;
+                    ro.WithoutCostestimate = rovm.WithoutCostestimate;
                     ro.PiceOfEquipment = rovm.PiceOfEquipment;
                     ro.RepairOrderStatusId = rovm.RepairOrderStatusId;
                     ro.ShippingMethod = rovm.ShippingMethod;

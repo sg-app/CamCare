@@ -373,6 +373,9 @@ namespace CamCare.Migrations
                     b.Property<bool>("Warranty")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("WithoutCostestimate")
+                        .HasColumnType("bit");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DeliveryAddressId");

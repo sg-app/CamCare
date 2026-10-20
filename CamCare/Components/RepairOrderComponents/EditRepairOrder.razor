@@ -175,7 +175,7 @@ else
 
     private void OnItemTypeChanged(bool? isCamera)
     {
-        if (RepairOrder.IsCamera == isCamera)
+        if (RepairOrder == null || RepairOrder.IsCamera == isCamera)
             return;
 
         RepairOrder.IsCamera = isCamera;
@@ -225,6 +225,8 @@ else
 
     private async Task OnSaveClicked(RepairOrderVm item)
     {
+        if (RepairOrder == null) return;
+
         var response = await RepairOrderService.UpdateAsync(RepairOrder.Id, RepairOrder);
         if (response.Success)
         {
