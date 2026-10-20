@@ -118,6 +118,33 @@ namespace CamCare.Services
             {
                 AddFilterCondition(command, command2, query, countQuery, LikeExpression("ORT", "@Ort"), "@Ort", $"%{filter.Ort}%");
             }
+            if (!string.IsNullOrWhiteSpace(filter?.SearchText))
+            {
+                // Freitextsuche über Kd-Nummer, Vor-/Nachname, PLZ und Ort. Die Bedingungen sind
+                // ODER-verknüpft, damit ein Kunde über eine einzige Suchzeile gefunden wird.
+                var searchText = filter.SearchText.Trim();
+                var searchCondition = string.Join(" OR ",
+                    LikeExpression("NR", "@SearchKdNummer"),
+                    LikeExpression("VORNAME", "@SearchVorname"),
+                    LikeExpression("NAME", "@SearchName"),
+                    LikeExpression("PLZ", "@SearchPlz", caseInsensitive: false),
+                    LikeExpression("ORT", "@SearchOrt"));
+
+                AddSearchParameter(command, "@SearchKdNummer", searchText, CustomerNumberFilterMaxLength);
+                AddSearchParameter(command, "@SearchVorname", searchText);
+                AddSearchParameter(command, "@SearchName", searchText);
+                AddSearchParameter(command, "@SearchPlz", searchText, PostalCodeFilterMaxLength);
+                AddSearchParameter(command, "@SearchOrt", searchText);
+
+                AddSearchParameter(command2, "@SearchKdNummer", searchText, CustomerNumberFilterMaxLength);
+                AddSearchParameter(command2, "@SearchVorname", searchText);
+                AddSearchParameter(command2, "@SearchName", searchText);
+                AddSearchParameter(command2, "@SearchPlz", searchText, PostalCodeFilterMaxLength);
+                AddSearchParameter(command2, "@SearchOrt", searchText);
+
+                query.Append(" AND (").Append(searchCondition).Append(')');
+                countQuery.Append(" AND (").Append(searchCondition).Append(')');
+            }
 
 
             query.Append(" ORDER BY LFDNR");
@@ -565,6 +592,14 @@ namespace CamCare.Services
 
             return parameterValue;
         }
+
+        /// <summary>
+        /// Fügt den Suchtext als LIKE-Parameter hinzu (Wildcards werden ergänzt). Der Wert wird
+        /// auf die Länge der verglichenen Spalte begrenzt (siehe <see cref="TruncateParameter"/>),
+        /// damit Firebird keinen "string right truncation"-Fehler meldet.
+        /// </summary>
+        private static void AddSearchParameter(FbCommand command, string parameterName, string searchText, int maxLength = DefaultFilterMaxLength)
+            => command.Parameters.AddWithValue(parameterName, TruncateParameter($"%{searchText}%", maxLength));
 
         private static string Truncate(string value, int maxLength)
             => value.Length <= maxLength ? value : value[..maxLength];

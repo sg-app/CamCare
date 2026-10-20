@@ -13,8 +13,7 @@
         <RadzenStack Orientation="Orientation.Horizontal">
 
             <RadzenFieldset Text="Kunde" class="w-50">
-                <RadzenText>@RepairOrder.Customer?.KdNummer - @RepairOrder.Customer?.FullName</RadzenText>
-                <RadzenText>@RepairOrder.Customer?.Plz @RepairOrder.Customer?.Ort</RadzenText>
+                <CustomerAssign RepairOrder="@RepairOrder" OnCustomerChanged="@OnCustomerChanged" />
             </RadzenFieldset>
 
             <RadzenFieldset Text="Reparaturgegenstand" class="w-50">
@@ -184,6 +183,24 @@ else
         RepairOrder.PiceOfEquipment = null;
         RepairOrder.SerialNumberNeedsMaintenance = false;
         RepairOrder.RepairOrderSerials = [new RepairOrderSerialVm()];
+    }
+
+    /// <summary>
+    /// Übernimmt einen nachträglich geänderten Kunden (nur für Administratoren möglich,
+    /// siehe <see cref="CustomerAssign"/>). Lieferanschrift und E-Mail-Adressen sind am
+    /// bisherigen Kunden gespeichert und werden deshalb verworfen; die abhängigen Komponenten
+    /// laden ihre Auswahllisten für den neuen Kunden selbstständig neu.
+    /// </summary>
+    private void OnCustomerChanged(Adressen customer)
+    {
+        if (RepairOrder is null)
+            return;
+
+        RepairOrder.CustomerId = customer.LfdNr;
+        RepairOrder.Customer = customer;
+        RepairOrder.DeliveryAddressId = null;
+        RepairOrder.DeliveryAddress = null;
+        RepairOrder.EmailAddresses = [];
     }
 
     private void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
