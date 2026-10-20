@@ -19,6 +19,9 @@ namespace CamCare.Persistence
         public DbSet<DeliveryAddress> DeliveryAddresses { get; set; }
         public DbSet<EmailAddress> EmailAddresses { get; set; }
         public DbSet<RepairOrderSerial> RepairOrderSerials { get; set; }
+        public DbSet<MailSettings> MailSettings { get; set; }
+        public DbSet<MailTemplate> MailTemplates { get; set; }
+        public DbSet<RepairOrderMailLog> RepairOrderMailLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -122,6 +125,71 @@ namespace CamCare.Persistence
                     new LogisticProvider { Id = 1, Name = "DHL", IsDefault = true, IsActive = true },
                     new LogisticProvider { Id = 2, Name = "Dachser", IsDefault = false, IsActive = true },
                     new LogisticProvider { Id = 3, Name = "DPD", IsDefault = false, IsActive = true }
+                );
+
+            // E-Mail-Vorlagen gehören zu einem Status des Reparaturauftrags: Wird der Status
+            // gelöscht, werden seine Vorlagen mit entfernt.
+            modelBuilder.Entity<MailTemplate>()
+                .HasOne(t => t.RepairOrderStatus)
+                .WithMany()
+                .HasForeignKey(t => t.RepairOrderStatusId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Das Versandprotokoll gehört zum Auftrag und wird mit ihm gelöscht.
+            modelBuilder.Entity<RepairOrderMailLog>()
+                .HasOne(l => l.RepairOrder)
+                .WithMany()
+                .HasForeignKey(l => l.RepairOrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Wird eine Vorlage gelöscht, bleibt das Versandprotokoll erhalten (SetNull).
+            modelBuilder.Entity<RepairOrderMailLog>()
+                .HasOne(l => l.MailTemplate)
+                .WithMany()
+                .HasForeignKey(l => l.MailTemplateId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Ausgangskonfiguration des E-Mail-Versands (genau ein Datensatz).
+            modelBuilder.Entity<MailSettings>()
+                .HasData(
+                    new MailSettings
+                    {
+                        Id = 1,
+                        SmtpHost = string.Empty,
+                        SmtpPort = 587,
+                        Security = MailSecurityMode.StartTls,
+                        TimeoutSeconds = 30,
+                        FromAddress = string.Empty,
+                        IsEnabled = false,
+                        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    }
+                );
+
+            // Beispielvorlagen für die Status "Eingetroffen" (Id 2) und "Versendet" (Id 9).
+            // Sie sind zunächst deaktiviert und werden erst nach dem Aktivieren in den
+            // Einstellungen automatisch versendet.
+            modelBuilder.Entity<MailTemplate>()
+                .HasData(
+                    new MailTemplate
+                    {
+                        Id = 1,
+                        RepairOrderStatusId = 2,
+                        IsEnabled = false,
+                        Order = 1,
+                        SubjectTemplate = MailSettingsDefaults.ArrivedSubjectTemplate,
+                        BodyTemplate = MailSettingsDefaults.ArrivedBodyTemplate,
+                        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    },
+                    new MailTemplate
+                    {
+                        Id = 2,
+                        RepairOrderStatusId = 9,
+                        IsEnabled = false,
+                        Order = 2,
+                        SubjectTemplate = MailSettingsDefaults.ShippedSubjectTemplate,
+                        BodyTemplate = MailSettingsDefaults.ShippedBodyTemplate,
+                        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    }
                 );
 
         }

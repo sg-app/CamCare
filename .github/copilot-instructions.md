@@ -65,7 +65,7 @@ All domain entities inherit from `AuditableEntity` which provides:
 - `UpdatedAt` (DateTime?)
 - `ArchivedAt` (DateTime?)
 
-Key entities: `RepairOrder`, `RepairPosition`, `Defective`, `IncludedComponent`, `Employee`, `LogisticProvider`, `RepairOrderStatus`, `RepairOrderStatusHistory`, `DataStore`
+Key entities: `RepairOrder`, `RepairPosition`, `Defective`, `IncludedComponent`, `Employee`, `LogisticProvider`, `RepairOrderStatus`, `RepairOrderStatusHistory`, `MailSettings`, `MailTemplate`, `RepairOrderMailLog`, `DataStore`
 
 ### Service Layer
 

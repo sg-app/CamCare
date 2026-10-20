@@ -47,6 +47,9 @@
                     <RadzenPanelMenuItem Text="Benutzergruppen" Icon="manage_accounts" Path="UserGroups" />
                 </AuthorizeView>
             </RadzenPanelMenuItem>
+            <AuthorizeView Policy="@AuthPolicies.AdminOnly">
+                <RadzenPanelMenuItem Text="Einstellungen" Icon="settings" Path="Settings" />
+            </AuthorizeView>
             <AuthorizeView Policy="@AuthPolicies.CanCreateOrders">
                 <RadzenPanelMenuItem Text="Auftrag erstellen" Icon="add_task" Path="Customers" />
             </AuthorizeView>

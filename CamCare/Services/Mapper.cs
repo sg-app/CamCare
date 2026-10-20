@@ -350,6 +350,62 @@ namespace CamCare.Services
                     ea.CreatedAt = eavm.CreatedAt;
                     ea.UpdatedAt = eavm.UpdatedAt;
                     break;
+                case MailSettings ms when destination is MailSettingsVm msvm:
+                    msvm.Id = ms.Id;
+                    msvm.SmtpHost = ms.SmtpHost;
+                    msvm.SmtpPort = ms.SmtpPort;
+                    msvm.Security = ms.Security;
+                    msvm.UserName = ms.UserName;
+                    msvm.Password = ms.Password;
+                    msvm.TimeoutSeconds = ms.TimeoutSeconds;
+                    msvm.FromAddress = ms.FromAddress;
+                    msvm.FromName = ms.FromName;
+                    msvm.IsEnabled = ms.IsEnabled;
+                    msvm.CreatedAt = ms.CreatedAt;
+                    msvm.UpdatedAt = ms.UpdatedAt;
+                    break;
+                case MailSettingsVm msvm when destination is MailSettings ms:
+                    ms.SmtpHost = msvm.SmtpHost;
+                    ms.SmtpPort = msvm.SmtpPort;
+                    ms.Security = msvm.Security;
+                    ms.UserName = msvm.UserName;
+                    ms.Password = msvm.Password;
+                    ms.TimeoutSeconds = msvm.TimeoutSeconds;
+                    ms.FromAddress = msvm.FromAddress;
+                    ms.FromName = msvm.FromName;
+                    ms.IsEnabled = msvm.IsEnabled;
+                    break;
+                case MailTemplate mt when destination is MailTemplateVm mtvm:
+                    mtvm.Id = mt.Id;
+                    mtvm.RepairOrderStatusId = mt.RepairOrderStatusId;
+                    mtvm.IsEnabled = mt.IsEnabled;
+                    mtvm.SubjectTemplate = mt.SubjectTemplate;
+                    mtvm.BodyTemplate = mt.BodyTemplate;
+                    mtvm.Order = mt.Order;
+                    mtvm.CreatedAt = mt.CreatedAt;
+                    mtvm.UpdatedAt = mt.UpdatedAt;
+                    if (mt.RepairOrderStatus != null)
+                        mtvm.StatusName = mt.RepairOrderStatus.Name;
+                    break;
+                case MailTemplateVm mtvm when destination is MailTemplate mt:
+                    mt.RepairOrderStatusId = mtvm.RepairOrderStatusId;
+                    mt.IsEnabled = mtvm.IsEnabled;
+                    mt.SubjectTemplate = mtvm.SubjectTemplate;
+                    mt.BodyTemplate = mtvm.BodyTemplate;
+                    mt.Order = mtvm.Order;
+                    break;
+                case RepairOrderMailLog log when destination is RepairOrderMailLogVm logvm:
+                    logvm.Id = log.Id;
+                    logvm.RepairOrderId = log.RepairOrderId;
+                    logvm.MailTemplateId = log.MailTemplateId;
+                    logvm.RepairOrderStatusId = log.RepairOrderStatusId;
+                    logvm.StatusName = log.StatusName;
+                    logvm.Recipients = log.Recipients;
+                    logvm.Subject = log.Subject;
+                    logvm.IsSuccess = log.IsSuccess;
+                    logvm.ErrorMessage = log.ErrorMessage;
+                    logvm.SentAt = log.SentAt.ToLocalTime();
+                    break;
                 default:
                     throw new NotSupportedException($"Mapping from {typeof(TSource)} to {typeof(TDestination)} is not supported.");
             }

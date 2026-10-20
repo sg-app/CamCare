@@ -262,6 +262,43 @@ Die mobile Upload-Seite wird **gezielt** über einen eigenen Reverse-Proxy-Host 
    `POST /api/upload/{token}` mit **HTTP 404** – der Upload-Host verrät dadurch nichts über
    die Existenz eines Auftrags und alte QR-Codes werden als „Link abgelaufen" angezeigt.
 
+## Automatischer E-Mail-Versand
+
+Unter **Einstellungen → EMail** (nur für die Benutzergruppe `admin`) wird der E-Mail-Versand
+konfiguriert:
+
+- **SMTP-Server**: Server, Port, Verschlüsselung (unverschlüsselt / STARTTLS / SSL-TLS),
+  Absenderadresse und -name sowie optional Benutzername/Passwort und Zeitlimit.
+  Der Versand erfolgt als HTML-Mail über **MailKit**.
+- **Automatischer Statusversand**: Es können **beliebig viele E-Mail-Vorlagen** angelegt werden –
+  jeweils für einen Status des Reparaturauftrags (z. B. eine Vorlage für **„Eingetroffen"** und eine
+  für **„Versendet"**); auch mehrere Vorlagen für denselben Status sind möglich. Wechselt ein
+  Reparaturauftrag in einen Status, werden alle für diesen Status **aktiven** Vorlagen an alle im
+  Auftrag hinterlegten E-Mail-Adressen versendet. Betreff und Inhalt (HTML) werden mit dem
+  **RadzenHtmlEditor** bearbeitet und können Platzhalter in der Schreibweise `{{Token}}` enthalten
+  (z. B. `{{OrderNumber}}`, `{{SerialNumber}}`, `{{Status}}`, `{{CustomerName}}`,
+  `{{Defects}}`, `{{DeliveryAddressCity}}`). Die Platzhalter werden beim Versand durch die
+  Werte des Auftrags ersetzt (HTML-kodiert); unbekannte Platzhalter bleiben unverändert
+  stehen. Eine Übersicht aller Platzhalter inkl. Beispielwerten ist direkt auf der Seite
+  verfügbar. Neue Vorlagen werden für die Status „Eingetroffen" und „Versendet" bereits
+  als deaktivierte Beispielvorlagen angelegt.
+- **Testversand**: Die aktuell bearbeitete Vorlage kann unabhängig vom Hauptschalter an eine manuell
+  eingegebene Adresse getestet werden. Optional werden dabei die Daten eines bestehenden Auftrags
+  eingesetzt, ansonsten Beispieldaten. Ohne ausgewählte Vorlage wird eine einfache Test-E-Mail
+  versendet (Prüfung der SMTP-Einstellungen).
+
+**Kein Mehrfachversand:** Jeder Versand wird im Versandprotokoll (`RepairOrderMailLogs`)
+festgehalten. Für einen Auftrag und eine Vorlage wird höchstens **eine erfolgreich
+versendete** E-Mail zugelassen – auch wenn der Status mehrfach geändert wird (z. B.
+Status A → „Eingetroffen" → Status B → „Eingetroffen"). Fehlgeschlagene Versuche werden
+ebenfalls protokolliert, blockieren aber keinen erneuten Versuch bei einer späteren
+Statusänderung. Ein Mailfehler beeinflusst das Speichern des Auftrags nicht (er wird
+lediglich protokolliert und im Versandprotokoll angezeigt) und verhindert auch nicht den
+Versand der übrigen Vorlagen.
+
+> **Hinweis:** Das SMTP-Passwort wird in der Datenbank gespeichert. Der Zugriff auf die
+> Datenbank ist entsprechend einzuschränken.
+
 ## Lizenz
 
 Siehe [LICENSE.txt](LICENSE.txt).

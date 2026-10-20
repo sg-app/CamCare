@@ -1,0 +1,11 @@
+@page "/Settings"
+@attribute [Authorize(Policy = AuthPolicies.AdminOnly)]
+@using CamCare.Components.SettingComponents
+
+<RadzenTabs>
+    <Tabs>
+        <RadzenTabsItem Text="EMail">
+            <MailSettings />
+        </RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>
