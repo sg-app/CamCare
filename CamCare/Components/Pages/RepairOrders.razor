@@ -86,7 +86,8 @@
                 @item.ArrivedAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridInlineEditColumn TItem="RepairOrderVm" EditRow="OnEditRowClicked" CanDelete="(_) => false" />
+        <RadzenDataGridInlineEditColumn TItem="RepairOrderVm" EditRow="OnEditRowClicked"
+                                        DeleteRow="OnDeleteRowClicked" CanDelete="(_) => _isAdmin" />
     </Columns>
     <Template Context="item">
         @{
@@ -244,6 +245,8 @@
     [Inject] protected IRepairOrderChangeSubscriber RepairOrderChangeSubscriber { get; set; } = default!;
     [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
     [Inject] protected ILogger<RepairOrders> Logger { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+    [Inject] protected AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
 
     private RadzenDataGrid<RepairOrderVm> _grid = default!;
     private IEnumerable<int> pageSizeOptions = new int[] { 20, 50, 100 };
@@ -251,6 +254,7 @@
     private int _totalCount;
     private bool _isLoading;
     private bool _archiveOrders;
+    private bool _isAdmin;
     private IEnumerable<RepairOrderStatusVm> _selectedStates;
 
     private async Task OnLoadData(LoadDataArgs args)
@@ -348,10 +352,36 @@ SortOrder.Descending
         NavigationManager.NavigateTo($"/EditRepairOrder/{item.Id}");
     }
 
-    protected override void OnInitialized()
+    /// <summary>
+    /// Löscht einen Auftrag nach vorheriger Bestätigung durch den Benutzer. Der Aufruf ist
+    /// zusätzlich zur Sichtbarkeit des Buttons auf die Benutzergruppe "admin" beschränkt.
+    /// </summary>
+    private async Task OnDeleteRowClicked(RepairOrderVm item)
     {
-        base.OnInitialized();
+        if (!_isAdmin)
+            return;
+
+        var dialogResult = await DialogService.Confirm(
+            $"Soll der Auftrag {item.Id} wirklich gelöscht werden?",
+            "Auftrag löschen",
+            new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
+        if (dialogResult != true)
+            return;
+
+        var response = await RepairOrderService.DeleteAsync(item.Id, false);
+        if (response.Success)
+            await _grid.Reload();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
         RepairOrderChangeSubscriber.Changed += OnRepairOrdersChanged;
+
+        // Der Löschen-Button ist ausschließlich für die Benutzergruppe "admin" sichtbar.
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isAdmin = authState.User.Identity?.IsAuthenticated == true
+            && authState.User.IsInRole(UserGroupRoles.Admin);
     }
 
     public void Dispose()
