@@ -1,18 +1,22 @@
 using CamCare.Interfaces.Services;
 using CamCare.Models;
+using CamCare.Options;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.Extensions.Options;
 using MimeKit;
 
 namespace CamCare.Services
 {
     /// <summary>
-    /// Versendet E-Mails als HTML über den konfigurierten SMTP-Server (MailKit).
+    /// Versendet E-Mails als HTML über den in der appsettings.json konfigurierten
+    /// SMTP-Server (MailKit).
     /// </summary>
-    public class MailService(ILogger<MailService> logger) : IMailService
+    public class MailService(IOptions<MailOptions> mailOptions, ILogger<MailService> logger) : IMailService
     {
+        private readonly MailOptions _options = mailOptions.Value;
+
         public async Task<ServiceResponse<bool>> SendAsync(
-            MailSettingsVm settings,
             IEnumerable<string> recipients,
             string subject,
             string htmlBody,
@@ -26,17 +30,17 @@ namespace CamCare.Services
 
             try
             {
-                if (string.IsNullOrWhiteSpace(settings.SmtpHost))
-                    return ServiceResponse.Failure<bool>("Es ist kein SMTP-Server konfiguriert.");
+                if (string.IsNullOrWhiteSpace(_options.SmtpHost))
+                    return ServiceResponse.Failure<bool>("Es ist kein SMTP-Server konfiguriert. Bitte den Abschnitt 'Mail' der appsettings.json prüfen.");
 
-                if (string.IsNullOrWhiteSpace(settings.FromAddress))
-                    return ServiceResponse.Failure<bool>("Es ist keine Absenderadresse konfiguriert.");
+                if (string.IsNullOrWhiteSpace(_options.FromAddress))
+                    return ServiceResponse.Failure<bool>("Es ist keine Absenderadresse konfiguriert. Bitte den Abschnitt 'Mail' der appsettings.json prüfen.");
 
                 if (recipientList.Count == 0)
                     return ServiceResponse.Failure<bool>("Es ist keine Empfängeradresse vorhanden.");
 
                 var message = new MimeMessage();
-                message.From.Add(new MailboxAddress(settings.FromName?.Trim() ?? string.Empty, settings.FromAddress.Trim()));
+                message.From.Add(new MailboxAddress(_options.FromName?.Trim() ?? string.Empty, _options.FromAddress.Trim()));
                 foreach (var recipient in recipientList)
                 {
                     message.To.Add(MailboxAddress.Parse(recipient));
@@ -47,14 +51,14 @@ namespace CamCare.Services
 
                 using var client = new SmtpClient
                 {
-                    Timeout = Math.Clamp(settings.TimeoutSeconds, 5, 300) * 1000
+                    Timeout = Math.Clamp(_options.TimeoutSeconds, 5, 300) * 1000
                 };
 
-                await client.ConnectAsync(settings.SmtpHost.Trim(), settings.SmtpPort, GetSocketOptions(settings.Security), cancellationToken);
+                await client.ConnectAsync(_options.SmtpHost.Trim(), _options.SmtpPort, GetSocketOptions(_options.Security), cancellationToken);
 
-                if (!string.IsNullOrWhiteSpace(settings.UserName))
+                if (!string.IsNullOrWhiteSpace(_options.UserName))
                 {
-                    await client.AuthenticateAsync(settings.UserName.Trim(), settings.Password ?? string.Empty, cancellationToken);
+                    await client.AuthenticateAsync(_options.UserName.Trim(), _options.Password ?? string.Empty, cancellationToken);
                 }
 
                 await client.SendAsync(message, cancellationToken);

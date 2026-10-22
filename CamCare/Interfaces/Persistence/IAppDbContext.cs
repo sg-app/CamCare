@@ -21,7 +21,6 @@ namespace CamCare.Interfaces.Persistence
         DbSet<DeliveryAddress> DeliveryAddresses { get; set; }
         DbSet<EmailAddress> EmailAddresses { get; set; }
         DbSet<RepairOrderSerial> RepairOrderSerials { get; set; }
-        DbSet<MailSettings> MailSettings { get; set; }
         DbSet<MailTemplate> MailTemplates { get; set; }
         DbSet<RepairOrderMailLog> RepairOrderMailLogs { get; set; }
 

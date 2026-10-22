@@ -2,7 +2,9 @@ using CamCare.Domain;
 using CamCare.Interfaces.Persistence;
 using CamCare.Interfaces.Services;
 using CamCare.Models;
+using CamCare.Options;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace CamCare.Services
 {
@@ -23,24 +25,24 @@ namespace CamCare.Services
         IMailTemplateRenderer templateRenderer,
         IMailService mailService,
         IAmicronDataService amicronDataService,
+        IOptions<MailOptions> mailOptions,
         ILogger<RepairOrderMailDispatcher> logger) : IRepairOrderMailDispatcher
     {
+        private readonly MailOptions _mailOptions = mailOptions.Value;
+
         public async Task DispatchAsync(int repairOrderId, int repairOrderStatusId)
         {
             try
             {
-                using var context = contextFactory.CreateDbContext();
-
-                var settings = await context.MailSettings
-                    .AsNoTracking()
-                    .OrderBy(s => s.Id)
-                    .FirstOrDefaultAsync();
-
-                if (settings is null || !settings.IsEnabled)
+                // Hauptschalter (appsettings.json: Mail:IsEnabled). Ist er deaktiviert, wird
+                // kein automatischer Statusversand ausgeführt.
+                if (!_mailOptions.IsEnabled)
                 {
                     logger.LogDebug("E-Mail-Versand ist deaktiviert (Auftrag {RepairOrderId}).", repairOrderId);
                     return;
                 }
+
+                using var context = contextFactory.CreateDbContext();
 
                 var templates = await context.MailTemplates
                     .AsNoTracking()
@@ -87,11 +89,9 @@ namespace CamCare.Services
                 // Kundenanschrift (Amicron) ergänzen, damit die Kunden-Platzhalter gefüllt sind.
                 await ApplyCustomerAsync(orderVm);
 
-                var settingsVm = mapper.Map<MailSettings, MailSettingsVm>(settings);
-
                 foreach (var template in templates)
                 {
-                    await SendTemplateAsync(context, template, settingsVm, orderVm, recipients, repairOrderId, repairOrderStatusId);
+                    await SendTemplateAsync(context, template, orderVm, recipients, repairOrderId, repairOrderStatusId);
                 }
             }
             catch (Exception ex)
@@ -107,7 +107,6 @@ namespace CamCare.Services
         private async Task SendTemplateAsync(
             IAppDbContext context,
             MailTemplate template,
-            MailSettingsVm settingsVm,
             RepairOrderVm orderVm,
             IReadOnlyList<string> recipients,
             int repairOrderId,
@@ -134,7 +133,7 @@ namespace CamCare.Services
                 var subject = templateRenderer.Render(template.SubjectTemplate, orderVm);
                 var body = templateRenderer.Render(template.BodyTemplate, orderVm);
 
-                var result = await mailService.SendAsync(settingsVm, recipients, subject, body);
+                var result = await mailService.SendAsync(recipients, subject, body);
 
                 context.RepairOrderMailLogs.Add(new RepairOrderMailLog
                 {

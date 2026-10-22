@@ -116,6 +116,17 @@ Die Verbindungszeichenfolgen und Optionen werden über `appsettings.json` bzw. `
     "AccessKey": "...",
     "SecretKey": "...",
     "BucketName": "..."
+  },
+  "Mail": {
+    "IsEnabled": false,
+    "SmtpHost": "smtp.example.com",
+    "SmtpPort": 587,
+    "Security": "StartTls",
+    "UserName": "",
+    "Password": "",
+    "TimeoutSeconds": 30,
+    "FromAddress": "noreply@example.com",
+    "FromName": "CamCare Reparatur"
   }
 }
 ```
@@ -183,6 +194,11 @@ Die Anwendung ist danach unter `http://localhost:8085` erreichbar.
 | `UploadLink__Secret`                 | Geheimer Schlüssel zur Signierung der mobilen Upload-Links           |
 | `UploadLink__TokenLifetimeMinutes`   | Gültigkeitsdauer eines Upload-Links in Minuten (Standard: 120)       |
 | `UploadLink__PublicBaseUrl`          | Öffentliche Basis-URL für QR-Code/Link des mobilen Uploads           |
+| `Mail__IsEnabled`                    | Hauptschalter für den automatischen E-Mail-Versand (Standard: `false`) |
+| `Mail__SmtpHost` / `Mail__SmtpPort`  | SMTP-Server und Port (Standard-Port: `587`)                          |
+| `Mail__Security`                     | Verschlüsselung: `None`, `StartTls` oder `SslOnConnect` (Standard: `StartTls`) |
+| `Mail__FromAddress` / `Mail__FromName` | Absenderadresse und -name der versendeten E-Mails                  |
+| `Mail__UserName` / `Mail__Password`  | Zugangsdaten für die SMTP-Authentifizierung (optional)              |
 | `ASPNETCORE_ENVIRONMENT`             | ASP.NET-Umgebung (Development/Production)                            |
 
 ## API-Endpunkte
@@ -264,12 +280,17 @@ Die mobile Upload-Seite wird **gezielt** über einen eigenen Reverse-Proxy-Host 
 
 ## Automatischer E-Mail-Versand
 
-Unter **Einstellungen → EMail** (nur für die Benutzergruppe `admin`) wird der E-Mail-Versand
-konfiguriert:
+Der E-Mail-Versand wird über den Abschnitt **`Mail`** der `appsettings.json` (bzw. über
+Umgebungsvariablen wie `Mail__SmtpHost`) konfiguriert – die SMTP-Zugangsdaten werden **nicht**
+in der Datenbank gespeichert. Unter **Einstellungen → EMail** (nur für die Benutzergruppe
+`admin`) werden die wirksamen Werte nur lesend angezeigt; dort werden die E-Mail-Vorlagen und
+das Versandprotokoll verwaltet:
 
-- **SMTP-Server**: Server, Port, Verschlüsselung (unverschlüsselt / STARTTLS / SSL-TLS),
+- **SMTP-Server**: Server, Port, Verschlüsselung (`None` / `StartTls` / `SslOnConnect`),
   Absenderadresse und -name sowie optional Benutzername/Passwort und Zeitlimit.
   Der Versand erfolgt als HTML-Mail über **MailKit**.
+- **Hauptschalter**: `Mail:IsEnabled` schaltet den automatischen Statusversand ein bzw. aus
+  (Standard: `false`). Der Testversand ist auch bei deaktiviertem Hauptschalter möglich.
 - **Automatischer Statusversand**: Es können **beliebig viele E-Mail-Vorlagen** angelegt werden –
   jeweils für einen Status des Reparaturauftrags (z. B. eine Vorlage für **„Eingetroffen"** und eine
   für **„Versendet"**); auch mehrere Vorlagen für denselben Status sind möglich. Wechselt ein
@@ -296,8 +317,9 @@ Statusänderung. Ein Mailfehler beeinflusst das Speichern des Auftrags nicht (er
 lediglich protokolliert und im Versandprotokoll angezeigt) und verhindert auch nicht den
 Versand der übrigen Vorlagen.
 
-> **Hinweis:** Das SMTP-Passwort wird in der Datenbank gespeichert. Der Zugriff auf die
-> Datenbank ist entsprechend einzuschränken.
+> **Hinweis:** Das SMTP-Passwort steht im Abschnitt `Mail` der `appsettings.json` bzw. in einer
+> Umgebungsvariable (`Mail__Password`). Die Konfigurationsdatei ist entsprechend einzuschränken;
+> in Produktion sollte das Passwort über eine sichere Umgebungsvariable gesetzt werden.
 
 ## Lizenz
 

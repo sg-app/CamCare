@@ -1,9 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace CamCare
+namespace CamCare.Options
 {
     /// <summary>
-    /// Verschlüsselung der Verbindung zum SMTP-Server.
+    /// Verschlüsselung der Verbindung zum SMTP-Server (Einstellung <c>Mail:Security</c> in der
+    /// <c>appsettings.json</c>).
     /// </summary>
     public enum MailSecurityMode
     {

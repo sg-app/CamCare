@@ -19,7 +19,6 @@ namespace CamCare.Persistence
         public DbSet<DeliveryAddress> DeliveryAddresses { get; set; }
         public DbSet<EmailAddress> EmailAddresses { get; set; }
         public DbSet<RepairOrderSerial> RepairOrderSerials { get; set; }
-        public DbSet<MailSettings> MailSettings { get; set; }
         public DbSet<MailTemplate> MailTemplates { get; set; }
         public DbSet<RepairOrderMailLog> RepairOrderMailLogs { get; set; }
 
@@ -149,21 +148,9 @@ namespace CamCare.Persistence
                 .HasForeignKey(l => l.MailTemplateId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // Ausgangskonfiguration des E-Mail-Versands (genau ein Datensatz).
-            modelBuilder.Entity<MailSettings>()
-                .HasData(
-                    new MailSettings
-                    {
-                        Id = 1,
-                        SmtpHost = string.Empty,
-                        SmtpPort = 587,
-                        Security = MailSecurityMode.StartTls,
-                        TimeoutSeconds = 30,
-                        FromAddress = string.Empty,
-                        IsEnabled = false,
-                        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                    }
-                );
+            // Die SMTP-Konfiguration des E-Mail-Versands wird über den Abschnitt "Mail" der
+            // appsettings.json gelesen (siehe CamCare.Options.MailOptions) und nicht mehr in
+            // der Datenbank gespeichert.
 
             // Beispielvorlagen für die Status "Eingetroffen" (Id 2) und "Versendet" (Id 9).
             // Sie sind zunächst deaktiviert und werden erst nach dem Aktivieren in den

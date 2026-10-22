@@ -1,22 +1,17 @@
-using System.ComponentModel.DataAnnotations;
-
-namespace CamCare.Domain
+namespace CamCare.Options
 {
     /// <summary>
-    /// Konfiguration des E-Mail-Versands: SMTP-Zugang sowie die Vorlage, die beim
-    /// Erreichen eines konfigurierbaren Status automatisch an die E-Mail-Adressen
-    /// des Reparaturauftrags versendet wird.
-    /// Es existiert genau ein Konfigurationsdatensatz (<see cref="Id"/> = 1).
+    /// Konfiguration des E-Mail-Versands (SMTP-Zugang). Die Werte werden aus dem Abschnitt
+    /// <c>Mail</c> der <c>appsettings.json</c> bzw. aus Umgebungsvariablen
+    /// (z. B. <c>Mail__SmtpHost</c>) gelesen und nicht in der Datenbank gespeichert.
     /// </summary>
-    public class MailSettings : AuditableEntity
+    public class MailOptions
     {
-        [Key]
-        public int Id { get; set; }
+        public const string SectionName = "Mail";
 
         // --- SMTP-Server ---
 
         /// <summary>Hostname oder IP-Adresse des SMTP-Servers.</summary>
-        [MaxLength(255)]
         public string SmtpHost { get; set; } = string.Empty;
 
         /// <summary>Port des SMTP-Servers (z. B. 25, 465 oder 587).</summary>
@@ -26,22 +21,21 @@ namespace CamCare.Domain
         public MailSecurityMode Security { get; set; } = MailSecurityMode.StartTls;
 
         /// <summary>Benutzername für die SMTP-Authentifizierung (optional).</summary>
-        [MaxLength(255)]
         public string? UserName { get; set; }
 
-        /// <summary>Passwort für die SMTP-Authentifizierung (optional).</summary>
-        [MaxLength(500)]
+        /// <summary>
+        /// Passwort für die SMTP-Authentifizierung (optional). Sollte in Produktion über eine
+        /// sichere Umgebungsvariable (<c>Mail__Password</c>) gesetzt werden.
+        /// </summary>
         public string? Password { get; set; }
 
         /// <summary>Zeitlimit für den kompletten Versandvorgang in Sekunden.</summary>
         public int TimeoutSeconds { get; set; } = 30;
 
         /// <summary>Absenderadresse (From) der versendeten E-Mails.</summary>
-        [MaxLength(320)]
         public string FromAddress { get; set; } = string.Empty;
 
         /// <summary>Anzeigename des Absenders (optional).</summary>
-        [MaxLength(255)]
         public string? FromName { get; set; }
 
         // --- Automatischer Versand ---
@@ -51,5 +45,11 @@ namespace CamCare.Domain
         /// keine E-Mail versendet (der Testversand bleibt möglich).
         /// </summary>
         public bool IsEnabled { get; set; }
+
+        /// <summary>
+        /// Gibt an, ob die Konfiguration für den Versand ausreicht (Server und Absenderadresse).
+        /// </summary>
+        public bool IsConfigured
+            => !string.IsNullOrWhiteSpace(SmtpHost) && !string.IsNullOrWhiteSpace(FromAddress);
     }
 }
