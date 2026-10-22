@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Net;
-using System.Text.RegularExpressions;
+using System.Text;
 using CamCare.Interfaces.Services;
 using CamCare.Models;
 
@@ -10,8 +10,12 @@ namespace CamCare.Services
     /// Ersetzt die Platzhalter (<c>{{Token}}</c>) in E-Mail-Vorlagen durch Werte eines
     /// Reparaturauftrags. Die Werte werden HTML-kodiert, damit Auftragsdaten die
     /// HTML-Struktur der Vorlage nicht beschädigen.
+    /// Zusätzlich werden Ersatzwerte (<c>{{Token|Ersatzwert}}</c>), Bedingungsblöcke
+    /// (<c>{{#if Token}}</c> … <c>{{/if}}</c>, <c>{{#unless Token}}</c> … <c>{{/unless}}</c>
+    /// mit optionalem <c>{{else}}</c>) und Kommentare (<c>{{! Kommentar}}</c>) unterstützt;
+    /// die Schreibweisen sind in <see cref="MailTemplateParser"/> dokumentiert.
     /// </summary>
-    public partial class MailTemplateRenderer : IMailTemplateRenderer
+    public class MailTemplateRenderer : IMailTemplateRenderer
     {
         private const string DateFormat = "dd.MM.yyyy";
         private const string DateTimeFormat = "dd.MM.yyyy HH:mm";
@@ -55,18 +59,55 @@ namespace CamCare.Services
                 return string.Empty;
 
             var values = BuildValues(order);
+            var builder = new StringBuilder(template.Length + 32);
 
-            return PlaceholderRegex().Replace(template, match =>
+            AppendNodes(MailTemplateParser.Parse(template), values, builder);
+
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Gibt die Bausteine der Vorlage aus. Werte werden HTML-kodiert; Ersatzwerte und
+        /// Bedingungsblöcke sind Teil der Vorlage und werden unverändert übernommen.
+        /// </summary>
+        private static void AppendNodes(
+            IReadOnlyList<MailTemplateNode> nodes, IReadOnlyDictionary<string, string> values, StringBuilder builder)
+        {
+            foreach (var node in nodes)
             {
-                var token = match.Groups["token"].Value;
-                if (!values.TryGetValue(token, out var value))
+                switch (node)
                 {
-                    // Unbekannte Platzhalter bleiben stehen, damit Tippfehler auffallen.
-                    return match.Value;
-                }
+                    case MailTemplateTextNode text:
+                        builder.Append(text.Text);
+                        break;
 
-                return WebUtility.HtmlEncode(value);
-            });
+                    case MailTemplatePlaceholderNode placeholder:
+                        if (!values.TryGetValue(placeholder.Token, out var value))
+                        {
+                            // Unbekannte Platzhalter bleiben stehen, damit Tippfehler auffallen.
+                            builder.Append(placeholder.Raw);
+                        }
+                        else if (string.IsNullOrEmpty(value))
+                        {
+                            // Der Ersatzwert ist Teil der Vorlage und wird deshalb unverändert übernommen.
+                            builder.Append(placeholder.Fallback);
+                        }
+                        else
+                        {
+                            builder.Append(WebUtility.HtmlEncode(value));
+                        }
+                        break;
+
+                    case MailTemplateConditionNode condition:
+                        // Nicht vorhandene bzw. leere Werte gelten als „nicht gefüllt“.
+                        var isFilled = values.TryGetValue(condition.Token, out var conditionValue)
+                                       && !string.IsNullOrWhiteSpace(conditionValue);
+
+                        AppendNodes(isFilled ^ condition.IsNegated ? condition.WhenTrue : condition.WhenFalse,
+                            values, builder);
+                        break;
+                }
+            }
         }
 
         private static Dictionary<string, string> BuildValues(RepairOrderVm? order)
@@ -125,8 +166,5 @@ namespace CamCare.Services
 
         private static string FormatDateTime(DateTime? value)
             => value.HasValue ? value.Value.ToString(DateTimeFormat, CultureInfo.InvariantCulture) : string.Empty;
-
-        [GeneratedRegex(@"\{\{\s*(?<token>[A-Za-z0-9_]+)\s*\}\}")]
-        private static partial Regex PlaceholderRegex();
     }
 }

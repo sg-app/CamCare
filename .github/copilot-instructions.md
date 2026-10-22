@@ -70,6 +70,11 @@ Key entities: `RepairOrder`, `RepairPosition`, `Defective`, `IncludedComponent`,
 
 > The SMTP/mail configuration is **not** stored in the database; it is bound from the `Mail`
 > section of `appsettings.json` via `IOptions<MailOptions>` (`CamCare.Options`).
+>
+> E-mail templates are rendered by `MailTemplateRenderer` / `MailTemplateParser`
+> (`CamCare.Services`). Besides simple placeholders (`{{Token}}`) they support functions:
+> `{{Token|fallback}}`, `{{#if Token}} … {{else}} … {{/if}}`, `{{#unless Token}} … {{/unless}}`
+> and comments (`{{! comment}}`).
 
 ### Service Layer
 

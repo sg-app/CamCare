@@ -146,6 +146,8 @@ else
                         <RadzenHtmlEditorSeparator />
                         <RadzenHtmlEditorCustomTool CommandName="InsertPlaceholder" Icon="data_object"
                                                     Title="Ausgewählten Platzhalter an der Cursorposition einfügen" />
+                        <RadzenHtmlEditorCustomTool CommandName="InsertCondition" Icon="rule"
+                                                    Title="Bedingungsblock für den ausgewählten Platzhalter an der Cursorposition einfügen" />
                         <RadzenHtmlEditorSeparator />
                         <RadzenHtmlEditorSource />
                     </RadzenHtmlEditor>
@@ -160,6 +162,8 @@ else
                         </RadzenFormField>
                         <RadzenButton Text="An das Ende der Vorlage anfügen" Icon="add_box" ButtonStyle="ButtonStyle.Secondary"
                                       Click="OnInsertPlaceholderClicked" />
+                        <RadzenButton Text="Bedingung anfügen (nur wenn gefüllt)" Icon="rule" ButtonStyle="ButtonStyle.Light"
+                                      Click="OnAppendConditionClicked" />
                     </RadzenStack>
 
                     <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" class="pt-2">
@@ -176,6 +180,14 @@ else
         <RadzenText TextStyle="TextStyle.Subtitle2">
             Die Platzhalter werden beim Versand durch die Werte des Auftrags ersetzt. Werte werden HTML-kodiert;
             unbekannte Platzhalter bleiben unverändert stehen.
+        </RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" class="mb-2">
+            Zusätzlich stehen Funktionen zur Verfügung: <code>{{Platzhalter|Ersatzwert}}</code> gibt den Ersatzwert aus,
+            wenn der Wert leer ist. <code>{{#if Platzhalter}} … {{else}} … {{/if}}</code> gibt den Inhalt nur aus, wenn der
+            Wert gefüllt ist (<code>{{#unless Platzhalter}} … {{/unless}}</code> für die Umkehrung),
+            <code>{{! Kommentar}}</code> wird nicht ausgegeben. Leere Zeilen vermeidet man, indem die bedingte Zeile
+            komplett eingeschlossen wird, z. B.
+            <code>{{#if DeliveryAddressCity}}&lt;p&gt;Lieferanschrift: {{DeliveryAddressCity}}&lt;/p&gt;{{/if}}</code>.
         </RadzenText>
         <RadzenDataGrid TItem="MailPlaceholder" Data="@_placeholders" Density="Density.Compact" AllowColumnResize="true"
                         ShowEmptyMessage="false" Style="width:100%">
@@ -248,6 +260,7 @@ else
 }
 @code {
     private const string InsertPlaceholderCommand = "InsertPlaceholder";
+    private const string InsertConditionCommand = "InsertCondition";
 
     [Inject] protected ILogger<MailSettings> Logger { get; set; } = default!;
     [Inject] protected IOptions<MailOptions> MailOptionsAccessor { get; set; } = default!;
@@ -521,34 +534,55 @@ else
     /// </summary>
     private void OnInsertPlaceholderClicked(MouseEventArgs args)
     {
-        if (_template is null)
+        if (_template is null || !TryGetSelectedPlaceholder(out var token))
             return;
 
-        if (string.IsNullOrWhiteSpace(_selectedPlaceholder))
-        {
-            NotificationService.Notify(NotificationSeverity.Warning, "Platzhalter",
-                "Bitte zuerst einen Platzhalter auswählen.");
-            return;
-        }
-
-        _template.BodyTemplate += "<p>{{" + _selectedPlaceholder + "}}</p>";
+        _template.BodyTemplate += "<p>{{" + token + "}}</p>";
     }
 
     /// <summary>
-    /// Fügt den ausgewählten Platzhalter über das Editor-Werkzeug an der Cursorposition ein.
+    /// Fügt am Ende der Vorlage einen Bedingungsblock für den ausgewählten Platzhalter ein:
+    /// der Inhalt wird nur ausgegeben, wenn der Platzhalter gefüllt ist.
+    /// </summary>
+    private void OnAppendConditionClicked(MouseEventArgs args)
+    {
+        if (_template is null || !TryGetSelectedPlaceholder(out var token))
+            return;
+
+        _template.BodyTemplate += "<p>{{#if " + token + "}}Inhalt für {{" + token + "}}{{/if}}</p>";
+    }
+
+    /// <summary>
+    /// Fügt den ausgewählten Platzhalter bzw. einen Bedingungsblock über das Editor-Werkzeug
+    /// an der Cursorposition ein.
     /// </summary>
     private async Task OnEditorExecuteAsync(HtmlEditorExecuteEventArgs args)
     {
-        if (args.CommandName != InsertPlaceholderCommand)
+        if (args.CommandName != InsertPlaceholderCommand && args.CommandName != InsertConditionCommand)
             return;
 
-        if (string.IsNullOrWhiteSpace(_selectedPlaceholder))
-        {
-            NotificationService.Notify(NotificationSeverity.Warning, "Platzhalter",
-                "Bitte zuerst in der Auswahlliste einen Platzhalter auswählen.");
+        if (!TryGetSelectedPlaceholder(out var token))
             return;
-        }
 
-        await args.Editor.ExecuteCommandAsync(HtmlEditorCommands.InsertHtml, "{{" + _selectedPlaceholder + "}}");
+        var html = args.CommandName == InsertConditionCommand
+            ? "{{#if " + token + "}}{{/if}}"
+            : "{{" + token + "}}";
+
+        await args.Editor.ExecuteCommandAsync(HtmlEditorCommands.InsertHtml, html);
+    }
+
+    /// <summary>
+    /// Liest den in der Auswahlliste gewählten Platzhalter und weist auf eine fehlende Auswahl hin.
+    /// </summary>
+    private bool TryGetSelectedPlaceholder(out string token)
+    {
+        token = _selectedPlaceholder?.Trim() ?? string.Empty;
+
+        if (token.Length > 0)
+            return true;
+
+        NotificationService.Notify(NotificationSeverity.Warning, "Platzhalter",
+            "Bitte zuerst in der Auswahlliste einen Platzhalter auswählen.");
+        return false;
     }
 }

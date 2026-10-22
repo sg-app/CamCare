@@ -303,6 +303,31 @@ das Versandprotokoll verwaltet:
   stehen. Eine Übersicht aller Platzhalter inkl. Beispielwerten ist direkt auf der Seite
   verfügbar. Neue Vorlagen werden für die Status „Eingetroffen" und „Versendet" bereits
   als deaktivierte Beispielvorlagen angelegt.
+
+  Neben einfachen Platzhaltern stehen **Funktionen** zur Verfügung (siehe
+  `MailTemplateParser`), mit denen sich z. B. leere Zeilen vermeiden lassen:
+
+  | Schreibweise | Bedeutung |
+  | --- | --- |
+  | `{{Token}}` | Wert des Platzhalters (leer, wenn kein Wert vorhanden ist) |
+  | `{{Token\|Ersatzwert}}` | Ersatzwert, wenn der Wert leer ist (wird wie Vorlagen-HTML ausgegeben) |
+  | `{{#if Token}} … {{/if}}` | Inhalt nur bei gefülltem Wert, optional mit `{{else}}` |
+  | `{{#unless Token}} … {{/unless}}` | Inhalt nur bei leerem Wert |
+  | `{{! Kommentar}}` | wird nicht ausgegeben |
+
+  Beispiel – die Lieferanschrift wird nur ausgegeben, wenn sie gepflegt ist
+  (statt einer leeren Zeile):
+
+  ```html
+  {{#if DeliveryAddressCity}}<p>Lieferanschrift:<br />{{DeliveryAddressRecipient}}<br />
+  {{DeliveryAddressStreet}}<br />{{DeliveryAddressCity}}</p>{{/if}}
+  ```
+
+  Die Blockstruktur muss vollständig sein: Fehlt z. B. `{{/if}}`, wird die Vorlage wie
+  Text behandelt – Platzhalter funktionieren weiterhin, die Block-Platzhalter bleiben
+  sichtbar stehen, damit der Fehler auffällt. Zum Einfügen von Platzhaltern und
+  Bedingungsblöcken stehen in der Bearbeitungsleiste des HTML-Editors eigene
+  Werkzeuge sowie Schaltflächen unterhalb des Inhalts zur Verfügung.
 - **Testversand**: Die aktuell bearbeitete Vorlage kann unabhängig vom Hauptschalter an eine manuell
   eingegebene Adresse getestet werden. Optional werden dabei die Daten eines bestehenden Auftrags
   eingesetzt, ansonsten Beispieldaten. Ohne ausgewählte Vorlage wird eine einfache Test-E-Mail
