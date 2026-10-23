@@ -11,6 +11,8 @@ namespace CamCare.Interfaces.Services
         /// <summary>
         /// Versendet eine HTML-E-Mail an die angegebenen Empfänger. Die SMTP-Konfiguration
         /// wird dabei aus dem <c>Mail</c>-Abschnitt der <c>appsettings.json</c> gelesen.
+        /// Bilder in <paramref name="inlineImages"/> werden in die E-Mail eingebettet und können
+        /// im HTML über <c>cid:{ContentId}</c> referenziert werden.
         /// Es wird keine Ausnahme geworfen; Fehler werden im <see cref="ServiceResponse{TData}"/>
         /// gemeldet.
         /// </summary>
@@ -18,6 +20,7 @@ namespace CamCare.Interfaces.Services
             IEnumerable<string> recipients,
             string subject,
             string htmlBody,
+            IEnumerable<MailInlineImage>? inlineImages = null,
             CancellationToken cancellationToken = default);
     }
 }

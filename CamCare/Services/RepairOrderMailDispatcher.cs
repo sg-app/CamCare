@@ -24,6 +24,7 @@ namespace CamCare.Services
         IMapper mapper,
         IMailTemplateRenderer templateRenderer,
         IMailService mailService,
+        IMailSignatureProvider signatureProvider,
         IAmicronDataService amicronDataService,
         IOptions<MailOptions> mailOptions,
         ILogger<RepairOrderMailDispatcher> logger) : IRepairOrderMailDispatcher
@@ -133,7 +134,10 @@ namespace CamCare.Services
                 var subject = templateRenderer.Render(template.SubjectTemplate, orderVm);
                 var body = templateRenderer.Render(template.BodyTemplate, orderVm);
 
-                var result = await mailService.SendAsync(recipients, subject, body);
+                // Die konfigurierte Signatur (inkl. Logo) wird an jede E-Mail angehängt.
+                var (bodyWithSignature, inlineImages) = await BuildBodyWithSignatureAsync(body);
+
+                var result = await mailService.SendAsync(recipients, subject, bodyWithSignature, inlineImages);
 
                 context.RepairOrderMailLogs.Add(new RepairOrderMailLog
                 {
@@ -163,6 +167,24 @@ namespace CamCare.Services
                     "Fehler beim automatischen Versand der E-Mail-Vorlage {MailTemplateId} für Auftrag {RepairOrderId}.",
                     template.Id, repairOrderId);
             }
+        }
+
+        /// <summary>
+        /// Hängt die aktive E-Mail-Signatur an den Inhalt an und liefert das einzubettende Logo
+        /// (falls vorhanden) für den Versand mit.
+        /// </summary>
+        private async Task<(string Body, List<MailInlineImage> InlineImages)> BuildBodyWithSignatureAsync(string body)
+        {
+            var signature = await signatureProvider.GetActiveSignatureAsync();
+
+            if (signature is null)
+                return (body, []);
+
+            var inlineImages = new List<MailInlineImage>();
+            if (signature.Logo is not null)
+                inlineImages.Add(signature.Logo);
+
+            return (MailBodyComposer.AppendSignature(body, signature.Html), inlineImages);
         }
 
         private async Task ApplyCustomerAsync(RepairOrderVm orderVm)

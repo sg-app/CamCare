@@ -369,6 +369,21 @@ namespace CamCare.Services
                     mt.BodyTemplate = mtvm.BodyTemplate;
                     mt.Order = mtvm.Order;
                     break;
+                case MailSignature ms when destination is MailSignatureVm msvm:
+                    msvm.Id = ms.Id;
+                    msvm.IsEnabled = ms.IsEnabled;
+                    msvm.HtmlTemplate = ms.HtmlTemplate;
+                    msvm.LogoFileName = ms.LogoFileName;
+                    msvm.LogoData = ms.LogoData;
+                    msvm.CreatedAt = ms.CreatedAt;
+                    msvm.UpdatedAt = ms.UpdatedAt;
+                    break;
+                case MailSignatureVm msvm when destination is MailSignature ms:
+                    ms.IsEnabled = msvm.IsEnabled;
+                    ms.HtmlTemplate = msvm.HtmlTemplate;
+                    ms.LogoFileName = msvm.HasLogo ? msvm.LogoFileName : null;
+                    ms.LogoData = msvm.HasLogo ? msvm.LogoData : null;
+                    break;
                 case RepairOrderMailLog log when destination is RepairOrderMailLogVm logvm:
                     logvm.Id = log.Id;
                     logvm.RepairOrderId = log.RepairOrderId;

@@ -23,6 +23,7 @@ namespace CamCare.Interfaces.Persistence
         DbSet<RepairOrderSerial> RepairOrderSerials { get; set; }
         DbSet<MailTemplate> MailTemplates { get; set; }
         DbSet<RepairOrderMailLog> RepairOrderMailLogs { get; set; }
+        DbSet<MailSignature> MailSignatures { get; set; }
 
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

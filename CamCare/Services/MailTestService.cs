@@ -12,6 +12,7 @@ namespace CamCare.Services
         ILogger<MailTestService> logger,
         IMailTemplateRenderer templateRenderer,
         IMailService mailService,
+        IMailSignatureProvider signatureProvider,
         IRepairOrderService repairOrderService) : IMailTestService
     {
         public async Task<ServiceResponse<bool>> SendTestMailAsync(MailTemplateVm? template, string recipient, int? repairOrderId)
@@ -42,7 +43,18 @@ namespace CamCare.Services
                     ? "<p>Testmail von CamCare – die SMTP-Einstellungen funktionieren.</p>"
                     : templateRenderer.Render(template.BodyTemplate, order);
 
-                return await mailService.SendAsync([recipient], subject, body);
+                // Damit die Signatur im Testversand geprüft werden kann, wird sie ebenfalls angehängt.
+                var inlineImages = new List<MailInlineImage>();
+                var signature = await signatureProvider.GetActiveSignatureAsync();
+                if (signature is not null)
+                {
+                    body = MailBodyComposer.AppendSignature(body, signature.Html);
+
+                    if (signature.Logo is not null)
+                        inlineImages.Add(signature.Logo);
+                }
+
+                return await mailService.SendAsync([recipient], subject, body, inlineImages);
             }
             catch (Exception ex)
             {

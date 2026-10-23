@@ -284,7 +284,8 @@ Der E-Mail-Versand wird über den Abschnitt **`Mail`** der `appsettings.json` (b
 Umgebungsvariablen wie `Mail__SmtpHost`) konfiguriert – die SMTP-Zugangsdaten werden **nicht**
 in der Datenbank gespeichert. Unter **Einstellungen → EMail** (nur für die Benutzergruppe
 `admin`) werden die wirksamen Werte nur lesend angezeigt; dort werden die E-Mail-Vorlagen und
-das Versandprotokoll verwaltet:
+das Versandprotokoll verwaltet. Unter **Einstellungen → Signatur** wird die E-Mail-Signatur
+inkl. Logo gepflegt:
 
 - **SMTP-Server**: Server, Port, Verschlüsselung (`None` / `StartTls` / `SslOnConnect`),
   Absenderadresse und -name sowie optional Benutzername/Passwort und Zeitlimit.
@@ -332,6 +333,17 @@ das Versandprotokoll verwaltet:
   eingegebene Adresse getestet werden. Optional werden dabei die Daten eines bestehenden Auftrags
   eingesetzt, ansonsten Beispieldaten. Ohne ausgewählte Vorlage wird eine einfache Test-E-Mail
   versendet (Prüfung der SMTP-Einstellungen).
+- **Signatur mit Logo** (Einstellungen → Signatur): Eine Signatur wird an **jede** über CamCare
+  versendete E-Mail angehängt – sowohl beim automatischen Statusversand als auch beim Testversand.
+  - Der Inhalt wird als HTML gepflegt (RadzenHtmlEditor). Der Platzhalter `{{Logo}}` markiert die
+    Stelle, an der das Logo ausgegeben wird; enthält die Signatur keinen Platzhalter, wird das Logo
+    an das Ende der Signatur angehängt.
+  - Das Logo wird als Bilddatei (z. B. PNG, maximal 2&#8201;MB) in den Einstellungen hinterlegt und in
+    der Datenbank gespeichert. Beim Versand wird es **in die E-Mail eingebettet** (Content-Id
+    `cid:…`) und nicht über eine externe URL geladen, damit es auch bei blockierten externen Bildern
+    angezeigt wird. Die Breite wird in der E-Mail auf 220 Pixel begrenzt.
+  - Über den Schalter **„Signatur an versendete E-Mails anhängen“** wird die Signatur ein- bzw.
+    ausgeschaltet. Eine Standard-Signatur wird bei der Installation angelegt (zunächst deaktiviert).
 
 **Kein Mehrfachversand:** Jeder Versand wird im Versandprotokoll (`RepairOrderMailLogs`)
 festgehalten. Für einen Auftrag und eine Vorlage wird höchstens **eine erfolgreich

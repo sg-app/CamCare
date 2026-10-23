@@ -29,6 +29,18 @@ namespace CamCare.Domain
             <p>Mit freundlichen Grüßen<br />Ihr CamCare-Team</p>
             """;
 
+        /// <summary>
+        /// Platzhalter in der Signatur, an dem das Logo der Signatur ausgegeben wird.
+        /// </summary>
+        public const string SignatureLogoPlaceholder = "{{Logo}}";
+
+        /// <summary>Standardinhalt einer neu angelegten Signatur.</summary>
+        public const string SignatureHtmlTemplate = """
+            <p>Mit freundlichen Grüßen</p>
+            <p><strong>Ihr CamCare-Team</strong></p>
+            <p>{{Logo}}</p>
+            """;
+
         /// <summary>Allgemeine Vorlage für neu angelegte Vorlagen.</summary>
         public const string SubjectTemplate = "Ihr Reparaturauftrag {{OrderNumber}} – {{Status}}";
 

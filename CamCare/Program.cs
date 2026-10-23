@@ -81,6 +81,8 @@ builder.Services.AddSingleton<IMailTemplateRenderer, MailTemplateRenderer>();
 builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddScoped<IMailTestService, MailTestService>();
 builder.Services.AddScoped<IMailTemplateService, MailTemplateService>();
+builder.Services.AddScoped<IMailSignatureService, MailSignatureService>();
+builder.Services.AddScoped<IMailSignatureProvider, MailSignatureProvider>();
 builder.Services.AddScoped<IRepairOrderMailLogService, RepairOrderMailLogService>();
 builder.Services.AddScoped<IRepairOrderMailDispatcher, RepairOrderMailDispatcher>();
 builder.Services.AddScoped<IRepairOrderChangeSubscriber, RepairOrderChangeSubscriber>();

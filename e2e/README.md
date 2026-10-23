@@ -29,7 +29,20 @@ npm run test:headed
 
 Konfiguration: `e2e/playwright.config.ts`
 
-## Was wird getestet (`tests/autocomplete.spec.ts`)
+## Was wird getestet
+
+### `tests/mail-signature.spec.ts`
+
+1. **Signatur-Tab** – unter *Einstellungen → Signatur* sind der Aktivierungs-Schalter,
+   der HTML-Editor mit dem Platzhalter `{{Logo}}`, die Werkzeuge zum Einfügen des
+   Platzhalters sowie die Logo-Dateiauswahl vorhanden.
+2. **Logo-Upload** – ein Logo kann hochgeladen, gespeichert und nach dem Neuladen
+   wieder angezeigt werden; anschließend lässt es sich wieder entfernen.
+
+Der Test läuft mit der Benutzergruppe `admin` und setzt die Signatur am Ende wieder
+in den Ausgangszustand (kein Logo) zurück.
+
+### `tests/autocomplete.spec.ts`
 
 1. **Defekte** – Mausklick auf einen Katalogtreffer übernimmt den vollen Wert
    (Regression: Es bleibt kein unvollständiger getippter Teilwert in der Zelle).

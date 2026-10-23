@@ -1,3 +1,4 @@
+using CamCare.Domain;
 using CamCare.Interfaces.Services;
 using CamCare.Models;
 using CamCare.Options;
@@ -20,6 +21,7 @@ namespace CamCare.Services
             IEnumerable<string> recipients,
             string subject,
             string htmlBody,
+            IEnumerable<MailInlineImage>? inlineImages = null,
             CancellationToken cancellationToken = default)
         {
             var recipientList = (recipients ?? [])
@@ -47,7 +49,29 @@ namespace CamCare.Services
                 }
 
                 message.Subject = subject ?? string.Empty;
-                message.Body = new BodyBuilder { HtmlBody = htmlBody ?? string.Empty }.ToMessageBody();
+
+                // Eingebettete Bilder (z. B. das Logo der Signatur) werden als „linked resources“
+                // mitgeschickt und im HTML über „cid:{ContentId}“ referenziert.
+                var bodyBuilder = new BodyBuilder { HtmlBody = htmlBody ?? string.Empty };
+
+                foreach (var image in inlineImages ?? [])
+                {
+                    if (image is null || string.IsNullOrWhiteSpace(image.ContentId) || image.Data is not { Length: > 0 })
+                        continue;
+
+                    var fileName = string.IsNullOrWhiteSpace(image.FileName)
+                        ? $"{image.ContentId}.png"
+                        : image.FileName;
+
+                    var contentType = string.IsNullOrWhiteSpace(image.ContentType)
+                        ? ImageContentTypes.DefaultContentType
+                        : image.ContentType;
+
+                    var resource = bodyBuilder.LinkedResources.Add(fileName, image.Data, ContentType.Parse(contentType));
+                    resource.ContentId = image.ContentId;
+                }
+
+                message.Body = bodyBuilder.ToMessageBody();
 
                 using var client = new SmtpClient
                 {

@@ -21,6 +21,7 @@ namespace CamCare.Persistence
         public DbSet<RepairOrderSerial> RepairOrderSerials { get; set; }
         public DbSet<MailTemplate> MailTemplates { get; set; }
         public DbSet<RepairOrderMailLog> RepairOrderMailLogs { get; set; }
+        public DbSet<MailSignature> MailSignatures { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -151,6 +152,24 @@ namespace CamCare.Persistence
             // Die SMTP-Konfiguration des E-Mail-Versands wird über den Abschnitt "Mail" der
             // appsettings.json gelesen (siehe CamCare.Options.MailOptions) und nicht mehr in
             // der Datenbank gespeichert.
+
+            // Die E-Mail-Signatur (inkl. Logo) wird in der Datenbank gepflegt, damit sie in den
+            // Einstellungen bearbeitet werden kann. Das Logo wird als Bilddatei gespeichert und
+            // beim Versand direkt in die E-Mail eingebettet.
+            modelBuilder.Entity<MailSignature>()
+                .Property(s => s.LogoFileName)
+                .HasMaxLength(260);
+
+            // Standard-Signatur; sie ist zunächst deaktiviert und wird erst nach dem Aktivieren
+            // in den Einstellungen an versendete E-Mails angehängt.
+            modelBuilder.Entity<MailSignature>()
+                .HasData(new MailSignature
+                {
+                    Id = 1,
+                    IsEnabled = false,
+                    HtmlTemplate = MailSettingsDefaults.SignatureHtmlTemplate,
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                });
 
             // Beispielvorlagen für die Status "Eingetroffen" (Id 2) und "Versendet" (Id 9).
             // Sie sind zunächst deaktiviert und werden erst nach dem Aktivieren in den

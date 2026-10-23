@@ -66,7 +66,7 @@ All domain entities inherit from `AuditableEntity` which provides:
 - `UpdatedAt` (DateTime?)
 - `ArchivedAt` (DateTime?)
 
-Key entities: `RepairOrder`, `RepairPosition`, `Defective`, `IncludedComponent`, `Employee`, `LogisticProvider`, `RepairOrderStatus`, `RepairOrderStatusHistory`, `MailTemplate`, `RepairOrderMailLog`, `DataStore`
+Key entities: `RepairOrder`, `RepairPosition`, `Defective`, `IncludedComponent`, `Employee`, `LogisticProvider`, `RepairOrderStatus`, `RepairOrderStatusHistory`, `MailTemplate`, `MailSignature`, `RepairOrderMailLog`, `DataStore`
 
 > The SMTP/mail configuration is **not** stored in the database; it is bound from the `Mail`
 > section of `appsettings.json` via `IOptions<MailOptions>` (`CamCare.Options`).

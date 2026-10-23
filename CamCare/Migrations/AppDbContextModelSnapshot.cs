@@ -287,6 +287,51 @@ namespace CamCare.Migrations
                         });
                 });
 
+            modelBuilder.Entity("CamCare.Domain.MailSignature", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("HtmlTemplate")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<byte[]>("LogoData")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("LogoFileName")
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MailSignatures");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            HtmlTemplate = "<p>Mit freundlichen Grüßen</p>\r\n<p><strong>Ihr CamCare-Team</strong></p>\r\n<p>{{Logo}}</p>",
+                            IsEnabled = false
+                        });
+                });
+
             modelBuilder.Entity("CamCare.Domain.MailTemplate", b =>
                 {
                     b.Property<int>("Id")
