@@ -17,7 +17,7 @@ namespace CamCare.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.11")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -287,6 +287,115 @@ namespace CamCare.Migrations
                         });
                 });
 
+            modelBuilder.Entity("CamCare.Domain.MailSignature", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("HtmlTemplate")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<byte[]>("LogoData")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("LogoFileName")
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MailSignatures");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            HtmlTemplate = "<p>Mit freundlichen Grüßen</p>\r\n<p><strong>Ihr CamCare-Team</strong></p>\r\n<p>{{Logo}}</p>",
+                            IsEnabled = false
+                        });
+                });
+
+            modelBuilder.Entity("CamCare.Domain.MailTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("BodyTemplate")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RepairOrderStatusId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SubjectTemplate")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RepairOrderStatusId");
+
+                    b.ToTable("MailTemplates");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            BodyTemplate = "<p>Guten Tag {{CustomerName}},</p>\r\n<p>Ihr Gerät (Seriennummer {{SerialNumber}}) ist zu Ihrem Reparaturauftrag\r\n<strong>{{OrderNumber}}</strong> bei uns eingetroffen.</p>\r\n<p>Eingetroffen am: {{ArrivedAt}}</p>\r\n<p>Wir beginnen mit der Begutachtung und melden uns mit den nächsten Schritten.</p>\r\n<p>Mit freundlichen Grüßen<br />Ihr CamCare-Team</p>",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsEnabled = false,
+                            Order = 1,
+                            RepairOrderStatusId = 2,
+                            SubjectTemplate = "Ihr Gerät ist eingetroffen – Auftrag {{OrderNumber}}"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            BodyTemplate = "<p>Guten Tag {{CustomerName}},</p>\r\n<p>Ihr Reparaturauftrag <strong>{{OrderNumber}}</strong> (Seriennummer {{SerialNumber}})\r\nwurde an Sie versendet.</p>\r\n<p>Lieferanschrift:<br />{{DeliveryAddressRecipient}}<br />{{DeliveryAddressStreet}}<br />{{DeliveryAddressCity}}</p>\r\n<p>Stand: {{CurrentStateAt}}</p>\r\n<p>Mit freundlichen Grüßen<br />Ihr CamCare-Team</p>",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsEnabled = false,
+                            Order = 2,
+                            RepairOrderStatusId = 9,
+                            SubjectTemplate = "Ihr Auftrag {{OrderNumber}} wurde versendet – {{Status}}"
+                        });
+                });
+
             modelBuilder.Entity("CamCare.Domain.RepairOrder", b =>
                 {
                     b.Property<int>("Id")
@@ -385,6 +494,56 @@ namespace CamCare.Migrations
                     b.HasIndex("RepairOrderStatusId");
 
                     b.ToTable("RepairOrders");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.RepairOrderMailLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("IsSuccess")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("MailTemplateId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Recipients")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("RepairOrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RepairOrderStatusId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("StatusName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MailTemplateId");
+
+                    b.HasIndex("RepairOrderId");
+
+                    b.ToTable("RepairOrderMailLogs");
                 });
 
             modelBuilder.Entity("CamCare.Domain.RepairOrderSerial", b =>
@@ -845,6 +1004,17 @@ namespace CamCare.Migrations
                     b.Navigation("RepairOrder");
                 });
 
+            modelBuilder.Entity("CamCare.Domain.MailTemplate", b =>
+                {
+                    b.HasOne("CamCare.Domain.RepairOrderStatus", "RepairOrderStatus")
+                        .WithMany()
+                        .HasForeignKey("RepairOrderStatusId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RepairOrderStatus");
+                });
+
             modelBuilder.Entity("CamCare.Domain.RepairOrder", b =>
                 {
                     b.HasOne("CamCare.Domain.DeliveryAddress", "DeliveryAddress")
@@ -867,6 +1037,24 @@ namespace CamCare.Migrations
                     b.Navigation("LogisticProvider");
 
                     b.Navigation("RepairOrderStatus");
+                });
+
+            modelBuilder.Entity("CamCare.Domain.RepairOrderMailLog", b =>
+                {
+                    b.HasOne("CamCare.Domain.MailTemplate", "MailTemplate")
+                        .WithMany()
+                        .HasForeignKey("MailTemplateId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CamCare.Domain.RepairOrder", "RepairOrder")
+                        .WithMany()
+                        .HasForeignKey("RepairOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MailTemplate");
+
+                    b.Navigation("RepairOrder");
                 });
 
             modelBuilder.Entity("CamCare.Domain.RepairOrderSerial", b =>

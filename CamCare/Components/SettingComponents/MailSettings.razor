@@ -1,0 +1,588 @@
+@using CamCare.Domain
+
+@*
+    Konfiguration des E-Mail-Versands:
+    - SMTP-Server (Versand als HTML-Mail über MailKit) – konfiguriert über die appsettings.json
+    - beliebig viele E-Mail-Vorlagen je Status (z. B. "Eingetroffen" und "Versendet")
+    - Testversand an eine manuell eingegebene Adresse
+    - Versandprotokoll (verhindert Mehrfachversand je Auftrag und Vorlage)
+*@
+
+<RadzenText TextStyle="TextStyle.H4">E-Mail-Versand</RadzenText>
+<RadzenText TextStyle="TextStyle.Body1" class="mb-2">
+    Der SMTP-Server wird über den Abschnitt <strong>Mail</strong> der <code>appsettings.json</code>
+    konfiguriert. Hier werden die E-Mail-Vorlagen verwaltet, die beim Erreichen eines Status
+    automatisch an die im Auftrag hinterlegten E-Mail-Adressen versendet werden.
+</RadzenText>
+
+<RadzenFieldset Text="SMTP-Konfiguration">
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap"
+                 class="mb-2">
+        <RadzenBadge
+        Text="@(_mailOptions.IsEnabled ? "Automatischer Versand aktiv" : "Automatischer Versand deaktiviert")"
+        BadgeStyle="@(_mailOptions.IsEnabled ? BadgeStyle.Success : BadgeStyle.Light)" IsPill="true" />
+        <RadzenBadge Text="@(_mailOptions.IsConfigured ? "SMTP konfiguriert" : "SMTP nicht konfiguriert")"
+                     BadgeStyle="@(_mailOptions.IsConfigured ? BadgeStyle.Success : BadgeStyle.Warning)" IsPill="true" />
+    </RadzenStack>
+
+    <RadzenStack Gap="0.25rem">
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center">
+            <RadzenText TextStyle="TextStyle.Subtitle2" Style="width:220px">Absenderadresse</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">@DisplayValue(_mailOptions.FromAddress)</RadzenText>
+        </RadzenStack>
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center">
+            <RadzenText TextStyle="TextStyle.Subtitle2" Style="width:220px">Absendername</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">@DisplayValue(_mailOptions.FromName)</RadzenText>
+        </RadzenStack>
+    </RadzenStack>
+</RadzenFieldset>
+
+@if (!_initialized)
+{
+    <RadzenProgressBar Indeterminate="true" Style="height:6px;margin-top:0.5rem" />
+}
+else
+{
+    <RadzenFieldset Text="E-Mail-Vorlagen" class="mt-3">
+        <RadzenText TextStyle="TextStyle.Subtitle2">
+            Für jeden Status kann eine Vorlage angelegt werden; es sind auch mehrere Vorlagen je Status möglich.
+            Beim Wechsel eines Auftrags in den jeweiligen Status werden alle aktiven Vorlagen an die im Auftrag
+            hinterlegten E-Mail-Adressen versendet – je Vorlage höchstens einmal pro Auftrag.
+        </RadzenText>
+
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" class="pt-2">
+            <InsertButton Text="Neue Vorlage" InsertClick="OnNewTemplateClicked" />
+            <RadzenButton Text="Aktualisieren" Icon="refresh" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                          Click="ReloadTemplatesAsync" />
+        </RadzenStack>
+
+        <RadzenDataGrid @ref="_templateGrid" TItem="MailTemplateVm" Data="@_templates" LoadData="OnLoadTemplatesData"
+                        IsLoading="_templatesLoading" Count="_templatesCount" AllowPaging="true" PageSize="10" Density="Density.Compact"
+                        AllowColumnResize="true" FilterMode="FilterMode.Simple"
+                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" ShowEmptyMessage="false" Style="width:100%"
+                        class="mt-2">
+            <Columns>
+                <RadzenDataGridColumn TItem="MailTemplateVm" Property="@nameof(MailTemplateVm.RepairOrderStatusId)"
+                                      Title="Status" Width="220px">
+                    <Template Context="item">
+                        <RadzenBadge Text="@GetStatusName(item.RepairOrderStatusId)"
+                                     Style="@GetStatusBadgeStyle(item.RepairOrderStatusId)" IsPill="true" />
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="MailTemplateVm" Property="@nameof(MailTemplateVm.SubjectTemplate)"
+                                      Title="Betreff" MinWidth="260px" />
+                <RadzenDataGridColumn TItem="MailTemplateVm" Property="@nameof(MailTemplateVm.IsEnabled)" Title="Aktiv"
+                                      Width="90px">
+                    <Template Context="item">
+                        <RadzenBadge Text="@(item.IsEnabled ? "Aktiv" : "Inaktiv")"
+                                     BadgeStyle="@(item.IsEnabled ? BadgeStyle.Success : BadgeStyle.Light)" IsPill="true" />
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="MailTemplateVm" Property="@nameof(MailTemplateVm.Order)" Title="Sortierung"
+                                      Width="110px" TextAlign="TextAlign.Right" SortOrder="SortOrder.Ascending" />
+                <RadzenDataGridColumn TItem="MailTemplateVm" Title="Aktionen" Width="130px" Sortable="false"
+                                      Filterable="false">
+                    <Template Context="item">
+                        <RadzenButton Icon="edit" Size="ButtonSize.Small" class="me-1"
+                                      Click="@(() => OnEditTemplateClicked(item))" />
+                        <RadzenButton Icon="delete" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger"
+                                      Click="@(() => OnDeleteTemplateClickedAsync(item))" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenFieldset>
+    @if (_template is not null)
+    {
+        <RadzenTemplateForm Data="@_template" TItem="MailTemplateVm" Submit="OnSaveTemplateClickedAsync"
+                            InvalidSubmit="OnInvalidSubmit">
+            <FluentValidator />
+
+            <RadzenFieldset Text="@_templateHeading" class="mt-3">
+                <RadzenStack Gap="0.5rem">
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.End"
+                                 Wrap="FlexWrap.Wrap">
+                        <RadzenFormField Text="Status, bei dem die Vorlage versendet wird" Style="width:320px">
+                            <RadzenDropDown TValue="int" Data="@_statuses" TextProperty="@nameof(RepairOrderStatusVm.Name)"
+                                            ValueProperty="@nameof(RepairOrderStatusVm.Id)" @bind-Value="_template.RepairOrderStatusId"
+                                            Style="width:100%" />
+                        </RadzenFormField>
+                        <RadzenFormField Text="Sortierung" Style="width:110px">
+                            <RadzenNumeric @bind-Value="_template.Order" Style="width:100%" Min="0" />
+                        </RadzenFormField>
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center"
+                                     Style="padding-top:1.4rem">
+                            <RadzenSwitch @bind-Value="_template.IsEnabled" />
+                            <RadzenLabel Text="Vorlage aktiv" />
+                        </RadzenStack>
+                    </RadzenStack>
+
+                    <RadzenFormField Text="Betreff" Style="width:100%">
+                        <RadzenTextBox @bind-Value="_template.SubjectTemplate" Style="width:100%" />
+                    </RadzenFormField>
+
+                    <RadzenText TextStyle="TextStyle.Subtitle2">Inhalt der E-Mail (HTML)</RadzenText>
+                    <RadzenHtmlEditor @bind-Value="_template.BodyTemplate" Style="height:350px" Execute="OnEditorExecuteAsync">
+                        <RadzenHtmlEditorUndo />
+                        <RadzenHtmlEditorRedo />
+                        <RadzenHtmlEditorSeparator />
+                        <RadzenHtmlEditorBold />
+                        <RadzenHtmlEditorItalic />
+                        <RadzenHtmlEditorUnderline />
+                        <RadzenHtmlEditorStrikeThrough />
+                        <RadzenHtmlEditorSeparator />
+                        <RadzenHtmlEditorAlignLeft />
+                        <RadzenHtmlEditorAlignCenter />
+                        <RadzenHtmlEditorAlignRight />
+                        <RadzenHtmlEditorSeparator />
+                        <RadzenHtmlEditorUnorderedList />
+                        <RadzenHtmlEditorOrderedList />
+                        <RadzenHtmlEditorSeparator />
+                        <RadzenHtmlEditorColor />
+                        <RadzenHtmlEditorRemoveFormat />
+                        <RadzenHtmlEditorSeparator />
+                        <RadzenHtmlEditorLink />
+                        <RadzenHtmlEditorUnlink />
+                        <RadzenHtmlEditorSeparator />
+                        <RadzenHtmlEditorCustomTool CommandName="InsertPlaceholder" Icon="data_object"
+                                                    Title="Ausgewählten Platzhalter an der Cursorposition einfügen" />
+                        <RadzenHtmlEditorCustomTool CommandName="InsertCondition" Icon="rule"
+                                                    Title="Bedingungsblock für den ausgewählten Platzhalter an der Cursorposition einfügen" />
+                        <RadzenHtmlEditorSeparator />
+                        <RadzenHtmlEditorSource />
+                    </RadzenHtmlEditor>
+
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.End"
+                                 Wrap="FlexWrap.Wrap" class="pt-2">
+                        <RadzenFormField Text="Platzhalter" Style="width:320px">
+                            <RadzenDropDown TValue="string" Data="@_placeholders"
+                                            TextProperty="@nameof(MailPlaceholder.Template)" ValueProperty="@nameof(MailPlaceholder.Token)"
+                                            @bind-Value="_selectedPlaceholder" AllowClear="true" Placeholder="Platzhalter auswählen"
+                                            Style="width:100%" />
+                        </RadzenFormField>
+                        <RadzenButton Text="An das Ende der Vorlage anfügen" Icon="add_box" ButtonStyle="ButtonStyle.Secondary"
+                                      Click="OnInsertPlaceholderClicked" />
+                        <RadzenButton Text="Bedingung anfügen (nur wenn gefüllt)" Icon="rule" ButtonStyle="ButtonStyle.Light"
+                                      Click="OnAppendConditionClicked" />
+                    </RadzenStack>
+
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" class="pt-2">
+                        <RadzenButton Text="@(_template.IsNew ? "Vorlage anlegen" : "Vorlage speichern")" Icon="save"
+                                      ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" Disabled="_isSavingTemplate" />
+                        <RadzenButton Text="Verwerfen" Icon="close" ButtonStyle="ButtonStyle.Secondary"
+                                      Click="OnDiscardTemplateClicked" />
+                    </RadzenStack>
+                </RadzenStack>
+            </RadzenFieldset>
+        </RadzenTemplateForm>
+    }
+    <RadzenFieldset Text="Verfügbare Platzhalter" class="mt-3">
+        <RadzenText TextStyle="TextStyle.Subtitle2">
+            Die Platzhalter werden beim Versand durch die Werte des Auftrags ersetzt. Werte werden HTML-kodiert;
+            unbekannte Platzhalter bleiben unverändert stehen.
+        </RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" class="mb-2">
+            Zusätzlich stehen Funktionen zur Verfügung: <code>{{Platzhalter|Ersatzwert}}</code> gibt den Ersatzwert aus,
+            wenn der Wert leer ist. <code>{{#if Platzhalter}} … {{else}} … {{/if}}</code> gibt den Inhalt nur aus, wenn der
+            Wert gefüllt ist (<code>{{#unless Platzhalter}} … {{/unless}}</code> für die Umkehrung),
+            <code>{{! Kommentar}}</code> wird nicht ausgegeben. Leere Zeilen vermeidet man, indem die bedingte Zeile
+            komplett eingeschlossen wird, z. B.
+            <code>{{#if DeliveryAddressCity}}&lt;p&gt;Lieferanschrift: {{DeliveryAddressCity}}&lt;/p&gt;{{/if}}</code>.
+        </RadzenText>
+        <RadzenDataGrid TItem="MailPlaceholder" Data="@_placeholders" Density="Density.Compact" AllowColumnResize="true"
+                        ShowEmptyMessage="false" Style="width:100%">
+            <Columns>
+                <RadzenDataGridColumn TItem="MailPlaceholder" Property="@nameof(MailPlaceholder.Template)"
+                                      Title="Platzhalter" Width="240px" />
+                <RadzenDataGridColumn TItem="MailPlaceholder" Property="@nameof(MailPlaceholder.Description)"
+                                      Title="Bedeutung" />
+                <RadzenDataGridColumn TItem="MailPlaceholder" Property="@nameof(MailPlaceholder.SampleValue)"
+                                      Title="Beispiel" Width="240px" />
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenFieldset>
+
+    <RadzenFieldset Text="Testversand" class="mt-3">
+        <RadzenStack Gap="0.5rem">
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.End" Wrap="FlexWrap.Wrap">
+                <RadzenFormField Text="Empfängeradresse" Style="width:300px">
+                    <RadzenTextBox @bind-Value="_testRecipient" Style="width:100%" Placeholder="name@example.com" />
+                </RadzenFormField>
+                <RadzenFormField Text="Auftrag für die Platzhalter (optional)" Style="width:350px">
+                    <RadzenDropDown TValue="int?" Data="@_orders" TextProperty="DisplayName" ValueProperty="Id"
+                                    @bind-Value="_testOrderId" AllowClear="true" Placeholder="Beispieldaten verwenden"
+                                    Style="width:100%" />
+                </RadzenFormField>
+                <RadzenButton Text="Test-E-Mail senden" Icon="send" ButtonStyle="ButtonStyle.Secondary"
+                              Disabled="_isTesting || _isSavingTemplate" Click="OnTestSendClickedAsync" />
+            </RadzenStack>
+            <RadzenText TextStyle="TextStyle.Subtitle2">
+                Es wird die aktuell bearbeitete Vorlage (bzw. ohne ausgewählte Vorlage eine einfache Test-E-Mail)
+                verwendet. Der Testversand ist auch bei deaktiviertem Hauptschalter möglich. Wird kein Auftrag
+                ausgewählt, werden Beispieldaten in die Vorlage eingesetzt.
+            </RadzenText>
+        </RadzenStack>
+    </RadzenFieldset>
+
+    <RadzenFieldset Text="Versandprotokoll" class="mt-3">
+        <RadzenText TextStyle="TextStyle.Subtitle2">
+            Automatisch versendete E-Mails. Ein Auftrag erhält je Vorlage höchstens eine erfolgreich versendete
+            E-Mail.
+        </RadzenText>
+        <RadzenDataGrid TItem="RepairOrderMailLogVm" Data="@_log" LoadData="OnLoadLogData" IsLoading="_isLogLoading"
+                        Count="_logTotalCount" AllowPaging="true" PageSize="10" Density="Density.Compact" AllowColumnResize="true"
+                        ShowEmptyMessage="false" Style="width:100%" class="mt-2">
+            <Columns>
+                <RadzenDataGridColumn TItem="RepairOrderMailLogVm" Property="@nameof(RepairOrderMailLogVm.SentAt)"
+                                      Title="Versendet am" Width="150px" FormatString="{0:dd.MM.yyyy HH:mm}"
+                                      SortOrder="SortOrder.Descending" />
+                <RadzenDataGridColumn TItem="RepairOrderMailLogVm" Property="@nameof(RepairOrderMailLogVm.RepairOrderId)"
+                                      Title="Auftrag" Width="90px" TextAlign="TextAlign.Right" />
+                <RadzenDataGridColumn TItem="RepairOrderMailLogVm" Property="@nameof(RepairOrderMailLogVm.MailTemplateId)"
+                                      Title="Vorlage" Width="90px" TextAlign="TextAlign.Right" />
+                <RadzenDataGridColumn TItem="RepairOrderMailLogVm" Property="@nameof(RepairOrderMailLogVm.StatusName)"
+                                      Title="Status" Width="160px" />
+                <RadzenDataGridColumn TItem="RepairOrderMailLogVm" Property="@nameof(RepairOrderMailLogVm.Recipients)"
+                                      Title="Empfänger" MinWidth="200px" />
+                <RadzenDataGridColumn TItem="RepairOrderMailLogVm" Property="@nameof(RepairOrderMailLogVm.Subject)"
+                                      Title="Betreff" MinWidth="200px" />
+                <RadzenDataGridColumn TItem="RepairOrderMailLogVm" Title="Ergebnis" Width="150px">
+                    <Template Context="item">
+                        <RadzenBadge Text="@(item.IsSuccess ? "Versendet" : "Fehlgeschlagen")"
+                                     BadgeStyle="@(item.IsSuccess ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" />
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="RepairOrderMailLogVm" Property="@nameof(RepairOrderMailLogVm.ErrorMessage)"
+                                      Title="Fehler" MinWidth="200px" />
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenFieldset>
+}
+@code {
+    private const string InsertPlaceholderCommand = "InsertPlaceholder";
+    private const string InsertConditionCommand = "InsertCondition";
+
+    [Inject] protected ILogger<MailSettings> Logger { get; set; } = default!;
+    [Inject] protected IOptions<MailOptions> MailOptionsAccessor { get; set; } = default!;
+    [Inject] protected IMailTestService MailTestService { get; set; } = default!;
+    [Inject] protected IMailTemplateService MailTemplateService { get; set; } = default!;
+    [Inject] protected IRepairOrderMailLogService MailLogService { get; set; } = default!;
+    [Inject] protected IRepairOrderService RepairOrderService { get; set; } = default!;
+    [Inject] protected IMailTemplateRenderer TemplateRenderer { get; set; } = default!;
+    [Inject] protected IMasterdataService MasterdataService { get; set; } = default!;
+    [Inject] protected DialogService DialogService { get; set; } = default!;
+    [Inject] protected NotificationService NotificationService { get; set; } = default!;
+
+    private RadzenDataGrid<MailTemplateVm> _templateGrid = default!;
+
+    private MailOptions _mailOptions = new();
+    private MailTemplateVm? _template;
+    private IReadOnlyList<MailPlaceholder> _placeholders = [];
+    private IList<RepairOrderStatusVm> _statuses = [];
+    private IList<RepairOrderVm> _orders = [];
+    private IList<MailTemplateVm>? _templates;
+    private IList<RepairOrderMailLogVm>? _log;
+
+    private string? _selectedPlaceholder;
+    private string? _testRecipient;
+    private int? _testOrderId;
+
+    private int _templatesCount;
+    private int _logTotalCount;
+    private bool _templatesLoading;
+    private bool _isLogLoading;
+    private bool _isSavingTemplate;
+    private bool _isTesting;
+    private bool _initialized;
+
+    private string _templateHeading
+    {
+        get
+        {
+            var template = _template;
+            if (template is null)
+                return string.Empty;
+
+            return template.IsNew
+                ? "Neue E-Mail-Vorlage"
+                : $"E-Mail-Vorlage #{template.Id} – {GetStatusName(template.RepairOrderStatusId)}";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _placeholders = TemplateRenderer.GetPlaceholders();
+        _statuses = MasterdataService.Get<RepairOrderStatusVm>()
+            .OrderBy(s => s.Order)
+            .ThenBy(s => s.Name)
+            .ToList();
+
+        _mailOptions = MailOptionsAccessor.Value;
+
+        await LoadTestOrdersAsync();
+
+        _initialized = true;
+    }
+
+    /// <summary>Liefert den Status zu einer Id (aus den Stammdaten).</summary>
+    private RepairOrderStatusVm? FindStatus(int statusId)
+        => _statuses.FirstOrDefault(s => s.Id == statusId);
+
+    private string GetStatusName(int statusId)
+        => FindStatus(statusId)?.Name ?? $"Status {statusId}";
+
+    private string GetStatusBadgeStyle(int statusId)
+        => FindStatus(statusId)?.BadageStyle ?? string.Empty;
+
+    private async Task LoadTestOrdersAsync()
+    {
+        try
+        {
+            // Die neuesten Aufträge für den optionalen Testversand mit echten Auftragsdaten.
+            var response = await RepairOrderService.GetAllAsync(new LoadDataArgs { Top = 50, OrderBy = "Id desc" }, false);
+            if (response.Success && response.Data is not null)
+                _orders = response.Data.Items.ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fehler beim Laden der Aufträge für den Testversand.");
+        }
+    }
+
+    private void OnInvalidSubmit()
+    {
+        NotificationService.Notify(NotificationSeverity.Warning, "E-Mail-Vorlage",
+            "Bitte die markierten Eingaben prüfen und korrigieren.");
+    }
+
+    /// <summary>Zeigt an, ob ein optionaler Wert konfiguriert ist.</summary>
+    private static string DisplayValue(string? value)
+        => string.IsNullOrWhiteSpace(value) ? "– nicht konfiguriert –" : value;
+
+    /// <summary>Deutsche Bezeichnung der in der appsettings.json eingestellten Verschlüsselung.</summary>
+    private static string GetSecurityDescription(MailSecurityMode security) => security switch
+    {
+        MailSecurityMode.None => "Unverschlüsselt",
+        MailSecurityMode.SslOnConnect => "SSL/TLS (SslOnConnect)",
+        _ => "STARTTLS"
+    };
+
+    // ---- E-Mail-Vorlagen ----
+
+    private async Task OnLoadTemplatesData(LoadDataArgs args)
+    {
+        _templatesLoading = true;
+        try
+        {
+            var response = await MailTemplateService.GetAllAsync(args);
+            if (response.Success && response.Data is not null)
+            {
+                _templates = response.Data.Items.ToList();
+                _templatesCount = response.Data.TotalCount;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fehler beim Laden der E-Mail-Vorlagen.");
+        }
+        finally
+        {
+            _templatesLoading = false;
+        }
+    }
+
+    private async Task ReloadTemplatesAsync()
+    {
+        if (_templateGrid is not null)
+            await _templateGrid.Reload();
+    }
+
+    private void OnNewTemplateClicked(MouseEventArgs args)
+    {
+        _template = new MailTemplateVm
+        {
+            RepairOrderStatusId = _statuses.FirstOrDefault()?.Id ?? 0,
+            IsEnabled = true,
+            Order = _templatesCount + 1,
+            SubjectTemplate = MailSettingsDefaults.SubjectTemplate,
+            BodyTemplate = MailSettingsDefaults.BodyTemplate
+        };
+
+        NotificationService.Notify(NotificationSeverity.Info, "Neue E-Mail-Vorlage",
+            "Bitte Status, Betreff und Inhalt festlegen und die Vorlage anlegen.", 4000);
+    }
+
+    private void OnEditTemplateClicked(MailTemplateVm item)
+    {
+        _template = item;
+    }
+
+    private async Task OnDeleteTemplateClickedAsync(MailTemplateVm item)
+    {
+        var confirmed = await DialogService.Confirm(
+            $"Soll die E-Mail-Vorlage für den Status \"{GetStatusName(item.RepairOrderStatusId)}\" wirklich gelöscht werden?",
+            "E-Mail-Vorlage löschen",
+            new ConfirmOptions { OkButtonText = "Ja", CancelButtonText = "Nein" });
+
+        if (confirmed != true)
+            return;
+
+        var response = await MailTemplateService.DeleteAsync(item.Id, false);
+        if (!response.Success)
+            return;
+
+        if (_template?.Id == item.Id)
+            _template = null;
+
+        await ReloadTemplatesAsync();
+    }
+
+    private async Task OnDiscardTemplateClicked(MouseEventArgs args)
+    {
+        _template = null;
+        await ReloadTemplatesAsync();
+    }
+
+    private async Task OnSaveTemplateClickedAsync(MailTemplateVm vm)
+    {
+        if (_isSavingTemplate)
+            return;
+
+        var isNew = vm.IsNew;
+        _isSavingTemplate = true;
+        try
+        {
+            var response = isNew
+                ? await MailTemplateService.CreateAsync(vm)
+                : await MailTemplateService.UpdateAsync(vm.Id, vm);
+
+            if (response.Success)
+            {
+                _template = response.Data ?? vm;
+
+                NotificationService.Notify(NotificationSeverity.Success, "E-Mail-Vorlage",
+                    isNew ? "Die Vorlage wurde angelegt." : "Die Vorlage wurde gespeichert.");
+
+                await ReloadTemplatesAsync();
+            }
+        }
+        finally
+        {
+            _isSavingTemplate = false;
+        }
+    }
+
+    private async Task OnLoadLogData(LoadDataArgs args)
+    {
+        _isLogLoading = true;
+        try
+        {
+            var response = await MailLogService.GetAllAsync(args);
+            if (response.Success && response.Data is not null)
+            {
+                _log = response.Data.Items.ToList();
+                _logTotalCount = response.Data.TotalCount;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fehler beim Laden des Versandprotokolls.");
+        }
+        finally
+        {
+            _isLogLoading = false;
+        }
+    }
+
+    private async Task OnTestSendClickedAsync(MouseEventArgs args)
+    {
+        if (_isTesting)
+            return;
+
+        if (string.IsNullOrWhiteSpace(_testRecipient))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Testversand",
+                "Bitte eine Empfängeradresse für den Testversand eingeben.");
+            return;
+        }
+
+        _isTesting = true;
+        try
+        {
+            var recipient = _testRecipient.Trim();
+            var response = await MailTestService.SendTestMailAsync(_template, recipient, _testOrderId);
+
+            if (response.Success)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Testversand",
+                    $"Die Test-E-Mail wurde an {recipient} versendet.");
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Testversand fehlgeschlagen",
+                    response.Message ?? string.Empty);
+            }
+        }
+        finally
+        {
+            _isTesting = false;
+        }
+    }
+
+    /// <summary>
+    /// Fügt den ausgewählten Platzhalter am Ende der Vorlage ein.
+    /// </summary>
+    private void OnInsertPlaceholderClicked(MouseEventArgs args)
+    {
+        if (_template is null || !TryGetSelectedPlaceholder(out var token))
+            return;
+
+        _template.BodyTemplate += "<p>{{" + token + "}}</p>";
+    }
+
+    /// <summary>
+    /// Fügt am Ende der Vorlage einen Bedingungsblock für den ausgewählten Platzhalter ein:
+    /// der Inhalt wird nur ausgegeben, wenn der Platzhalter gefüllt ist.
+    /// </summary>
+    private void OnAppendConditionClicked(MouseEventArgs args)
+    {
+        if (_template is null || !TryGetSelectedPlaceholder(out var token))
+            return;
+
+        _template.BodyTemplate += "<p>{{#if " + token + "}}Inhalt für {{" + token + "}}{{/if}}</p>";
+    }
+
+    /// <summary>
+    /// Fügt den ausgewählten Platzhalter bzw. einen Bedingungsblock über das Editor-Werkzeug
+    /// an der Cursorposition ein.
+    /// </summary>
+    private async Task OnEditorExecuteAsync(HtmlEditorExecuteEventArgs args)
+    {
+        if (args.CommandName != InsertPlaceholderCommand && args.CommandName != InsertConditionCommand)
+            return;
+
+        if (!TryGetSelectedPlaceholder(out var token))
+            return;
+
+        var html = args.CommandName == InsertConditionCommand
+            ? "{{#if " + token + "}}{{/if}}"
+            : "{{" + token + "}}";
+
+        await args.Editor.ExecuteCommandAsync(HtmlEditorCommands.InsertHtml, html);
+    }
+
+    /// <summary>
+    /// Liest den in der Auswahlliste gewählten Platzhalter und weist auf eine fehlende Auswahl hin.
+    /// </summary>
+    private bool TryGetSelectedPlaceholder(out string token)
+    {
+        token = _selectedPlaceholder?.Trim() ?? string.Empty;
+
+        if (token.Length > 0)
+            return true;
+
+        NotificationService.Notify(NotificationSeverity.Warning, "Platzhalter",
+            "Bitte zuerst in der Auswahlliste einen Platzhalter auswählen.");
+        return false;
+    }
+}

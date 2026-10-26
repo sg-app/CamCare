@@ -1,0 +1,275 @@
+@using CamCare.Domain
+
+@*
+    Konfiguration der E-Mail-Signatur:
+    - Signaturtext (HTML) mit dem Platzhalter {{Logo}} für die Position des Logos
+    - Logo als Bilddatei; es wird in die E-Mail eingebettet (kein externer Bildaufruf nötig)
+    - Die Signatur wird beim automatischen Statusversand und beim Testversand angehängt.
+*@
+
+<RadzenText TextStyle="TextStyle.H4">E-Mail-Signatur</RadzenText>
+<RadzenText TextStyle="TextStyle.Body1" class="mb-2">
+    Die Signatur wird an jede über CamCare versendete E-Mail angehängt – sowohl beim automatischen
+    Statusversand als auch beim Testversand. Der Inhalt wird als HTML gepflegt; der Platzhalter
+    <code>@MailSettingsDefaults.SignatureLogoPlaceholder</code> markiert die Stelle, an der das
+    Logo eingefügt wird. Das Logo wird als Bilddatei hinterlegt und direkt in die E-Mail
+    eingebettet, damit es auch bei blockierten externen Bildern angezeigt wird.
+</RadzenText>
+
+@if (!_initialized)
+{
+    <RadzenProgressBar Indeterminate="true" Style="height:6px;margin-top:0.5rem" />
+}
+else if (_signature is not null)
+{
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" class="mb-2"
+                 Wrap="FlexWrap.Wrap">
+        <RadzenBadge Text="@(_signature.IsEnabled ? "Signatur aktiv" : "Signatur deaktiviert")"
+                     BadgeStyle="@(_signature.IsEnabled ? BadgeStyle.Success : BadgeStyle.Light)" IsPill="true" />
+        <RadzenBadge Text="@(_signature.HasLogo ? "Logo hinterlegt" : "kein Logo")"
+                     BadgeStyle="@(_signature.HasLogo ? BadgeStyle.Success : BadgeStyle.Warning)" IsPill="true" />
+    </RadzenStack>
+
+    <RadzenTemplateForm Data="@_signature" TItem="MailSignatureVm" Submit="OnSaveClickedAsync"
+                        InvalidSubmit="OnInvalidSubmit">
+        <FluentValidator />
+
+        <RadzenFieldset Text="Signatur" class="mt-3">
+            <RadzenStack Gap="0.5rem">
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                    <RadzenSwitch @bind-Value="_signature.IsEnabled" />
+                    <RadzenLabel Text="Signatur an versendete E-Mails anhängen" />
+                </RadzenStack>
+
+                <RadzenText TextStyle="TextStyle.Subtitle2">Inhalt der Signatur (HTML)</RadzenText>
+                <RadzenHtmlEditor @bind-Value="_signature.HtmlTemplate" Style="height:250px" Execute="OnEditorExecuteAsync">
+                    <RadzenHtmlEditorUndo />
+                    <RadzenHtmlEditorRedo />
+                    <RadzenHtmlEditorSeparator />
+                    <RadzenHtmlEditorBold />
+                    <RadzenHtmlEditorItalic />
+                    <RadzenHtmlEditorUnderline />
+                    <RadzenHtmlEditorStrikeThrough />
+                    <RadzenHtmlEditorSeparator />
+                    <RadzenHtmlEditorAlignLeft />
+                    <RadzenHtmlEditorAlignCenter />
+                    <RadzenHtmlEditorAlignRight />
+                    <RadzenHtmlEditorSeparator />
+                    <RadzenHtmlEditorUnorderedList />
+                    <RadzenHtmlEditorOrderedList />
+                    <RadzenHtmlEditorSeparator />
+                    <RadzenHtmlEditorColor />
+                    <RadzenHtmlEditorRemoveFormat />
+                    <RadzenHtmlEditorSeparator />
+                    <RadzenHtmlEditorLink />
+                    <RadzenHtmlEditorUnlink />
+                    <RadzenHtmlEditorSeparator />
+                    <RadzenHtmlEditorCustomTool CommandName="@InsertLogoCommand" Icon="image"
+                                                Title="Logo der Signatur an der Cursorposition einfügen" />
+                    <RadzenHtmlEditorSeparator />
+                    <RadzenHtmlEditorSource />
+                </RadzenHtmlEditor>
+
+                <RadzenButton Text="Logo-Platzhalter an das Ende der Signatur anfügen" Icon="add_photo_alternate"
+                              ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small"
+                              Click="OnInsertLogoPlaceholderClicked" />
+            </RadzenStack>
+        </RadzenFieldset>
+
+        <RadzenFieldset Text="Logo" class="mt-3">
+            <RadzenStack Gap="0.5rem">
+                <RadzenText TextStyle="TextStyle.Subtitle2">
+                    Empfohlen: PNG mit transparentem Hintergrund, maximal @MaxLogoSizeText. Die Breite des
+                    Logos wird in der E-Mail auf 220 Pixel begrenzt. Enthält die Signatur keinen
+                    Logo-Platzhalter, wird das Logo automatisch an das Ende der Signatur angehängt.
+                </RadzenText>
+
+                <div style="display:inline-block;padding:0.5rem 0.75rem;border:1px dashed #c0c0c0;border-radius:4px">
+                    <InputFile OnChange="OnLogoSelectedAsync" Accept="image/*" aria-label="Logo der E-Mail-Signatur" />
+                </div>
+
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" AlignItems="AlignItems.Center"
+                             Wrap="FlexWrap.Wrap">
+                    <RadzenText TextStyle="TextStyle.Body2">
+                        @(_signature.HasLogo
+                            ? $"Hinterlegt: {_signature.LogoFileName} ({_signature.LogoSizeText})"
+                            : "Es ist kein Logo hinterlegt.")
+                    </RadzenText>
+                    <RadzenButton Text="Hinterlegtes Logo entfernen" Icon="delete" ButtonStyle="ButtonStyle.Light"
+                                  Size="ButtonSize.ExtraSmall" Disabled="@(!_signature.HasLogo)"
+                                  Click="OnRemoveLogoClicked" />
+                </RadzenStack>
+
+                @if (_signature.LogoDataUrl is not null)
+                {
+                    <div style="display:inline-block;max-width:280px;padding:0.5rem;border:1px solid #e0e0e0;border-radius:4px;text-align:center">
+                        <img src="@_signature.LogoDataUrl" alt="Vorschau des Logos"
+                             style="max-width:220px;max-height:120px" />
+                    </div>
+                }
+            </RadzenStack>
+        </RadzenFieldset>
+
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" class="pt-2">
+            <RadzenButton ButtonType="ButtonType.Submit" Text="Signatur speichern" Icon="save"
+                          ButtonStyle="ButtonStyle.Primary" Disabled="_isSaving" />
+            <RadzenButton Text="Zurücksetzen" Icon="undo" ButtonStyle="ButtonStyle.Light" Disabled="_isSaving"
+                          Click="OnRevertClickedAsync" />
+        </RadzenStack>
+    </RadzenTemplateForm>
+}
+
+@code {
+    /// <summary>Name des Editor-Werkzeugs zum Einfügen des Logo-Platzhalters.</summary>
+    private const string InsertLogoCommand = "InsertSignatureLogo";
+
+    /// <summary>Maximale Größe des Logos (2 MB).</summary>
+    private const int MaxLogoSizeBytes = 2 * 1024 * 1024;
+
+    /// <summary>Anzeigetext der maximalen Logogröße.</summary>
+    private const string MaxLogoSizeText = "2 MB";
+
+    [Inject] protected ILogger<MailSignatureSettings> Logger { get; set; } = default!;
+    [Inject] protected IMailSignatureService MailSignatureService { get; set; } = default!;
+    [Inject] protected NotificationService NotificationService { get; set; } = default!;
+
+    private MailSignatureVm? _signature;
+    private bool _isSaving;
+    private bool _initialized;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSignatureAsync();
+        _initialized = true;
+    }
+
+    private async Task LoadSignatureAsync()
+    {
+        var response = await MailSignatureService.GetSignatureAsync();
+
+        if (response.Success && response.Data is not null)
+        {
+            _signature = response.Data;
+            return;
+        }
+
+        NotificationService.Notify(NotificationSeverity.Error, "E-Mail-Signatur",
+            response.Message ?? "Die E-Mail-Signatur konnte nicht geladen werden.");
+    }
+
+    private void OnInvalidSubmit()
+    {
+        NotificationService.Notify(NotificationSeverity.Warning, "E-Mail-Signatur",
+            "Bitte die markierten Eingaben prüfen und korrigieren.");
+    }
+
+    private async Task OnSaveClickedAsync(MailSignatureVm vm)
+    {
+        if (_isSaving)
+            return;
+
+        var isNew = vm.IsNew;
+        _isSaving = true;
+        try
+        {
+            var response = isNew
+                ? await MailSignatureService.CreateAsync(vm)
+                : await MailSignatureService.UpdateAsync(vm.Id, vm);
+
+            if (response.Success)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "E-Mail-Signatur",
+                    isNew ? "Die Signatur wurde angelegt." : "Die Signatur wurde gespeichert.");
+
+                await LoadSignatureAsync();
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "E-Mail-Signatur",
+                    response.Message ?? "Die Signatur konnte nicht gespeichert werden.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fehler beim Speichern der E-Mail-Signatur.");
+            NotificationService.Notify(NotificationSeverity.Error, "E-Mail-Signatur",
+                "Die Signatur konnte nicht gespeichert werden.");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    /// <summary>Verwirft die Änderungen und lädt die gespeicherte Signatur erneut.</summary>
+    private async Task OnRevertClickedAsync(MouseEventArgs args)
+    {
+        await LoadSignatureAsync();
+
+        NotificationService.Notify(NotificationSeverity.Info, "E-Mail-Signatur",
+            "Die gespeicherte Signatur wurde neu geladen.", 4000);
+    }
+
+    /// <summary>
+    /// Liest die ausgewählte Logo-Datei ein und übernimmt sie in die Signatur. Das Bild wird
+    /// erst beim Speichern in der Datenbank abgelegt.
+    /// </summary>
+    private async Task OnLogoSelectedAsync(InputFileChangeEventArgs args)
+    {
+        if (_signature is null)
+            return;
+
+        try
+        {
+            var file = args.File;
+
+            if (file.Size > MaxLogoSizeBytes)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "E-Mail-Signatur",
+                    $"Das Logo darf maximal {MaxLogoSizeText} groß sein.");
+                return;
+            }
+
+            await using var stream = file.OpenReadStream(MaxLogoSizeBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+
+            _signature.LogoData = buffer.ToArray();
+            _signature.LogoFileName = file.Name;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fehler beim Einlesen des Logos der E-Mail-Signatur.");
+            NotificationService.Notify(NotificationSeverity.Error, "E-Mail-Signatur",
+                "Das Logo konnte nicht eingelesen werden.");
+        }
+    }
+
+    /// <summary>Entfernt das hinterlegte Logo aus der Signatur.</summary>
+    private void OnRemoveLogoClicked(MouseEventArgs args)
+    {
+        if (_signature is null)
+            return;
+
+        _signature.LogoData = null;
+        _signature.LogoFileName = null;
+    }
+
+    /// <summary>Fügt den Logo-Platzhalter am Ende der Signatur ein.</summary>
+    private void OnInsertLogoPlaceholderClicked(MouseEventArgs args)
+    {
+        if (_signature is null)
+            return;
+
+        _signature.HtmlTemplate += $"<p>{MailSettingsDefaults.SignatureLogoPlaceholder}</p>";
+    }
+
+    /// <summary>Fügt den Logo-Platzhalter über das Editor-Werkzeug an der Cursorposition ein.</summary>
+    private async Task OnEditorExecuteAsync(HtmlEditorExecuteEventArgs args)
+    {
+        if (args.CommandName != InsertLogoCommand)
+            return;
+
+        await args.Editor.ExecuteCommandAsync(HtmlEditorCommands.InsertHtml, MailSettingsDefaults.SignatureLogoPlaceholder);
+    }
+}

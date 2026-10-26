@@ -116,6 +116,17 @@ Die Verbindungszeichenfolgen und Optionen werden über `appsettings.json` bzw. `
     "AccessKey": "...",
     "SecretKey": "...",
     "BucketName": "..."
+  },
+  "Mail": {
+    "IsEnabled": false,
+    "SmtpHost": "smtp.example.com",
+    "SmtpPort": 587,
+    "Security": "StartTls",
+    "UserName": "",
+    "Password": "",
+    "TimeoutSeconds": 30,
+    "FromAddress": "noreply@example.com",
+    "FromName": "CamCare Reparatur"
   }
 }
 ```
@@ -183,6 +194,11 @@ Die Anwendung ist danach unter `http://localhost:8085` erreichbar.
 | `UploadLink__Secret`                 | Geheimer Schlüssel zur Signierung der mobilen Upload-Links           |
 | `UploadLink__TokenLifetimeMinutes`   | Gültigkeitsdauer eines Upload-Links in Minuten (Standard: 120)       |
 | `UploadLink__PublicBaseUrl`          | Öffentliche Basis-URL für QR-Code/Link des mobilen Uploads           |
+| `Mail__IsEnabled`                    | Hauptschalter für den automatischen E-Mail-Versand (Standard: `false`) |
+| `Mail__SmtpHost` / `Mail__SmtpPort`  | SMTP-Server und Port (Standard-Port: `587`)                          |
+| `Mail__Security`                     | Verschlüsselung: `None`, `StartTls` oder `SslOnConnect` (Standard: `StartTls`) |
+| `Mail__FromAddress` / `Mail__FromName` | Absenderadresse und -name der versendeten E-Mails                  |
+| `Mail__UserName` / `Mail__Password`  | Zugangsdaten für die SMTP-Authentifizierung (optional)              |
 | `ASPNETCORE_ENVIRONMENT`             | ASP.NET-Umgebung (Development/Production)                            |
 
 ## API-Endpunkte
@@ -261,6 +277,86 @@ Die mobile Upload-Seite wird **gezielt** über einen eigenen Reverse-Proxy-Host 
 7. **Abgelaufene/ungültige Tokens** beantworten sowohl `GET /u/{token}` als auch
    `POST /api/upload/{token}` mit **HTTP 404** – der Upload-Host verrät dadurch nichts über
    die Existenz eines Auftrags und alte QR-Codes werden als „Link abgelaufen" angezeigt.
+
+## Automatischer E-Mail-Versand
+
+Der E-Mail-Versand wird über den Abschnitt **`Mail`** der `appsettings.json` (bzw. über
+Umgebungsvariablen wie `Mail__SmtpHost`) konfiguriert – die SMTP-Zugangsdaten werden **nicht**
+in der Datenbank gespeichert. Unter **Einstellungen → EMail** (nur für die Benutzergruppe
+`admin`) werden die wirksamen Werte nur lesend angezeigt; dort werden die E-Mail-Vorlagen und
+das Versandprotokoll verwaltet. Unter **Einstellungen → Signatur** wird die E-Mail-Signatur
+inkl. Logo gepflegt:
+
+- **SMTP-Server**: Server, Port, Verschlüsselung (`None` / `StartTls` / `SslOnConnect`),
+  Absenderadresse und -name sowie optional Benutzername/Passwort und Zeitlimit.
+  Der Versand erfolgt als HTML-Mail über **MailKit**.
+- **Hauptschalter**: `Mail:IsEnabled` schaltet den automatischen Statusversand ein bzw. aus
+  (Standard: `false`). Der Testversand ist auch bei deaktiviertem Hauptschalter möglich.
+- **Automatischer Statusversand**: Es können **beliebig viele E-Mail-Vorlagen** angelegt werden –
+  jeweils für einen Status des Reparaturauftrags (z. B. eine Vorlage für **„Eingetroffen"** und eine
+  für **„Versendet"**); auch mehrere Vorlagen für denselben Status sind möglich. Wechselt ein
+  Reparaturauftrag in einen Status, werden alle für diesen Status **aktiven** Vorlagen an alle im
+  Auftrag hinterlegten E-Mail-Adressen versendet. Betreff und Inhalt (HTML) werden mit dem
+  **RadzenHtmlEditor** bearbeitet und können Platzhalter in der Schreibweise `{{Token}}` enthalten
+  (z. B. `{{OrderNumber}}`, `{{SerialNumber}}`, `{{Status}}`, `{{CustomerName}}`,
+  `{{Defects}}`, `{{DeliveryAddressCity}}`). Die Platzhalter werden beim Versand durch die
+  Werte des Auftrags ersetzt (HTML-kodiert); unbekannte Platzhalter bleiben unverändert
+  stehen. Eine Übersicht aller Platzhalter inkl. Beispielwerten ist direkt auf der Seite
+  verfügbar. Neue Vorlagen werden für die Status „Eingetroffen" und „Versendet" bereits
+  als deaktivierte Beispielvorlagen angelegt.
+
+  Neben einfachen Platzhaltern stehen **Funktionen** zur Verfügung (siehe
+  `MailTemplateParser`), mit denen sich z. B. leere Zeilen vermeiden lassen:
+
+  | Schreibweise | Bedeutung |
+  | --- | --- |
+  | `{{Token}}` | Wert des Platzhalters (leer, wenn kein Wert vorhanden ist) |
+  | `{{Token\|Ersatzwert}}` | Ersatzwert, wenn der Wert leer ist (wird wie Vorlagen-HTML ausgegeben) |
+  | `{{#if Token}} … {{/if}}` | Inhalt nur bei gefülltem Wert, optional mit `{{else}}` |
+  | `{{#unless Token}} … {{/unless}}` | Inhalt nur bei leerem Wert |
+  | `{{! Kommentar}}` | wird nicht ausgegeben |
+
+  Beispiel – die Lieferanschrift wird nur ausgegeben, wenn sie gepflegt ist
+  (statt einer leeren Zeile):
+
+  ```html
+  {{#if DeliveryAddressCity}}<p>Lieferanschrift:<br />{{DeliveryAddressRecipient}}<br />
+  {{DeliveryAddressStreet}}<br />{{DeliveryAddressCity}}</p>{{/if}}
+  ```
+
+  Die Blockstruktur muss vollständig sein: Fehlt z. B. `{{/if}}`, wird die Vorlage wie
+  Text behandelt – Platzhalter funktionieren weiterhin, die Block-Platzhalter bleiben
+  sichtbar stehen, damit der Fehler auffällt. Zum Einfügen von Platzhaltern und
+  Bedingungsblöcken stehen in der Bearbeitungsleiste des HTML-Editors eigene
+  Werkzeuge sowie Schaltflächen unterhalb des Inhalts zur Verfügung.
+- **Testversand**: Die aktuell bearbeitete Vorlage kann unabhängig vom Hauptschalter an eine manuell
+  eingegebene Adresse getestet werden. Optional werden dabei die Daten eines bestehenden Auftrags
+  eingesetzt, ansonsten Beispieldaten. Ohne ausgewählte Vorlage wird eine einfache Test-E-Mail
+  versendet (Prüfung der SMTP-Einstellungen).
+- **Signatur mit Logo** (Einstellungen → Signatur): Eine Signatur wird an **jede** über CamCare
+  versendete E-Mail angehängt – sowohl beim automatischen Statusversand als auch beim Testversand.
+  - Der Inhalt wird als HTML gepflegt (RadzenHtmlEditor). Der Platzhalter `{{Logo}}` markiert die
+    Stelle, an der das Logo ausgegeben wird; enthält die Signatur keinen Platzhalter, wird das Logo
+    an das Ende der Signatur angehängt.
+  - Das Logo wird als Bilddatei (z. B. PNG, maximal 2&#8201;MB) in den Einstellungen hinterlegt und in
+    der Datenbank gespeichert. Beim Versand wird es **in die E-Mail eingebettet** (Content-Id
+    `cid:…`) und nicht über eine externe URL geladen, damit es auch bei blockierten externen Bildern
+    angezeigt wird. Die Breite wird in der E-Mail auf 220 Pixel begrenzt.
+  - Über den Schalter **„Signatur an versendete E-Mails anhängen“** wird die Signatur ein- bzw.
+    ausgeschaltet. Eine Standard-Signatur wird bei der Installation angelegt (zunächst deaktiviert).
+
+**Kein Mehrfachversand:** Jeder Versand wird im Versandprotokoll (`RepairOrderMailLogs`)
+festgehalten. Für einen Auftrag und eine Vorlage wird höchstens **eine erfolgreich
+versendete** E-Mail zugelassen – auch wenn der Status mehrfach geändert wird (z. B.
+Status A → „Eingetroffen" → Status B → „Eingetroffen"). Fehlgeschlagene Versuche werden
+ebenfalls protokolliert, blockieren aber keinen erneuten Versuch bei einer späteren
+Statusänderung. Ein Mailfehler beeinflusst das Speichern des Auftrags nicht (er wird
+lediglich protokolliert und im Versandprotokoll angezeigt) und verhindert auch nicht den
+Versand der übrigen Vorlagen.
+
+> **Hinweis:** Das SMTP-Passwort steht im Abschnitt `Mail` der `appsettings.json` bzw. in einer
+> Umgebungsvariable (`Mail__Password`). Die Konfigurationsdatei ist entsprechend einzuschränken;
+> in Produktion sollte das Passwort über eine sichere Umgebungsvariable gesetzt werden.
 
 ## Lizenz
 
