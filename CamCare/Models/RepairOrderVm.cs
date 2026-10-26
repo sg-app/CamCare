@@ -71,6 +71,9 @@ namespace CamCare.Models
         public ICollection<RepairOrderStatusHistoryVm>? RepairOrderStatusHistories { get; set; }
         public ICollection<DataStoreVm>? DataStores { get; set; }
 
+        /// <summary>Anzeigename für Auswahllisten.</summary>
+        public string DisplayName => $"[{Id}] {OrderNumber ?? "ohne Auftragsnummer"} – {CameraSerialNumber ?? "ohne Seriennummer"}";
+
         public override string ToString() => $"[{Id}] CameraId: {CameraSerialNumber}";
     }
 }

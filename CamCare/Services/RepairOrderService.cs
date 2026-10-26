@@ -12,12 +12,14 @@ namespace CamCare.Services
     {
         private readonly IAmicronDataService _amicronDataService;
         private readonly IRepairOrderChangeBroadcaster _changeBroadcaster;
+        private readonly IRepairOrderMailDispatcher _mailDispatcher;
 
-        public RepairOrderService(IAppDbContextFactory contextFactory, IMapper mapper, ILogger<RepairOrderService> logger, NotificationService notificationService, IAmicronDataService amicronDataService, IRepairOrderChangeBroadcaster changeBroadcaster)
+        public RepairOrderService(IAppDbContextFactory contextFactory, IMapper mapper, ILogger<RepairOrderService> logger, NotificationService notificationService, IAmicronDataService amicronDataService, IRepairOrderChangeBroadcaster changeBroadcaster, IRepairOrderMailDispatcher mailDispatcher)
             : base(contextFactory, mapper, logger, notificationService)
         {
             _amicronDataService = amicronDataService;
             _changeBroadcaster = changeBroadcaster;
+            _mailDispatcher = mailDispatcher;
         }
 
         public async Task<ServiceResponse<Paginated<RepairOrderVm>>> GetAllAsync(LoadDataArgs args, bool viewCurrentOrders)
@@ -410,6 +412,10 @@ namespace CamCare.Services
 
                 await _changeBroadcaster.PublishAsync(new RepairOrderChangedEvent(entity.Id, RepairOrderChangeType.Created));
 
+                // Automatischer Status-Mailversand (z. B. bei direktem Anlegen im Auslöser-Status).
+                // Der Versand ist gegen Mehrfachversand abgesichert und beeinflusst das Speichern nicht.
+                await _mailDispatcher.DispatchAsync(entity.Id, entity.RepairOrderStatusId);
+
                 var resultVm = _mapper.Map<RepairOrder, RepairOrderVm>(entity);
                 return ServiceResponse.Success(resultVm);
             }
@@ -679,6 +685,11 @@ namespace CamCare.Services
                 await transaction.CommitAsync();
 
                 await _changeBroadcaster.PublishAsync(new RepairOrderChangedEvent(entity.Id, RepairOrderChangeType.Updated));
+
+                // Automatischer Status-Mailversand: nur bei einer tatsächlichen Statusänderung.
+                // Der Versand ist gegen Mehrfachversand abgesichert und beeinflusst das Speichern nicht.
+                if (statusChanged)
+                    await _mailDispatcher.DispatchAsync(entity.Id, entity.RepairOrderStatusId);
 
                 var resultVm = _mapper.Map<RepairOrder, RepairOrderVm>(entity);
                 return ServiceResponse.Success(resultVm);

@@ -15,6 +15,7 @@ CamCare is a **Blazor Interactive Server** application (ASP.NET Core 8) for mana
   - **Services/** - Business logic services
   - **Interfaces/** - Service and persistence interfaces
   - **Persistence/** - EF Core DbContext, migrations, and registration
+  - **Options/** - Configuration option classes bound from `appsettings.json` (e.g. `MailOptions`)
   - **Store/** - Fluxor state management (actions, reducers, state)
   - **Extensions/** - Extension methods
   - **Migrations/** - EF Core migrations
@@ -65,7 +66,15 @@ All domain entities inherit from `AuditableEntity` which provides:
 - `UpdatedAt` (DateTime?)
 - `ArchivedAt` (DateTime?)
 
-Key entities: `RepairOrder`, `RepairPosition`, `Defective`, `IncludedComponent`, `Employee`, `LogisticProvider`, `RepairOrderStatus`, `RepairOrderStatusHistory`, `DataStore`
+Key entities: `RepairOrder`, `RepairPosition`, `Defective`, `IncludedComponent`, `Employee`, `LogisticProvider`, `RepairOrderStatus`, `RepairOrderStatusHistory`, `MailTemplate`, `MailSignature`, `RepairOrderMailLog`, `DataStore`
+
+> The SMTP/mail configuration is **not** stored in the database; it is bound from the `Mail`
+> section of `appsettings.json` via `IOptions<MailOptions>` (`CamCare.Options`).
+>
+> E-mail templates are rendered by `MailTemplateRenderer` / `MailTemplateParser`
+> (`CamCare.Services`). Besides simple placeholders (`{{Token}}`) they support functions:
+> `{{Token|fallback}}`, `{{#if Token}} … {{else}} … {{/if}}`, `{{#unless Token}} … {{/unless}}`
+> and comments (`{{! comment}}`).
 
 ### Service Layer
 

@@ -19,6 +19,9 @@ namespace CamCare.Persistence
         public DbSet<DeliveryAddress> DeliveryAddresses { get; set; }
         public DbSet<EmailAddress> EmailAddresses { get; set; }
         public DbSet<RepairOrderSerial> RepairOrderSerials { get; set; }
+        public DbSet<MailTemplate> MailTemplates { get; set; }
+        public DbSet<RepairOrderMailLog> RepairOrderMailLogs { get; set; }
+        public DbSet<MailSignature> MailSignatures { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -122,6 +125,77 @@ namespace CamCare.Persistence
                     new LogisticProvider { Id = 1, Name = "DHL", IsDefault = true, IsActive = true },
                     new LogisticProvider { Id = 2, Name = "Dachser", IsDefault = false, IsActive = true },
                     new LogisticProvider { Id = 3, Name = "DPD", IsDefault = false, IsActive = true }
+                );
+
+            // E-Mail-Vorlagen gehören zu einem Status des Reparaturauftrags: Wird der Status
+            // gelöscht, werden seine Vorlagen mit entfernt.
+            modelBuilder.Entity<MailTemplate>()
+                .HasOne(t => t.RepairOrderStatus)
+                .WithMany()
+                .HasForeignKey(t => t.RepairOrderStatusId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Das Versandprotokoll gehört zum Auftrag und wird mit ihm gelöscht.
+            modelBuilder.Entity<RepairOrderMailLog>()
+                .HasOne(l => l.RepairOrder)
+                .WithMany()
+                .HasForeignKey(l => l.RepairOrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Wird eine Vorlage gelöscht, bleibt das Versandprotokoll erhalten (SetNull).
+            modelBuilder.Entity<RepairOrderMailLog>()
+                .HasOne(l => l.MailTemplate)
+                .WithMany()
+                .HasForeignKey(l => l.MailTemplateId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Die SMTP-Konfiguration des E-Mail-Versands wird über den Abschnitt "Mail" der
+            // appsettings.json gelesen (siehe CamCare.Options.MailOptions) und nicht mehr in
+            // der Datenbank gespeichert.
+
+            // Die E-Mail-Signatur (inkl. Logo) wird in der Datenbank gepflegt, damit sie in den
+            // Einstellungen bearbeitet werden kann. Das Logo wird als Bilddatei gespeichert und
+            // beim Versand direkt in die E-Mail eingebettet.
+            modelBuilder.Entity<MailSignature>()
+                .Property(s => s.LogoFileName)
+                .HasMaxLength(260);
+
+            // Standard-Signatur; sie ist zunächst deaktiviert und wird erst nach dem Aktivieren
+            // in den Einstellungen an versendete E-Mails angehängt.
+            modelBuilder.Entity<MailSignature>()
+                .HasData(new MailSignature
+                {
+                    Id = 1,
+                    IsEnabled = false,
+                    HtmlTemplate = MailSettingsDefaults.SignatureHtmlTemplate,
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                });
+
+            // Beispielvorlagen für die Status "Eingetroffen" (Id 2) und "Versendet" (Id 9).
+            // Sie sind zunächst deaktiviert und werden erst nach dem Aktivieren in den
+            // Einstellungen automatisch versendet.
+            modelBuilder.Entity<MailTemplate>()
+                .HasData(
+                    new MailTemplate
+                    {
+                        Id = 1,
+                        RepairOrderStatusId = 2,
+                        IsEnabled = false,
+                        Order = 1,
+                        SubjectTemplate = MailSettingsDefaults.ArrivedSubjectTemplate,
+                        BodyTemplate = MailSettingsDefaults.ArrivedBodyTemplate,
+                        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    },
+                    new MailTemplate
+                    {
+                        Id = 2,
+                        RepairOrderStatusId = 9,
+                        IsEnabled = false,
+                        Order = 2,
+                        SubjectTemplate = MailSettingsDefaults.ShippedSubjectTemplate,
+                        BodyTemplate = MailSettingsDefaults.ShippedBodyTemplate,
+                        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    }
                 );
 
         }

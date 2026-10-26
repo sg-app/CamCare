@@ -55,6 +55,14 @@ services:
       - UploadLink__Secret=${UPLOAD_LINK_SECRET:?UploadLink.Secret fehlt - bitte UPLOAD_LINK_SECRET setzen}
       - UploadLink__TokenLifetimeMinutes=${UPLOAD_LINK_LIFETIME_MINUTES:-120}
       - UploadLink__PublicBaseUrl=${UPLOAD_LINK_PUBLIC_BASE_URL:?UploadLink.PublicBaseUrl fehlt - bitte UPLOAD_LINK_PUBLIC_BASE_URL setzen}
+      - Mail__IsEnabled=${MAIL_IS_ENABLED:-false}
+      - Mail__SmtpHost=${MAIL_SMTP_HOST:-}
+      - Mail__SmtpPort=${MAIL_SMTP_PORT:-587}
+      - Mail__Security=${MAIL_SECURITY:-StartTls}
+      - Mail__FromAddress=${MAIL_FROM_ADDRESS:-}
+      - Mail__FromName=${MAIL_FROM_NAME:-}
+      - Mail__UserName=${MAIL_USER_NAME:-}
+      - Mail__Password=${MAIL_PASSWORD:-}
     ports:
       - 8085:8080
     healthcheck:

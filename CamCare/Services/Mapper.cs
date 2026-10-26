@@ -350,6 +350,52 @@ namespace CamCare.Services
                     ea.CreatedAt = eavm.CreatedAt;
                     ea.UpdatedAt = eavm.UpdatedAt;
                     break;
+                case MailTemplate mt when destination is MailTemplateVm mtvm:
+                    mtvm.Id = mt.Id;
+                    mtvm.RepairOrderStatusId = mt.RepairOrderStatusId;
+                    mtvm.IsEnabled = mt.IsEnabled;
+                    mtvm.SubjectTemplate = mt.SubjectTemplate;
+                    mtvm.BodyTemplate = mt.BodyTemplate;
+                    mtvm.Order = mt.Order;
+                    mtvm.CreatedAt = mt.CreatedAt;
+                    mtvm.UpdatedAt = mt.UpdatedAt;
+                    if (mt.RepairOrderStatus != null)
+                        mtvm.StatusName = mt.RepairOrderStatus.Name;
+                    break;
+                case MailTemplateVm mtvm when destination is MailTemplate mt:
+                    mt.RepairOrderStatusId = mtvm.RepairOrderStatusId;
+                    mt.IsEnabled = mtvm.IsEnabled;
+                    mt.SubjectTemplate = mtvm.SubjectTemplate;
+                    mt.BodyTemplate = mtvm.BodyTemplate;
+                    mt.Order = mtvm.Order;
+                    break;
+                case MailSignature ms when destination is MailSignatureVm msvm:
+                    msvm.Id = ms.Id;
+                    msvm.IsEnabled = ms.IsEnabled;
+                    msvm.HtmlTemplate = ms.HtmlTemplate;
+                    msvm.LogoFileName = ms.LogoFileName;
+                    msvm.LogoData = ms.LogoData;
+                    msvm.CreatedAt = ms.CreatedAt;
+                    msvm.UpdatedAt = ms.UpdatedAt;
+                    break;
+                case MailSignatureVm msvm when destination is MailSignature ms:
+                    ms.IsEnabled = msvm.IsEnabled;
+                    ms.HtmlTemplate = msvm.HtmlTemplate;
+                    ms.LogoFileName = msvm.HasLogo ? msvm.LogoFileName : null;
+                    ms.LogoData = msvm.HasLogo ? msvm.LogoData : null;
+                    break;
+                case RepairOrderMailLog log when destination is RepairOrderMailLogVm logvm:
+                    logvm.Id = log.Id;
+                    logvm.RepairOrderId = log.RepairOrderId;
+                    logvm.MailTemplateId = log.MailTemplateId;
+                    logvm.RepairOrderStatusId = log.RepairOrderStatusId;
+                    logvm.StatusName = log.StatusName;
+                    logvm.Recipients = log.Recipients;
+                    logvm.Subject = log.Subject;
+                    logvm.IsSuccess = log.IsSuccess;
+                    logvm.ErrorMessage = log.ErrorMessage;
+                    logvm.SentAt = log.SentAt.ToLocalTime();
+                    break;
                 default:
                     throw new NotSupportedException($"Mapping from {typeof(TSource)} to {typeof(TDestination)} is not supported.");
             }

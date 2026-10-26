@@ -76,7 +76,9 @@
 
         Logger.LogInformation("New position added.");
         _toEdit = new WorkVm();
-        await _grid.InsertRow(_toEdit);
+
+        // Neue Zeilen werden ans Ende der Liste gehängt (Append) statt an erster Stelle eingefügt.
+        await _grid.AppendRowAsync(_toEdit);
     }
 
     private async Task OnSaveRow(WorkVm item)
