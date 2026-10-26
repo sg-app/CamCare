@@ -9,16 +9,36 @@ async function openFirstRepairOrder(page: Page): Promise<void> {
   await expect(page.locator('.rz-data-row').first()).toBeVisible({ timeout: 30_000 });
 
   await page.locator('.rz-data-row').first().locator('button:has-text("edit_square")').click();
-  await page.waitForURL('**/EditRepairOrder*', { timeout: 15_000 });
-  await expect(page.locator('button:has-text("add")').first()).toBeVisible({ timeout: 30_000 });
+
+  // Blazor navigiert clientseitig (Enhanced Navigation); dabei wird kein Load-Event ausgelöst.
+  // Deshalb wird die URL geprüft und auf die Edit-Seite gewartet – nicht auf `load`.
+  await expect(page).toHaveURL(/\/EditRepairOrder/, { timeout: 15_000 });
+  await expect(page.locator('button').filter({ hasText: /^\s*add\s*$/ }).first())
+    .toBeVisible({ timeout: 30_000 });
 }
 
 /**
- * Fügt im n-ten Grid (0-basiert, Reihenfolge im DOM) eine neue Zeile hinzu
+ * Liefert den "Einfügen"-Button des Grids mit der angegebenen Überschrift
+ * (z. B. "Defekte", "Mitgelieferte Komponenten", "Zu berechnende Artikel").
+ *
+ * Hinweis: `button:has-text("add")` ist zu unspezifisch – es matcht auch die
+ * Icon-Buttons "add_location_alt" (Lieferanschrift) und "add_comment" (E-Mail).
+ */
+function addButtonForGrid(page: Page, gridTitle: string) {
+  return page
+    .locator('div')
+    .filter({ has: page.locator('h6', { hasText: new RegExp(`^\\s*${gridTitle}\\s*$`) }) })
+    .last()
+    .locator('button')
+    .filter({ hasText: /^\s*add\s*$/ });
+}
+
+/**
+ * Fügt im Grid mit der angegebenen Überschrift eine neue Zeile hinzu
  * und gibt das AutoComplete-Eingabefeld zurück.
  */
-async function addRowAndGetAutocomplete(page: Page, addButtonIndex: number) {
-  const addButton = page.locator('button:has-text("add")').nth(addButtonIndex);
+async function addRowAndGetAutocomplete(page: Page, gridTitle: string) {
+  const addButton = addButtonForGrid(page, gridTitle).first();
   await expect(addButton).toBeVisible({ timeout: 30_000 });
   await addButton.click();
 
@@ -37,6 +57,23 @@ async function getAllGridCellTexts(page: Page): Promise<string[][]> {
       Array.from(t.querySelectorAll('.rz-data-row')).map((r) =>
         (r.textContent ?? '').replace(/\s+/g, ' ').trim()));
   });
+}
+
+/**
+ * Liest die Zeilen (als Text) des Grids, das den gesuchten Text enthält.
+ */
+async function getRowsOfGridContaining(page: Page, text: string): Promise<string[]> {
+  return page.evaluate((needle) => {
+    const tables = Array.from(document.querySelectorAll('.rz-datatable'));
+    for (const table of tables) {
+      const rows = Array.from(table.querySelectorAll('.rz-data-row')).map((r) =>
+        (r.textContent ?? '').replace(/\s+/g, ' ').trim());
+      if (rows.some((row) => row.includes(needle))) {
+        return rows;
+      }
+    }
+    return [];
+  }, text);
 }
 
 async function expectCellContains(page: Page, text: string): Promise<void> {
@@ -75,9 +112,7 @@ test.describe('RadzenAutoComplete Mausklick-Übernahme', () => {
   test('Defekte: Mausklick auf Katalogtreffer übernimmt den vollen Wert', async ({ page }) => {
     await openFirstRepairOrder(page);
 
-    // Defekte-Grid ist das 2. Grid mit "add"-Button (DOM-Reihenfolge:
-    // Mitgelieferte Komponenten, Defekte, Reparaturpositionen).
-    const input = await addRowAndGetAutocomplete(page, 1);
+    const input = await addRowAndGetAutocomplete(page, 'Defekte');
     await selectAutocompleteItem(page, input, 'Glas', 'Glas gebrochen');
 
     // Erwartung: Die Zelle zeigt den vollständigen Katalogtext, nicht nur den getippten Teil.
@@ -95,7 +130,7 @@ test.describe('RadzenAutoComplete Mausklick-Übernahme', () => {
   test('Mitgelieferte Komponenten: Mausklick auf Katalogtreffer übernimmt den vollen Wert', async ({ page }) => {
     await openFirstRepairOrder(page);
 
-    const input = await addRowAndGetAutocomplete(page, 0);
+    const input = await addRowAndGetAutocomplete(page, 'Mitgelieferte Komponenten');
     await selectAutocompleteItem(page, input, 'Netz', 'Netzteil');
 
     await expectCellContains(page, 'Netzteil');
@@ -104,7 +139,7 @@ test.describe('RadzenAutoComplete Mausklick-Übernahme', () => {
   test('Reparaturpositionen: Mausklick auf Katalogtreffer übernimmt Beschreibung und Artikelnummer', async ({ page }) => {
     await openFirstRepairOrder(page);
 
-    const input = await addRowAndGetAutocomplete(page, 2);
+    const input = await addRowAndGetAutocomplete(page, 'Zu berechnende Artikel');
     await selectAutocompleteItem(page, input, 'Spiralschutz', 'Spiralschutzschlauch für MINI-Power 100');
 
     await expectCellContains(page, 'Spiralschutzschlauch für MINI-Power 100');
@@ -113,7 +148,7 @@ test.describe('RadzenAutoComplete Mausklick-Übernahme', () => {
   test('Defekte: frei eingetragener Text (kein Katalogtreffer) wird über den Save-Button übernommen', async ({ page }) => {
     await openFirstRepairOrder(page);
 
-    const input = await addRowAndGetAutocomplete(page, 1);
+    const input = await addRowAndGetAutocomplete(page, 'Defekte');
 
     // Freier Text, der nicht im Katalog existiert.
     const freeText = 'Defekt Sonderanfertigung';
@@ -126,5 +161,36 @@ test.describe('RadzenAutoComplete Mausklick-Übernahme', () => {
     await saveButton.click();
 
     await expectCellContains(page, freeText);
+  });
+
+  test('Defekte: neue Zeilen werden am Ende der Liste angehängt (Append statt Index 0)', async ({ page }) => {
+    await openFirstRepairOrder(page);
+
+    // Erste neue Zeile über einen Katalogtreffer (Mausklick).
+    const firstInput = await addRowAndGetAutocomplete(page, 'Defekte');
+    await selectAutocompleteItem(page, firstInput, 'Glas', 'Glas gebrochen');
+    await expectCellContains(page, 'Glas gebrochen');
+
+    // Zweite neue Zeile mit freiem Text (kein Katalogtreffer), gespeichert über den Save-Haken.
+    const secondInput = await addRowAndGetAutocomplete(page, 'Defekte');
+    const freeText = 'Defekt Append-Test';
+    await secondInput.click();
+    await secondInput.pressSequentially(freeText);
+
+    const saveButton = page.locator('button:has-text("save")').first();
+    await expect(saveButton).toBeVisible({ timeout: 15_000 });
+    await saveButton.click();
+    await expectCellContains(page, freeText);
+
+    // Erwartung: Die zuletzt hinzugefügte Zeile steht UNTER der zuvor hinzugefügten Zeile –
+    // neue Zeilen werden also ans Ende gehängt und nicht an erster Stelle eingefügt.
+    await expect
+      .poll(async () => {
+        const rows = await getRowsOfGridContaining(page, freeText);
+        const firstIndex = rows.findIndex((row) => row.includes('Glas gebrochen'));
+        const secondIndex = rows.findIndex((row) => row.includes(freeText));
+        return firstIndex >= 0 && secondIndex > firstIndex;
+      }, { timeout: 15_000 })
+      .toBe(true);
   });
 });

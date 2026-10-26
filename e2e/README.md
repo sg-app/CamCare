@@ -50,6 +50,8 @@ in den Ausgangszustand (kein Logo) zurück.
 3. **Reparaturpositionen** – Mausklick übernimmt Beschreibung *und* Artikelnummer.
 4. **Defekte (freie Eingabe)** – Text ohne Katalogtreffer wird über den
    Save-Button übernommen.
+5. **Defekte (Append)** – neu hinzugefügte Zeilen werden ans Ende der Liste
+   gehängt (die zuletzt hinzugefügte Zeile steht unterhalb der vorherigen).
 
 Die Tests sind bewusst **seriell** (`workers: 1`), da alle Tests gegen eine
 einzelne In-Memory-App-Instanz laufen und sich parallele Edits auf denselben

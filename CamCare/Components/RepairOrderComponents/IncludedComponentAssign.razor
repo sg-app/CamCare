@@ -76,7 +76,9 @@ rp.Description.ToLower().Contains(args.Filter.ToLower()));
 
         Logger.LogInformation("New position added.");
         _toEdit = new IncludedComponentVm();
-        await _grid.InsertRow(_toEdit);
+
+        // Neue Zeilen werden ans Ende der Liste gehängt (Append) statt an erster Stelle eingefügt.
+        await _grid.AppendRowAsync(_toEdit);
     }
 
     private async Task OnSaveRow(IncludedComponentVm item)
