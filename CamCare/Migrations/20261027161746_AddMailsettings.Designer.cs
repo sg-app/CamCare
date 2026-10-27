@@ -12,15 +12,15 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CamCare.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261021161955_RemoveMailSettingsFromDatabase")]
-    partial class RemoveMailSettingsFromDatabase
+    [Migration("20261027161746_AddMailsettings")]
+    partial class AddMailsettings
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -290,6 +290,42 @@ namespace CamCare.Migrations
                         });
                 });
 
+            modelBuilder.Entity("CamCare.Domain.MailSignature", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("HtmlTemplate")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<byte[]>("LogoData")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("LogoFileName")
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MailSignatures");
+                });
+
             modelBuilder.Entity("CamCare.Domain.MailTemplate", b =>
                 {
                     b.Property<int>("Id")
@@ -330,28 +366,6 @@ namespace CamCare.Migrations
                     b.HasIndex("RepairOrderStatusId");
 
                     b.ToTable("MailTemplates");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            BodyTemplate = "<p>Guten Tag {{CustomerName}},</p>\r\n<p>Ihr Gerät (Seriennummer {{SerialNumber}}) ist zu Ihrem Reparaturauftrag\r\n<strong>{{OrderNumber}}</strong> bei uns eingetroffen.</p>\r\n<p>Eingetroffen am: {{ArrivedAt}}</p>\r\n<p>Wir beginnen mit der Begutachtung und melden uns mit den nächsten Schritten.</p>\r\n<p>Mit freundlichen Grüßen<br />Ihr CamCare-Team</p>",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsEnabled = false,
-                            Order = 1,
-                            RepairOrderStatusId = 2,
-                            SubjectTemplate = "Ihr Gerät ist eingetroffen – Auftrag {{OrderNumber}}"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            BodyTemplate = "<p>Guten Tag {{CustomerName}},</p>\r\n<p>Ihr Reparaturauftrag <strong>{{OrderNumber}}</strong> (Seriennummer {{SerialNumber}})\r\nwurde an Sie versendet.</p>\r\n<p>Lieferanschrift:<br />{{DeliveryAddressRecipient}}<br />{{DeliveryAddressStreet}}<br />{{DeliveryAddressCity}}</p>\r\n<p>Stand: {{CurrentStateAt}}</p>\r\n<p>Mit freundlichen Grüßen<br />Ihr CamCare-Team</p>",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsEnabled = false,
-                            Order = 2,
-                            RepairOrderStatusId = 9,
-                            SubjectTemplate = "Ihr Auftrag {{OrderNumber}} wurde versendet – {{Status}}"
-                        });
                 });
 
             modelBuilder.Entity("CamCare.Domain.RepairOrder", b =>

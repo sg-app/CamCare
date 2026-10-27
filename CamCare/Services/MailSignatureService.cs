@@ -33,8 +33,7 @@ namespace CamCare.Services
                     // Noch keine Signatur vorhanden: Standardinhalt zum Anlegen anbieten.
                     return ServiceResponse.Success(new MailSignatureVm
                     {
-                        IsEnabled = false,
-                        HtmlTemplate = MailSettingsDefaults.SignatureHtmlTemplate
+                        IsEnabled = false
                     });
                 }
 
