@@ -9,7 +9,7 @@ namespace CamCare.Services
 {
     /// <summary>
     /// Lädt die aktive E-Mail-Signatur und bereitet sie für den Versand vor: Der Logo-Platzhalter
-    /// (<see cref="MailSettingsDefaults.SignatureLogoPlaceholder"/>) wird durch ein eingebettetes
+    /// ({{Logo}}) wird durch ein eingebettetes
     /// Bild (<c>cid:</c>) ersetzt, damit das Logo ohne externen Aufruf angezeigt wird.
     /// </summary>
     public class MailSignatureProvider(
@@ -82,7 +82,7 @@ namespace CamCare.Services
                 ? string.Empty
                 : $"<img src=\"cid:{logo.ContentId}\" alt=\"Logo\" style=\"{LogoImageStyle}\" />";
 
-            var placeholder = MailSettingsDefaults.SignatureLogoPlaceholder;
+            var placeholder = "{{Logo}}";
 
             if (!template.Contains(placeholder, StringComparison.OrdinalIgnoreCase))
                 return logo is null ? template : template + logoHtml;

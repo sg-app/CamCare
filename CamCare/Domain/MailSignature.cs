@@ -17,7 +17,7 @@ namespace CamCare.Domain
 
         /// <summary>
         /// HTML-Inhalt der Signatur. Der Platzhalter <c>{{Logo}}</c> markiert die Stelle,
-        /// an der das Logo ausgegeben wird (<see cref="MailSettingsDefaults.SignatureLogoPlaceholder"/>).
+        /// an der das Logo ausgegeben wird ({{Logo}}).
         /// </summary>
         public string HtmlTemplate { get; set; } = string.Empty;
 

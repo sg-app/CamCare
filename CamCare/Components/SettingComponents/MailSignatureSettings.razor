@@ -11,7 +11,7 @@
 <RadzenText TextStyle="TextStyle.Body1" class="mb-2">
     Die Signatur wird an jede über CamCare versendete E-Mail angehängt – sowohl beim automatischen
     Statusversand als auch beim Testversand. Der Inhalt wird als HTML gepflegt; der Platzhalter
-    <code>@MailSettingsDefaults.SignatureLogoPlaceholder</code> markiert die Stelle, an der das
+    <code>{{Logo}}</code> markiert die Stelle, an der das
     Logo eingefügt wird. Das Logo wird als Bilddatei hinterlegt und direkt in die E-Mail
     eingebettet, damit es auch bei blockierten externen Bildern angezeigt wird.
 </RadzenText>
@@ -71,8 +71,7 @@ else if (_signature is not null)
                 </RadzenHtmlEditor>
 
                 <RadzenButton Text="Logo-Platzhalter an das Ende der Signatur anfügen" Icon="add_photo_alternate"
-                              ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small"
-                              Click="OnInsertLogoPlaceholderClicked" />
+                              ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" Click="OnInsertLogoPlaceholderClicked" />
             </RadzenStack>
         </RadzenFieldset>
 
@@ -96,15 +95,14 @@ else if (_signature is not null)
                             : "Es ist kein Logo hinterlegt.")
                     </RadzenText>
                     <RadzenButton Text="Hinterlegtes Logo entfernen" Icon="delete" ButtonStyle="ButtonStyle.Light"
-                                  Size="ButtonSize.ExtraSmall" Disabled="@(!_signature.HasLogo)"
-                                  Click="OnRemoveLogoClicked" />
+                                  Size="ButtonSize.ExtraSmall" Disabled="@(!_signature.HasLogo)" Click="OnRemoveLogoClicked" />
                 </RadzenStack>
 
                 @if (_signature.LogoDataUrl is not null)
                 {
-                    <div style="display:inline-block;max-width:280px;padding:0.5rem;border:1px solid #e0e0e0;border-radius:4px;text-align:center">
-                        <img src="@_signature.LogoDataUrl" alt="Vorschau des Logos"
-                             style="max-width:220px;max-height:120px" />
+                    <div
+                        style="display:inline-block;max-width:280px;padding:0.5rem;border:1px solid #e0e0e0;border-radius:4px;text-align:center">
+                        <img src="@_signature.LogoDataUrl" alt="Vorschau des Logos" style="max-width:220px;max-height:120px" />
                     </div>
                 }
             </RadzenStack>
@@ -261,7 +259,7 @@ else if (_signature is not null)
         if (_signature is null)
             return;
 
-        _signature.HtmlTemplate += $"<p>{MailSettingsDefaults.SignatureLogoPlaceholder}</p>";
+        _signature.HtmlTemplate += "<p>{{{Logo}}}</p>";
     }
 
     /// <summary>Fügt den Logo-Platzhalter über das Editor-Werkzeug an der Cursorposition ein.</summary>
@@ -270,6 +268,6 @@ else if (_signature is not null)
         if (args.CommandName != InsertLogoCommand)
             return;
 
-        await args.Editor.ExecuteCommandAsync(HtmlEditorCommands.InsertHtml, MailSettingsDefaults.SignatureLogoPlaceholder);
+        await args.Editor.ExecuteCommandAsync(HtmlEditorCommands.InsertHtml, "{{Logo}}");
     }
 }

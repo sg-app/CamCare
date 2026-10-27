@@ -403,9 +403,7 @@ else
         {
             RepairOrderStatusId = _statuses.FirstOrDefault()?.Id ?? 0,
             IsEnabled = true,
-            Order = _templatesCount + 1,
-            SubjectTemplate = MailSettingsDefaults.SubjectTemplate,
-            BodyTemplate = MailSettingsDefaults.BodyTemplate
+            Order = _templatesCount + 1
         };
 
         NotificationService.Notify(NotificationSeverity.Info, "Neue E-Mail-Vorlage",

@@ -93,6 +93,25 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-restore --verbosity normal
 
+      - name: Check EF Core model for pending changes
+        # Schlägt fehl, sobald das EF-Modell nicht mehr zum letzten Migrations-
+        # Snapshot passt. Ohne diese Prüfung startet die App in Produktion nicht
+        # (PendingModelChangesWarning in MigrateAsync). Läuft unter Linux und
+        # erkennt damit auch plattformabhängige Modellunterschiede, z. B.
+        # CRLF/LF in Raw-String-Literalen von HasData-Seed-Daten.
+        env:
+          # Platzhalter – für die Prüfung wird keine Datenbank benötigt.
+          ConnectionStrings__Default: "Server=127.0.0.1;Database=CamCare;User Id=sa;Password=design-time;TrustServerCertificate=True"
+          ConnectionStrings__DefaultKrd: "Server=127.0.0.1;Database=Krd;User Id=sa;Password=design-time;TrustServerCertificate=True"
+        run: |
+          dotnet tool restore
+          dotnet ef migrations has-pending-model-changes \
+            --project CamCare/CamCare.csproj \
+            --startup-project CamCare/CamCare.csproj \
+            --context AppDbContext \
+            --configuration Release \
+            --no-build
+
   docker:
     name: Build and Push Docker Image
     needs: [gitversion, build]

@@ -4,7 +4,7 @@ namespace CamCare.Models
 {
     /// <summary>
     /// Die Signatur, die an versendete E-Mails angehängt wird. Der HTML-Inhalt kann den
-    /// Platzhalter <see cref="MailSettingsDefaults.SignatureLogoPlaceholder"/> enthalten,
+    /// Platzhalter {{Logo}} enthalten,
     /// an dessen Stelle das Logo eingefügt wird.
     /// </summary>
     public class MailSignatureVm
