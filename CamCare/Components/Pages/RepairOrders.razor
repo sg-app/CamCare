@@ -12,10 +12,10 @@
     <InsertButton InsertClick="OnInsertClicked" />
 </AuthorizeView>
 
-<RadzenDataGrid @ref="_grid" Render="@OnRender" TItem="RepairOrderVm" Data="_data" LoadData="OnLoadData"
-                IsLoading="_isLoading" Count="_totalCount" AllowPaging="true" PageSizeOptions="@pageSizeOptions" PageSize="50"
-                Density="Density.Compact" AllowColumnResize="true" AllowSorting="true" AllowMultiColumnSorting="true"
-                ShowMultiColumnSortingIndex="true" ShowEmptyMessage="false" FilterMode="FilterMode.Simple"
+<RadzenDataGrid @ref="_grid" TItem="RepairOrderVm" Data="_data" LoadData="OnLoadData" IsLoading="_isLoading"
+                Count="_totalCount" AllowPaging="true" PageSizeOptions="@pageSizeOptions" PageSize="50" Density="Density.Compact"
+                AllowColumnResize="true" AllowSorting="true" AllowMultiColumnSorting="true" ShowMultiColumnSortingIndex="true"
+                ShowEmptyMessage="false" FilterMode="FilterMode.Simple"
                 FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
     <Columns>
         <RadzenDataGridColumn TItem="RepairOrderVm" Title="Auftrag" Property="Id" Width="80px" Filterable="false" />
@@ -137,25 +137,6 @@
         }
         _isLoading = false;
     }
-
-    private void OnRender(DataGridRenderEventArgs<RepairOrderVm> args)
-    {
-        if (args.FirstRender && args?.Grid is not null)
-        {
-            args.Grid.Sorts.Add(new SortDescriptor()
-            {
-                Property = nameof(RepairOrderVm.PriorityRepair),
-                SortOrder =
-SortOrder.Descending
-            });
-            args.Grid.Sorts.Add(new SortDescriptor()
-            {
-                Property = nameof(RepairOrderVm.ArrivedAt),
-                SortOrder = SortOrder.Ascending
-            });
-        }
-    }
-
 
     private void OnInsertClicked(MouseEventArgs args)
     {

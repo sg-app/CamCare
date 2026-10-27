@@ -26,15 +26,29 @@ namespace CamCare.Services
         {
             using var context = _contextFactory.CreateDbContext();
             var query = context.RepairOrders
-                .AsNoTracking();
-            if (args.Filter != null)
+                .AsNoTracking()
+                .AsSplitQuery();
+            if (!String.IsNullOrEmpty(args.Filter))
             {
                 query = query.Where(args.Filter);
             }
-            if (args.OrderBy != null)
+
+            if (viewCurrentOrders)
+                query = query.Where(f => !f.RepairOrderStatus.IsOrderClose);
+
+            // In RepairOrderService.cs - GetAllAsync Methode
+            if (!String.IsNullOrEmpty(args.OrderBy))
             {
                 query = query.OrderBy(args.OrderBy);
             }
+            else
+            {
+                // Standard-Sortierung wenn keine explizite Sortierung vom Grid kommt
+                query = query
+                    .OrderByDescending(r => r.PriorityRepair ?? false)
+                    .ThenBy(r => r.ArrivedAt);
+            }
+
             var totalCount = query.Count();
             if (args.Skip.HasValue)
             {
@@ -45,6 +59,7 @@ namespace CamCare.Services
                 query = query.Take(args.Top.Value);
             }
             query = query
+                .AsSplitQuery()
                 .Include(i => i.RepairOrderStatus)
                 .Include(i => i.RepairOrderStatusHistory)
                     .ThenInclude(i => i.RepairOrderStatus)
@@ -59,8 +74,7 @@ namespace CamCare.Services
                 .Include(i => i.EmailAddresses)
                 .Include(i => i.RepairOrderSerials);
 
-            if (viewCurrentOrders)
-                query = query.Where(f => !f.RepairOrderStatus.IsOrderClose);
+
 
             var items = await query.ToListAsync();
 
@@ -117,6 +131,7 @@ namespace CamCare.Services
 
                 var items = await context.RepairOrders
                     .AsNoTracking()
+                    .AsSplitQuery()
                     .Where(f => (f.SerialNumber != null && f.SerialNumber.Trim().ToLower() == normalized)
                         || f.RepairOrderSerials.Any(s => s.SerialNumber.Trim().ToLower() == normalized))
                     .Include(i => i.RepairOrderStatus)
@@ -434,6 +449,7 @@ namespace CamCare.Services
             try
             {
                 var entity = await context.RepairOrders
+                    .AsSplitQuery()
                     .Include(r => r.Defectives)
                     .Include(i => i.Works)
                     .Include(r => r.IncludedComponents)
@@ -827,6 +843,7 @@ namespace CamCare.Services
                 using var context = _contextFactory.CreateDbContext();
                 var entity = await context.RepairOrders
                     .AsNoTracking()
+                    .AsSplitQuery()
                     .Include(i => i.RepairOrderStatus)
                     .Include(i => i.RepairOrderStatusHistory)
                         .ThenInclude(i => i.RepairOrderStatus)
