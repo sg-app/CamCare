@@ -1,168 +1,80 @@
-﻿<RadzenDataGrid class="mt-2" @ref="_grid" Data="@RepairOrder.Works" TItem="WorkVm" RowUpdate="OnRowUpdate"
-                RowCreate="OnRowCreate" Density="Density.Compact" EmptyText="Keine Positionen eingetragen">
-    <HeaderTemplate>
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+@* Zuordnung der ausgeführten Arbeiten eines Reparaturauftrags.
+   Statt eines Grids wird ein AutoComplete verwendet: Die Arbeit wird gesucht oder frei erfasst
+   und mit Enter bzw. „Einfügen“ ans Ende der Liste gehängt. Die Reihenfolge wird am Auftrag
+   gespeichert (SortOrder) und kann per Drag&Drop geändert werden. *@
+@inherits AssignmentListComponentBase<WorkVm>
 
-            <InsertIconButton Click="OnInsertClicked" />
-            <RadzenText Text="Ausgeführte Arbeiten" TextStyle="TextStyle.H6" />
-        </RadzenStack>
-    </HeaderTemplate>
-    <Columns>
-        <RadzenDataGridColumn TItem="WorkVm" Title="Beschreibung">
-            <Template Context="item">
-                @item.Description
-            </Template>
-            <EditTemplate Context="item">
+<div class="mt-2" data-assignment="Arbeiten" @ref="Container">
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+        <InsertIconButton Click="OnInsertClicked" />
+        <RadzenText Text="Ausgeführte Arbeiten" TextStyle="TextStyle.H6" />
+    </RadzenStack>
 
-                <RadzenAutoComplete @onkeydown="(args) => OnEditKeyDown(args, item)" Value="@item.Description" Change="OnDescriptionChanged" Data=@_Works
-                                    LoadData="OnLoadWorkCatalog" OpenOnFocus="true" TextProperty="@nameof(WorkVm.Description)"
-                                    ValueChanged="@(value => OnValueChanged(item, value))" SelectedItemChanged="OnSelectedItemChanged"
-                                    Style="width: 100%"
-                                    InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Arbeiten" } })" />
-            </EditTemplate>
-        </RadzenDataGridColumn>
-        <RadzenDataGridInlineEditColumn TItem="WorkVm" DeleteRow="OnDeleteRow" SaveRow="OnSaveRow"
-                                        CancelEditRow="OnCancelEditRow" EditRow="OnEditRow" />
-    </Columns>
-</RadzenDataGrid>
+    <RadzenAutoComplete class="mt-2" TValue="string" Value="@SearchText" ValueChanged="@OnSearchTextChanged"
+                        Change="@(value => OnSearchTextChanged(value?.ToString()))" SelectedItemChanged="@OnCatalogItemSelected"
+                        Data="@Catalog" LoadData="@OnLoadCatalog" OpenOnFocus="true" TextProperty="@nameof(WorkVm.Description)"
+                        Placeholder="Arbeit suchen oder neu erfassen – Enter oder Einfügen übernimmt den Eintrag" Style="width:100%"
+                        @onkeydown="OnSearchKeyDown"
+                        InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Arbeiten Katalog" } })" />
+
+    @if (Items is null || Items.Count == 0)
+    {
+        <RadzenText class="d-block text-secondary pt-1">Keine Positionen eingetragen</RadzenText>
+    }
+    else
+    {
+        var position = 0;
+        @foreach (var item in Items)
+        {
+            var index = position;
+            position++;
+
+            <div @key="item" class="camcare-assignment-row d-flex align-items-center gap-2 @GetRowClass(index)" draggable="true"
+                 title="Ziehen, um die Reihenfolge zu ändern" @ondragstart="() => OnDragStart(index)" @ondragover:preventDefault
+                 @ondragover="() => OnDragOver(index)" @ondrop:preventDefault @ondrop="() => OnDrop(index)"
+                 @ondragend="OnDragEnd">
+                <RadzenIcon Icon="drag_indicator" class="text-secondary" />
+                <div class="flex-grow-1">
+                    <RadzenText class="d-block">@item.Description</RadzenText>
+                </div>
+                <RadzenButton Icon="delete" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Danger"
+                              Click="() => OnRemoveClicked(item)" />
+            </div>
+        }
+    }
+</div>
 
 @code {
-    [Inject] protected ILogger<WorkAssign> Logger { get; set; } = default!;
     [Inject] protected IWorkService WorkService { get; set; } = default!;
-    [Inject] protected IJSRuntime JS { get; set; } = default!;
 
-    [Parameter] public RepairOrderVm RepairOrder { get; set; } = new();
-
-    private IList<WorkVm>? _Works;
-    private RadzenDataGrid<WorkVm> _grid = default!;
-    private WorkVm? _toEdit;
-    private WorkVm? _toCreate;
-
-
-    protected override Task OnParametersSetAsync()
+    protected override ICollection<WorkVm>? Items
     {
-        if (RepairOrder is null)
-            throw new ArgumentNullException(nameof(RepairOrder), "RepairOrder cannot be null");
-
-        Logger.LogInformation("RepairOrder set to: {repairOrder}", RepairOrder);
-        RepairOrder.Works ??= [];
-        return base.OnParametersSetAsync();
+        get => RepairOrder.Works;
+        set => RepairOrder.Works = value;
     }
 
-    private async Task OnLoadWorkCatalog(LoadDataArgs args)
+    protected override string GetDescription(WorkVm item) => item.Description;
+
+    protected override int GetSortOrder(WorkVm item) => item.SortOrder;
+
+    protected override void SetSortOrder(WorkVm item, int sortOrder) => item.SortOrder = sortOrder;
+
+    protected override WorkVm CreateFromText(string text) => new() { Description = text };
+
+    protected override WorkVm CreateFromCatalogItem(WorkVm catalogItem)
+        => new() { Id = catalogItem.Id, Description = catalogItem.Description };
+
+    /// <summary>Lädt die Katalogtreffer für die Suche im AutoComplete.</summary>
+    private async Task OnLoadCatalog(LoadDataArgs args)
     {
-        Logger.LogTrace("Load defects catalog with Filter: {filter}", args.Filter);
+        Logger.LogTrace("Arbeiten-Katalog laden (Filter: {filter}).", args.Filter);
 
         ServiceResponse<Paginated<WorkVm>> response;
         if (!string.IsNullOrEmpty(args.Filter))
-            response = await WorkService.GetAllAsync(args, rp => rp.Description.ToLower().Contains(args.Filter.ToLower()));
+            response = await WorkService.GetAllAsync(args, w => w.Description.ToLower().Contains(args.Filter.ToLower()));
         else
             response = await WorkService.GetAllAsync(args);
 
-        _Works = response.Data?.Items.ToList() ?? [];
+        Catalog = response.Data?.Items.ToList() ?? [];
     }
-
-    private async Task OnDeleteRow(WorkVm item)
-    {
-        RepairOrder.Works!.Remove(item);
-        Logger.LogInformation("Position {item} deleted.", item);
-        await _grid.Reload();
-    }
-
-    private async Task OnInsertClicked(MouseEventArgs args)
-    {
-        if (_toEdit is not null)
-            return;
-
-        Logger.LogInformation("New position added.");
-        _toEdit = new WorkVm();
-
-        // Neue Zeilen werden ans Ende der Liste gehängt (Append) statt an erster Stelle eingefügt.
-        await _grid.AppendRowAsync(_toEdit);
-    }
-
-    private async Task OnSaveRow(WorkVm item)
-    {
-        await _grid.UpdateRow(item);
-    }
-
-    private async Task OnEditKeyDown(KeyboardEventArgs args, WorkVm item)
-    {
-        if (args.Key != "Enter")
-            return;
-
-        // Das change-Event des RadzenAutoComplete (ValueChanged -> Modellbindung) feuert bei
-        // Enter noch nicht – erst beim Verlassen des Felds (Blur). Damit die Eingabe übernommen
-        // wird, lesen wir den aktuellen Wert direkt aus dem fokussierten Input und aktualisieren
-        // das Modell, BEVOR die Zeile gespeichert wird.
-        var value = await JS.InvokeAsync<string>("camcareGetActiveElementValue");
-        OnDescriptionChanged(value);
-
-        // Wurde die Zeile bereits über die Dropdown-Auswahl (OnSelectedItemChanged) gespeichert,
-        // ist _toEdit null und es ist hier nichts mehr zu tun.
-        if (_toEdit is not null)
-        {
-            await OnSaveRow(item);
-        }
-    }
-
-    private async Task OnCancelEditRow(WorkVm item)
-    {
-        _toEdit = null;
-        _toCreate = null;
-        _grid.CancelEditRow(item);
-        await _grid.Reload();
-    }
-
-    private async Task OnEditRow(WorkVm item)
-    {
-        _toEdit = item;
-        await _grid.EditRow(item);
-    }
-
-    private Task OnRowCreate(WorkVm item)
-    {
-        Logger.LogInformation("Row created with {item}.", item);
-        RepairOrder.Works!.Add(item);
-        _toCreate = item;
-        _toEdit = null;
-        return Task.CompletedTask;
-    }
-
-    private Task OnRowUpdate(WorkVm item)
-    {
-        _toEdit = null;
-        return Task.CompletedTask;
-    }
-
-    private static void OnValueChanged(WorkVm item, string? value)
-        => item.Description = value ?? string.Empty;
-
-    private void OnDescriptionChanged(dynamic item)
-    {
-        Logger.LogDebug("Description changed to {item}.", item as string);
-
-        if (_toEdit is null)
-            return;
-
-        // Beim Verlassen des Felds (Enter/Blur) wird hier nur das Modell aktualisiert –
-        // KEIN `UpdateRow`, damit ein anschließendes `click`-Event (Auswahl per Maus)
-        // verarbeitet werden kann, bevor die Zelle geschlossen wird.
-        var text = item?.ToString() ?? string.Empty;
-        var savedWork = _Works?.FirstOrDefault(d => d.Description == text);
-        _toEdit.Id = savedWork?.Id ?? 0;
-        _toEdit.Description = savedWork?.Description ?? text;
-    }
-
-    private async Task OnSelectedItemChanged(object? selected)
-    {
-        if (selected is not WorkVm selectedWork || _toEdit is null)
-            return;
-
-        Logger.LogDebug("Work '{description}' selected from catalog.", selectedWork.Description);
-        _toEdit.Id = selectedWork.Id;
-        _toEdit.Description = selectedWork.Description;
-        await _grid.UpdateRow(_toEdit);
-    }
-
 }

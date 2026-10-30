@@ -64,6 +64,18 @@ namespace CamCare.Domain
         public virtual ICollection<IncludedComponent> IncludedComponents { get; set; } = [];
         public virtual ICollection<RepairPosition> RepairPositions { get; set; } = [];
         public virtual ICollection<RepairOrderRepairPosition> RepairOrderRepairPositions { get; set; } = [];
+
+        /// <summary>
+        /// Zuordnungen zu Defekten inklusive der am Auftrag gespeicherten Reihenfolge
+        /// (<see cref="RepairOrderDefective.SortOrder"/>).
+        /// </summary>
+        public virtual ICollection<RepairOrderDefective> RepairOrderDefectives { get; set; } = [];
+
+        /// <summary>
+        /// Zuordnungen zu ausgeführten Arbeiten inklusive der am Auftrag gespeicherten
+        /// Reihenfolge (<see cref="RepairOrderWork.SortOrder"/>).
+        /// </summary>
+        public virtual ICollection<RepairOrderWork> RepairOrderWorks { get; set; } = [];
         public virtual ICollection<Employee> Employees { get; set; } = [];
         public virtual ICollection<RepairOrderStatusHistory> RepairOrderStatusHistory { get; set; } = [];
         public virtual ICollection<DataStore> DataStores { get; set; } = [];

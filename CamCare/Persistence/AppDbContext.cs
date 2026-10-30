@@ -44,14 +44,45 @@ namespace CamCare.Persistence
                         .OnDelete(DeleteBehavior.Cascade) // Verhalten für RepairOrder
                 );
 
+            // Die Zuordnungen zu Defekten und ausgeführten Arbeiten sind eigene Entitäten
+            // (Join-Tabellen). Nur so kann zusätzlich die Reihenfolge der am Auftrag erfassten
+            // Einträge gespeichert werden (SortOrder). Die Tabellen- und Spaltennamen der
+            // bestehenden Join-Tabellen bleiben dabei unverändert.
             modelBuilder.Entity<RepairOrder>()
                 .HasMany(e => e.Defectives)
                 .WithMany(e => e.RepairOrders)
-                .UsingEntity(
-                    "DefectiveRepairOrder",
-                    r => r.HasOne(typeof(Defective)).WithMany().OnDelete(DeleteBehavior.Restrict),
-                    l => l.HasOne(typeof(RepairOrder)).WithMany().OnDelete(DeleteBehavior.Cascade)
+                .UsingEntity<RepairOrderDefective>(
+                    r => r.HasOne(j => j.Defective).WithMany(d => d.RepairOrderDefectives)
+                        .HasForeignKey(j => j.DefectiveId).OnDelete(DeleteBehavior.Restrict),
+                    l => l.HasOne(j => j.RepairOrder).WithMany(ro => ro.RepairOrderDefectives)
+                        .HasForeignKey(j => j.RepairOrderId).OnDelete(DeleteBehavior.Cascade)
                 );
+
+            modelBuilder.Entity<RepairOrderDefective>().ToTable("DefectiveRepairOrder");
+            modelBuilder.Entity<RepairOrderDefective>()
+                .Property(j => j.DefectiveId).HasColumnName("DefectivesId");
+            modelBuilder.Entity<RepairOrderDefective>()
+                .Property(j => j.RepairOrderId).HasColumnName("RepairOrdersId");
+            modelBuilder.Entity<RepairOrderDefective>()
+                .HasKey(j => new { j.DefectiveId, j.RepairOrderId });
+
+            modelBuilder.Entity<RepairOrder>()
+                .HasMany(e => e.Works)
+                .WithMany(e => e.RepairOrders)
+                .UsingEntity<RepairOrderWork>(
+                    r => r.HasOne(j => j.Work).WithMany(w => w.RepairOrderWorks)
+                        .HasForeignKey(j => j.WorkId).OnDelete(DeleteBehavior.Restrict),
+                    l => l.HasOne(j => j.RepairOrder).WithMany(ro => ro.RepairOrderWorks)
+                        .HasForeignKey(j => j.RepairOrderId).OnDelete(DeleteBehavior.Cascade)
+                );
+
+            modelBuilder.Entity<RepairOrderWork>().ToTable("RepairOrderWork");
+            modelBuilder.Entity<RepairOrderWork>()
+                .Property(j => j.WorkId).HasColumnName("WorksId");
+            modelBuilder.Entity<RepairOrderWork>()
+                .Property(j => j.RepairOrderId).HasColumnName("RepairOrdersId");
+            modelBuilder.Entity<RepairOrderWork>()
+                .HasKey(j => new { j.RepairOrderId, j.WorkId });
 
             modelBuilder.Entity<RepairOrder>()
                 .HasMany(e => e.IncludedComponents)

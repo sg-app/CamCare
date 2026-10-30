@@ -60,6 +60,42 @@ h1:focus {
     border-bottom: 1px solid black;
 }
 
+/* Zuordnungen eines Reparaturauftrags (Defekte, Arbeiten, mitgelieferte Komponenten und
+   zu berechnende Artikel). Die Zeilen werden per Drag&Drop umsortiert. */
+.camcare-assignment-row {
+    padding: 0.25rem 0.5rem;
+    border-top: 2px solid transparent;
+    border-bottom: 1px solid var(--rz-base-300);
+    cursor: grab;
+}
+
+    .camcare-assignment-row:last-child {
+        border-bottom: none;
+    }
+
+    .camcare-assignment-row:hover {
+        background-color: var(--rz-base-100);
+    }
+
+.camcare-assignment-dragging {
+    opacity: 0.5;
+}
+
+.camcare-assignment-drop-target {
+    border-top-color: var(--rz-primary);
+}
+
+/* Das Material-Theme setzt für RadzenText einen Abstand nach unten (margin-block-end).
+   Radzen hebt diesen Abstand nur für direkte Kinder eines RadzenStack auf
+   (.rz-stack > .rz-text). In den Zuordnungszeilen liegt der Text in einem
+   flex-grow-1-Container, daher verschiebt der Abstand den Text in der
+   align-items: center-Zeile nach oben. Hier wird der Abstand entfernt, damit
+   Beschreibung, Icon und Button sauber auf einer Linie stehen. */
+.camcare-assignment-row .rz-text,
+.camcare-assignment-row .rz-text-body1 {
+    margin-block-end: 0 !important;
+}
+
 .rz-tile-box {
     display: flex;
     flex-direction: column;

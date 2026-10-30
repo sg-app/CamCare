@@ -68,3 +68,32 @@ window.camcareGetActiveElementValue = function () {
   }
   return null;
 };
+
+// Leert das Eingabefeld eines RadzenAutoComplete innerhalb des übergebenen Containers.
+// Wird nach dem Übernehmen einer Eingabe benötigt: Der gebundene Wert wird auf null gesetzt,
+// Radzen aktualisiert das Eingabefeld dabei aber nicht (es bleibt mit dem zuletzt erfassten
+// Text gefüllt). Das input-Event informiert Radzen anschließend über den geleerten Wert.
+// Der Container wird geprüft: Ist die Komponente (noch) nicht gerendert, wird ein leeres
+// ElementReference übergeben, das kein DOM-Element ist.
+window.camcareClearAutoComplete = function (container) {
+  if (!isElement(container)) return;
+  var input = container.querySelector("input.rz-autocomplete-input");
+  if (!input) return;
+  input.value = "";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+};
+
+// Prüft, ob im übergebenen Container ein AutoComplete-Eintrag markiert ist (Navigation im
+// Dropdown mit den Pfeiltasten). Nur dann übernimmt Radzen den Eintrag beim Enter-Druck selbst
+// (SelectedItemChanged). Die Markierung wird über `aria-selected` vom Server gerendert und beim
+// Schließen des Dropdowns wieder zurückgesetzt – sie ist damit immer aktuell.
+window.camcareHasHighlightedAutoCompleteItem = function (container) {
+  if (!isElement(container)) return false;
+  return !!container.querySelector('.rz-autocomplete-list-item[aria-selected="true"]');
+};
+
+// Hilfsfunktion: `container` kann ein ElementReference sein, das (noch) nicht gerendert wurde
+// und von Blazor als Objekt statt als DOM-Element übergeben wird.
+function isElement(container) {
+  return !!container && typeof container.querySelector === "function";
+}
