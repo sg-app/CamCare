@@ -27,6 +27,16 @@ npm test          # headless
 npm run test:headed
 ```
 
+Die Anmeldung erfolgt über `POST /api/auth/login` mit der Gruppe `buero` und deren
+Standard-Passwort. Wurde das Passwort in der lokalen Datenbank geändert, lassen sich die
+Zugangsdaten überschreiben:
+
+```powershell
+$env:CAMCARE_E2E_GROUP = 'werkstatt'
+$env:CAMCARE_E2E_PASSWORD = 'werk'
+npm test
+```
+
 Konfiguration: `e2e/playwright.config.ts`
 
 ## Was wird getestet
@@ -44,14 +54,27 @@ in den Ausgangszustand (kein Logo) zurück.
 
 ### `tests/autocomplete.spec.ts`
 
-1. **Defekte** – Mausklick auf einen Katalogtreffer übernimmt den vollen Wert
-   (Regression: Es bleibt kein unvollständiger getippter Teilwert in der Zelle).
-2. **Mitgelieferte Komponenten** – Mausklick auf einen Katalogtreffer übernimmt den Wert.
-3. **Reparaturpositionen** – Mausklick übernimmt Beschreibung *und* Artikelnummer.
-4. **Defekte (freie Eingabe)** – Text ohne Katalogtreffer wird über den
-   Save-Button übernommen.
-5. **Defekte (Append)** – neu hinzugefügte Zeilen werden ans Ende der Liste
-   gehängt (die zuletzt hinzugefügte Zeile steht unterhalb der vorherigen).
+**Zuordnungen über das Grid (Mitgelieferte Komponenten, Reparaturpositionen)**
+
+1. **Mitgelieferte Komponenten** – Mausklick auf einen Katalogtreffer übernimmt den vollen Wert.
+2. **Reparaturpositionen** – Mausklick übernimmt Beschreibung *und* Artikelnummer.
+
+**Zuordnungen über AutoComplete (Defekte, Ausgeführte Arbeiten)**
+
+Die drei Wege, auf denen ein Eintrag zugeordnet wird, werden jeweils einzeln geprüft:
+
+3. **Pfeiltasten + Enter** – der im Dropdown markierte (`aria-selected="true"`) Katalogtreffer
+   wird mit Enter übernommen (voller Katalogtext, genau ein Eintrag, Feld danach leer).
+4. **Maus** – ein Klick auf den Katalogtreffer übernimmt ihn sofort, ohne Enter/„Einfügen“.
+5. **Eingabe ohne Auswahl** – Freitext wird mit Enter bzw. über den Button „Einfügen“ angelegt;
+   entspricht die Eingabe exakt einem Katalogeintrag, wird dieser übernommen; ein bereits
+   zugeordneter Eintrag wird nicht doppelt angelegt.
+6. **Reihenfolge** – neue Einträge werden ans Ende gehängt, per Drag&Drop umsortiert und beim
+   Entfernen eines Eintrags bleibt die Reihenfolge der übrigen erhalten.
+
+Die Zuordnung wird jeweils über den exakten Beschreibungstext (`getByText(..., { exact: true })`)
+geprüft, damit auch geprüft ist, dass kein doppelter bzw. nur teilweise übernommener Eintrag
+entsteht.
 
 Die Tests sind bewusst **seriell** (`workers: 1`), da alle Tests gegen eine
 einzelne In-Memory-App-Instanz laufen und sich parallele Edits auf denselben

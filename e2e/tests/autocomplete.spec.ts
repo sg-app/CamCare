@@ -45,21 +45,65 @@ async function rowTexts(page: Page, name: string): Promise<string[]> {
 }
 
 /**
- * Sucht einen Katalogeintrag und übernimmt den vollständigen Text per Mausklick in das
- * Eingabefeld. Eingefügt wird der Eintrag anschließend mit Enter oder „Einfügen“.
+ * Öffnet das Dropdown einer Zuordnung, tippt den Suchtext und wartet auf den Katalogtreffer.
+ * Liefert das Eingabefeld und den Treffer zurück.
  */
-async function selectCatalogItem(page: Page, name: string, searchText: string, itemText: string): Promise<void> {
+async function searchCatalogItem(page: Page, name: string, searchText: string, itemText: string) {
   const input = searchInput(page, name);
   await input.click();
   await input.pressSequentially(searchText, { delay: 100 });
 
   const item = page.locator('.rz-autocomplete-list-item', { hasText: itemText }).first();
   await expect(item).toBeVisible({ timeout: 15_000 });
-  await item.click();
 
-  // Der vollständige Text des Katalogtreffers wird erst mit dem Server-Roundtrip in das
-  // Eingabefeld übernommen – darauf warten, bevor mit Enter eingefügt wird.
-  await expect(input).toHaveValue(itemText, { timeout: 15_000 });
+  return { input, item };
+}
+
+/**
+ * Tippt einen Suchtext, markiert den ersten Katalogtreffer mit den Pfeiltasten und liefert
+ * das Eingabefeld sowie den vollständigen Text des markierten Treffers zurück.
+ */
+async function highlightFirstCatalogItem(page: Page, name: string, searchText: string) {
+  const input = searchInput(page, name);
+  await input.click();
+  await input.pressSequentially(searchText, { delay: 100 });
+
+  await expect(page.locator('.rz-autocomplete-list-item').first()).toBeVisible({ timeout: 15_000 });
+
+  // Mit den Pfeiltasten wird der Eintrag markiert (aria-selected wird vom Server gesetzt).
+  await input.press('ArrowDown');
+  const highlighted = page.locator('.rz-autocomplete-list-item[aria-selected="true"]').first();
+  await expect(highlighted).toBeVisible({ timeout: 15_000 });
+
+  return { input, expected: await visibleText(highlighted) };
+}
+
+/** Sichtbarer Text eines Elements, auf einfache Leerzeichen normalisiert. */
+async function visibleText(locator: Locator): Promise<string> {
+  return (await locator.innerText()).replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Zugeordnete Einträge einer Zuordnung mit exakt diesem Beschreibungstext. Bewusst auf die
+ * Zeilen eingegrenzt: Die (ausgeblendeten) Einträge des AutoComplete-Dropdowns enthalten
+ * denselben Text.
+ */
+function entries(page: Page, name: string, text: string): Locator {
+  return assignment(page, name).locator('.camcare-assignment-row').getByText(text, { exact: true });
+}
+
+/**
+ * Prüft, dass der Eintrag dem Auftrag genau einmal zugeordnet ist (also nicht doppelt
+ * angelegt wurde). Die Prüfung erfolgt auf den exakten Text des Eintrags.
+ */
+async function expectEntryOnce(page: Page, name: string, text: string): Promise<void> {
+  await expect(entries(page, name, text).first()).toBeVisible({ timeout: 15_000 });
+  await expect(entries(page, name, text)).toHaveCount(1, { timeout: 15_000 });
+}
+
+/** Prüft, dass dem Auftrag kein Eintrag mit genau diesem Text zugeordnet ist. */
+async function expectNoEntry(page: Page, name: string, text: string): Promise<void> {
+  await expect(entries(page, name, text)).toHaveCount(0, { timeout: 15_000 });
 }
 
 /** Fügt einen Text über das AutoComplete und die Enter-Taste dem Auftrag hinzu. */
@@ -162,7 +206,7 @@ async function selectAutocompleteItem(
 
 test.describe('Zuordnungen über das Grid (Komponenten und Reparaturpositionen)', () => {
   test.beforeEach(async ({ page }) => {
-    await loginViaApi(page, 'buero', 'buero');
+    await loginViaApi(page);
   });
 
   test('Mitgelieferte Komponenten: Mausklick auf Katalogtreffer übernimmt den vollen Wert', async ({ page }) => {
@@ -187,32 +231,69 @@ test.describe('Zuordnungen über das Grid (Komponenten und Reparaturpositionen)'
 
 test.describe('Zuordnungen über AutoComplete (Defekte und Arbeiten)', () => {
   test.beforeEach(async ({ page }) => {
-    await loginViaApi(page, 'buero', 'buero');
+    await loginViaApi(page);
   });
 
-  test('Defekte: Mausklick auf Katalogtreffer und Enter übernimmt den vollen Wert', async ({ page }) => {
+  test('Defekte: Auswahl mit den Pfeiltasten und Enter fügt den Katalogtreffer ein', async ({ page }) => {
     await openFirstRepairOrder(page);
 
-    await selectCatalogItem(page, 'Defekte', 'Glas', 'Glas gebrochen');
-    await searchInput(page, 'Defekte').press('Enter');
+    const { input, expected } = await highlightFirstCatalogItem(page, 'Defekte', 'Glas');
 
-    // Erwartung: Der zugeordnete Eintrag zeigt den vollständigen Katalogtext, nicht nur
-    // den getippten Teil ("Glas").
-    await expect(rows(page, 'Defekte').filter({ hasText: 'Glas gebrochen' }).first())
-      .toBeVisible({ timeout: 15_000 });
+    await input.press('Enter');
 
-    await expect
-      .poll(async () => {
-        const texts = (await rowTexts(page, 'Defekte')).filter((row) => row.includes('Glas'));
-        return texts.length === 1 && texts[0].includes('Glas gebrochen');
-      }, { timeout: 5_000 })
-      .toBe(true);
+    // Übernommen wird der vollständige Katalogtext – nicht der nur getippte Teil ("Glas").
+    await expectEntryOnce(page, 'Defekte', expected);
+    await expectNoEntry(page, 'Defekte', 'Glas');
+
+    // Nach dem Übernehmen ist das Eingabefeld wieder leer.
+    await expect(input).toHaveValue('');
   });
 
-  test('Defekte: frei erfasster Text wird mit Enter übernommen', async ({ page }) => {
+  test('Defekte: Auswahl mit der Maus fügt den Katalogtreffer ohne Enter ein', async ({ page }) => {
     await openFirstRepairOrder(page);
 
-    await insertWithEnter(page, 'Defekte', 'Defekt Sonderanfertigung');
+    const { input, item } = await searchCatalogItem(page, 'Defekte', 'Glas', 'Glas gebrochen');
+    const expected = await visibleText(item);
+
+    await item.click();
+
+    // Der Mausklick übernimmt den Eintrag direkt – ohne Enter und ohne „Einfügen“.
+    await expectEntryOnce(page, 'Defekte', expected);
+    await expect(input).toHaveValue('');
+  });
+
+  test('Defekte: Eingabe ohne Auswahl legt einen neuen Eintrag an', async ({ page }) => {
+    await openFirstRepairOrder(page);
+
+    const text = 'Defekt Sonderanfertigung';
+    await insertWithEnter(page, 'Defekte', text);
+
+    // Der Freitext wird genau einmal angelegt (kein Duplikat durch das nachlaufende
+    // change-Event des AutoComplete).
+    await expectEntryOnce(page, 'Defekte', text);
+    await expect(searchInput(page, 'Defekte')).toHaveValue('');
+  });
+
+  test('Defekte: Eingabe ohne Auswahl übernimmt einen exakt passenden Katalogtreffer', async ({ page }) => {
+    await openFirstRepairOrder(page);
+
+    // Der Text entspricht genau einem Katalogeintrag, wird aber nicht im Dropdown ausgewählt.
+    const input = searchInput(page, 'Defekte');
+    await input.click();
+    await input.pressSequentially('Glas gebrochen', { delay: 100 });
+    await input.press('Enter');
+
+    await expectEntryOnce(page, 'Defekte', 'Glas gebrochen');
+  });
+
+  test('Defekte: bereits zugeordneter Eintrag wird nicht doppelt angelegt', async ({ page }) => {
+    await openFirstRepairOrder(page);
+
+    const text = 'Defekt Doppelt';
+    await insertWithEnter(page, 'Defekte', text);
+    await insertWithEnter(page, 'Defekte', text);
+
+    await expectEntryOnce(page, 'Defekte', text);
   });
 
   test('Defekte: Eingabe wird über den Button „Einfügen“ übernommen', async ({ page }) => {
@@ -221,14 +302,25 @@ test.describe('Zuordnungen über AutoComplete (Defekte und Arbeiten)', () => {
     await insertWithButton(page, 'Defekte', 'Defekt Einfuegen-Test');
   });
 
-  test('Arbeiten: Mausklick auf Katalogtreffer und Enter übernimmt den vollen Wert', async ({ page }) => {
+  test('Arbeiten: Auswahl mit den Pfeiltasten und Enter fügt den Katalogtreffer ein', async ({ page }) => {
     await openFirstRepairOrder(page);
 
-    await selectCatalogItem(page, 'Arbeiten', 'Glas abgedr', 'Glas abgedrückt');
-    await searchInput(page, 'Arbeiten').press('Enter');
+    const { input, expected } = await highlightFirstCatalogItem(page, 'Arbeiten', 'Glas abgedr');
 
-    await expect(rows(page, 'Arbeiten').filter({ hasText: 'Glas abgedrückt' }).first())
-      .toBeVisible({ timeout: 15_000 });
+    await input.press('Enter');
+
+    await expectEntryOnce(page, 'Arbeiten', expected);
+    await expect(input).toHaveValue('');
+  });
+
+  test('Arbeiten: Auswahl mit der Maus fügt den Katalogtreffer ohne Enter ein', async ({ page }) => {
+    await openFirstRepairOrder(page);
+
+    const { item } = await searchCatalogItem(page, 'Arbeiten', 'Glas abgedr', 'Glas abgedrückt');
+
+    await item.click();
+
+    await expectEntryOnce(page, 'Arbeiten', 'Glas abgedrückt');
   });
 
   test('Reihenfolge: neue Einträge werden ans Ende der Liste angehängt', async ({ page }) => {
@@ -279,26 +371,29 @@ test.describe('Zuordnungen über AutoComplete (Defekte und Arbeiten)', () => {
       .toBe(true);
   });
 
-  test('Reihenfolge: Entfernen eines Eintrags nummeriert die Liste neu', async ({ page }) => {
+  test('Reihenfolge: Entfernen eines Eintrags behält die Reihenfolge der übrigen Einträge', async ({ page }) => {
     await openFirstRepairOrder(page);
 
     const firstText = 'Arbeit Entfernen A';
-    const secondText = 'Arbeit Entfernen B';
+    const middleText = 'Arbeit Entfernen B';
+    const lastText = 'Arbeit Entfernen C';
 
     await insertWithEnter(page, 'Arbeiten', firstText);
-    await insertWithEnter(page, 'Arbeiten', secondText);
+    await insertWithEnter(page, 'Arbeiten', middleText);
+    await insertWithEnter(page, 'Arbeiten', lastText);
 
-    await rows(page, 'Arbeiten').filter({ hasText: firstText }).first().locator('button').last().click();
+    await rows(page, 'Arbeiten').filter({ hasText: middleText }).first().locator('button').last().click();
 
-    await expect(rows(page, 'Arbeiten').filter({ hasText: firstText })).toHaveCount(0, { timeout: 15_000 });
-    await expect(rows(page, 'Arbeiten').filter({ hasText: secondText }).first()).toBeVisible();
+    await expect(rows(page, 'Arbeiten').filter({ hasText: middleText }))
+      .toHaveCount(0, { timeout: 15_000 });
 
-    // Die verbleibenden Einträge werden fortlaufend neu nummeriert.
+    // Die übrigen Einträge behalten ihre Reihenfolge (A steht weiterhin vor C).
     await expect
       .poll(async () => {
         const texts = await rowTexts(page, 'Arbeiten');
-        const index = texts.findIndex((row) => row.includes(secondText));
-        return index >= 0 && texts[index].includes(`${index + 1}.`);
+        const firstIndex = texts.findIndex((row) => row.includes(firstText));
+        const lastIndex = texts.findIndex((row) => row.includes(lastText));
+        return firstIndex >= 0 && lastIndex > firstIndex;
       }, { timeout: 15_000 })
       .toBe(true);
   });

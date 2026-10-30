@@ -4,7 +4,7 @@
    gespeichert (SortOrder) und kann per Drag&Drop geändert werden. *@
 @inherits AssignmentListComponentBase<DefectiveVm>
 
-<div class="mt-2" data-assignment="Defekte">
+<div class="mt-2" data-assignment="Defekte" @ref="Container">
     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
         <InsertIconButton Click="OnInsertClicked" />
         <RadzenText Text="Defekte" TextStyle="TextStyle.H6" />

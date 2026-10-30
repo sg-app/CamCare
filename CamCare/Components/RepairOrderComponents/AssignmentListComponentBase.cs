@@ -10,9 +10,12 @@ namespace CamCare.Components.RepairOrderComponents
     /// Basis für die Zuordnungen eines Reparaturauftrags (Defekte, ausgeführte Arbeiten,
     /// mitgelieferte Komponenten und zu berechnende Artikel).
     /// <para>
-    /// Die Einträge werden über ein AutoComplete gesucht bzw. frei erfasst und mit Enter oder
-    /// „Einfügen“ ans Ende der Liste gehängt. Beim Einfügen wird die Reihenfolge mitgespeichert
-    /// (<c>SortOrder</c>); sie kann anschließend per Drag&amp;Drop geändert werden.
+    /// Die Einträge werden über ein AutoComplete gesucht bzw. frei erfasst und ans Ende der Liste
+    /// gehängt. Ein Katalogtreffer wird bereits bei der Auswahl übernommen (Mausklick oder
+    /// Pfeiltasten + Enter); eine Eingabe ohne Auswahl wird mit Enter bzw. über „Einfügen“
+    /// angelegt oder – bei exakter Übereinstimmung – als Katalogeintrag übernommen. Beim Einfügen
+    /// wird die Reihenfolge mitgespeichert (<c>SortOrder</c>); sie kann anschließend per
+    /// Drag&amp;Drop geändert werden.
     /// </para>
     /// </summary>
     /// <typeparam name="TItem">Typ der zugeordneten Einträge (ViewModel).</typeparam>
@@ -79,20 +82,31 @@ namespace CamCare.Components.RepairOrderComponents
         /// </summary>
         protected void OnSearchTextChanged(string? value)
         {
-            if (_insertedText is not null && string.Equals(_insertedText, value, StringComparison.Ordinal))
-                return;
+            if (_insertedText is not null)
+            {
+                if (string.Equals(_insertedText, value, StringComparison.Ordinal))
+                    return;
+
+                // Es wurde wieder etwas anderes eingegeben – der Merker gilt nicht mehr.
+                _insertedText = null;
+            }
 
             SearchText = value;
         }
 
         /// <summary>
-        /// Übernimmt den vollständigen Text eines per Maus ausgewählten Katalogeintrags in das
-        /// Eingabefeld. Eingefügt wird der Eintrag mit Enter oder über „Einfügen“.
+        /// Übernimmt einen im Dropdown ausgewählten Katalogeintrag direkt in die Zuordnung.
+        /// Radzen meldet über <c>SelectedItemChanged</c> sowohl die Auswahl mit der Maus als auch
+        /// die Auswahl mit den Pfeiltasten und Enter – beide Fälle werden hier eingefügt.
         /// </summary>
-        protected void OnCatalogItemSelected(object? selected)
+        protected async Task OnCatalogItemSelected(object? selected)
         {
-            if (selected is TItem item)
-                SearchText = GetDescription(item);
+            if (selected is not TItem item)
+                return;
+
+            Logger.LogDebug("Katalogeintrag '{description}' wurde ausgewählt.", GetDescription(item));
+
+            await InsertCatalogItemAsync(item);
         }
 
         /// <summary>Fügt die Eingabe mit der Enter-Taste dem Auftrag hinzu.</summary>
@@ -101,14 +115,45 @@ namespace CamCare.Components.RepairOrderComponents
             if (args.Key != "Enter")
                 return;
 
+            // Ist im Dropdown ein Eintrag markiert (Navigation mit den Pfeiltasten), übernimmt
+            // Radzen die Auswahl beim Enter-Druck selbst und ruft `SelectedItemChanged` auf.
+            // Ein zusätzliches Einfügen hier würde den Eintrag doppelt anlegen.
+            if (await HasHighlightedCatalogItemAsync())
+                return;
+
             // Das change-Event des RadzenAutoComplete (ValueChanged-Modellbindung) feuert bei
             // Enter noch nicht – erst beim Verlassen des Felds (Blur). Damit die Eingabe
             // übernommen wird, wird der aktuelle Wert direkt aus dem Eingabefeld gelesen.
             var value = await JS.InvokeAsync<string?>("camcareGetActiveElementValue");
-            if (!string.IsNullOrWhiteSpace(value))
-                SearchText = value;
+            var text = value?.Trim();
 
+            if (string.IsNullOrWhiteSpace(text) || string.Equals(text, _insertedText, StringComparison.Ordinal))
+                return;
+
+            SearchText = text;
             await InsertAsync();
+        }
+
+        /// <summary>
+        /// Prüft, ob im AutoComplete-Dropdown ein Eintrag markiert ist (Navigation mit den
+        /// Pfeiltasten). Nur dann wählt Radzen den Eintrag beim Enter-Druck selbst aus.
+        /// </summary>
+        private async Task<bool> HasHighlightedCatalogItemAsync()
+        {
+            try
+            {
+                return await JS.InvokeAsync<bool>("camcareHasHighlightedAutoCompleteItem", Container);
+            }
+            catch (JSDisconnectedException)
+            {
+                // Der Circuit wurde beendet – es kann nichts mehr markiert sein.
+                return false;
+            }
+            catch (JSException)
+            {
+                // Das Dropdown ist nicht (mehr) vorhanden – dann gibt es auch keine Markierung.
+                return false;
+            }
         }
 
         /// <summary>Fügt die Eingabe über den Button „Einfügen“ dem Auftrag hinzu.</summary>
@@ -125,13 +170,18 @@ namespace CamCare.Components.RepairOrderComponents
             {
                 // Der Circuit wurde beendet – das Eingabefeld ist nicht mehr vorhanden.
             }
+            catch (JSException ex)
+            {
+                // Das Eingabefeld ist (noch) nicht gerendert – das Leeren kann entfallen.
+                Logger.LogDebug(ex, "Das AutoComplete-Eingabefeld konnte nicht geleert werden.");
+            }
         }
 
         /// <summary>
         /// Hängt den eingegebenen Eintrag ans Ende der Zuordnung an und vergibt die Reihenfolge.
-        /// Entspricht die Eingabe einem Katalogeintrag, wird dieser übernommen; ansonsten wird ein
-        /// neuer Eintrag aus dem erfassten Text angelegt (und beim Speichern des Auftrags in den
-        /// Stammdaten hinterlegt).
+        /// Entspricht die Eingabe exakt einem Katalogeintrag, wird dieser ausgewählt; ansonsten
+        /// wird ein neuer Eintrag aus dem erfassten Text angelegt (und beim Speichern des Auftrags
+        /// in den Stammdaten hinterlegt).
         /// </summary>
         protected async Task InsertAsync()
         {
@@ -139,28 +189,41 @@ namespace CamCare.Components.RepairOrderComponents
             if (string.IsNullOrWhiteSpace(text))
                 return;
 
-            var items = Items ??= new List<TItem>();
-
-            // Bereits zugeordnete Einträge werden nicht doppelt angelegt.
-            if (items.Any(item => string.Equals(GetDescription(item), text, StringComparison.OrdinalIgnoreCase)))
-            {
-                Logger.LogDebug("'{text}' ist dem Auftrag bereits zugeordnet.", text);
-                await ResetSearchAsync(text);
-                return;
-            }
-
             var catalogItem = Catalog?.FirstOrDefault(item =>
                 string.Equals(GetDescription(item), text, StringComparison.OrdinalIgnoreCase));
 
-            var newItem = catalogItem is null ? CreateFromText(text) : CreateFromCatalogItem(catalogItem);
+            if (catalogItem is not null)
+                await InsertCatalogItemAsync(catalogItem);
+            else
+                await InsertItemAsync(CreateFromText(text), text);
+        }
+
+        /// <summary>Hängt einen im Dropdown ausgewählten Katalogeintrag ans Ende der Zuordnung an.</summary>
+        protected async Task InsertCatalogItemAsync(TItem catalogItem)
+            => await InsertItemAsync(CreateFromCatalogItem(catalogItem), GetDescription(catalogItem));
+
+        /// <summary>
+        /// Hängt einen Eintrag ans Ende der Zuordnung an. Bereits zugeordnete Einträge werden nicht
+        /// doppelt angelegt; in diesem Fall wird lediglich die Suche zurückgesetzt.
+        /// </summary>
+        private async Task InsertItemAsync(TItem newItem, string description)
+        {
+            var items = Items ??= new List<TItem>();
+
+            if (items.Any(item => string.Equals(GetDescription(item), description, StringComparison.OrdinalIgnoreCase)))
+            {
+                Logger.LogDebug("'{description}' ist dem Auftrag bereits zugeordnet.", description);
+                await ResetSearchAsync(description);
+                return;
+            }
 
             SetSortOrder(newItem, items.Count);
             items.Add(newItem);
 
             Logger.LogInformation("'{item}' wurde dem Auftrag {repairOrderId} hinzugefügt (Position {sortOrder}).",
-                GetDescription(newItem), RepairOrder.Id, GetSortOrder(newItem));
+                description, RepairOrder.Id, GetSortOrder(newItem));
 
-            await ResetSearchAsync(text);
+            await ResetSearchAsync(description);
         }
 
         /// <summary>
