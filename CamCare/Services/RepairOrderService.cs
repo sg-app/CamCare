@@ -66,8 +66,10 @@ namespace CamCare.Services
                 .Include(i => i.LogisticProvider)
                 .Include(i => i.DeliveryAddress)
                 .Include(i => i.Employees)
-                .Include(i => i.Defectives)
-                .Include(i => i.Works)
+                .Include(i => i.RepairOrderDefectives)
+                    .ThenInclude(j => j.Defective)
+                .Include(i => i.RepairOrderWorks)
+                    .ThenInclude(j => j.Work)
                 .Include(i => i.IncludedComponents)
                 .Include(i => i.RepairOrderRepairPositions)
                     .ThenInclude(rp => rp.RepairPosition)
@@ -139,8 +141,10 @@ namespace CamCare.Services
                         .ThenInclude(i => i.RepairOrderStatus)
                     .Include(i => i.LogisticProvider)
                     .Include(i => i.Employees)
-                    .Include(i => i.Defectives)
-                    .Include(i => i.Works)
+                    .Include(i => i.RepairOrderDefectives)
+                        .ThenInclude(j => j.Defective)
+                    .Include(i => i.RepairOrderWorks)
+                        .ThenInclude(j => j.Work)
                     .Include(i => i.IncludedComponents)
                     .Include(i => i.RepairOrderRepairPositions)
                         .ThenInclude(rp => rp.RepairPosition)
@@ -256,8 +260,8 @@ namespace CamCare.Services
                 // E-Mail-Adressen zuordnen bzw. neu zum Kunden speichern.
                 await ApplyEmailAddressesAsync(context, vm, entity);
 
-                entity.Defectives = new List<Defective>();
-                entity.Works = new List<Work>();
+                entity.RepairOrderDefectives = new List<RepairOrderDefective>();
+                entity.RepairOrderWorks = new List<RepairOrderWork>();
                 entity.IncludedComponents = new List<IncludedComponent>();
                 entity.Employees = new List<Employee>();
                 entity.RepairOrderRepairPositions = new List<RepairOrderRepairPosition>();
@@ -280,7 +284,8 @@ namespace CamCare.Services
                     entity.ArrivedAt = DateTime.UtcNow;
                 }
 
-                // Defectives zuordnen oder anlegen
+                // Defectives zuordnen oder anlegen. Die Reihenfolge der im Formular erfassten
+                // Einträge wird als SortOrder gespeichert.
                 if (vm.Defectives != null)
                 {
                     var descriptions = vm.Defectives
@@ -305,7 +310,11 @@ namespace CamCare.Services
                             defectivesByDescription[defVm.Description] = defective;
                         }
 
-                        entity.Defectives.Add(defective);
+                        AddAssignment(entity.RepairOrderDefectives, new RepairOrderDefective
+                        {
+                            RepairOrder = entity,
+                            Defective = defective
+                        });
                     }
                 }
 
@@ -334,7 +343,11 @@ namespace CamCare.Services
                             worksByDescription[defVm.Description] = work;
                         }
 
-                        entity.Works.Add(work);
+                        AddAssignment(entity.RepairOrderWorks, new RepairOrderWork
+                        {
+                            RepairOrder = entity,
+                            Work = work
+                        });
                     }
                 }
 
@@ -450,8 +463,10 @@ namespace CamCare.Services
             {
                 var entity = await context.RepairOrders
                     .AsSplitQuery()
-                    .Include(r => r.Defectives)
-                    .Include(i => i.Works)
+                    .Include(r => r.RepairOrderDefectives)
+                        .ThenInclude(j => j.Defective)
+                    .Include(r => r.RepairOrderWorks)
+                        .ThenInclude(j => j.Work)
                     .Include(r => r.IncludedComponents)
                     .Include(r => r.RepairOrderRepairPositions)
                         .ThenInclude(rp => rp.RepairPosition)
@@ -546,9 +561,9 @@ namespace CamCare.Services
                     newDefectives.Add(defective);
                 }
 
-                entity.Defectives.Clear();
-                foreach (var defective in newDefectives)
-                    entity.Defectives.Add(defective);
+                SyncAssignments(context, entity.RepairOrderDefectives, newDefectives,
+                    assignment => assignment.Defective,
+                    defective => new RepairOrderDefective { RepairOrder = entity, Defective = defective });
 
                 // --- Works synchronisieren ---
                 var vmWorks = vm.Works ?? new List<WorkVm>();
@@ -578,9 +593,9 @@ namespace CamCare.Services
                     newWorks.Add(work);
                 }
 
-                entity.Works.Clear();
-                foreach (var work in newWorks)
-                    entity.Works.Add(work);
+                SyncAssignments(context, entity.RepairOrderWorks, newWorks,
+                    assignment => assignment.Work,
+                    work => new RepairOrderWork { RepairOrder = entity, Work = work });
 
                 // --- Included Components synchronisieren ---
                 var vmIncludedComponents = vm.IncludedComponents ?? new List<IncludedComponentVm>();
@@ -849,8 +864,10 @@ namespace CamCare.Services
                         .ThenInclude(i => i.RepairOrderStatus)
                     .Include(i => i.LogisticProvider)
                     .Include(i => i.Employees)
-                    .Include(i => i.Defectives)
-                    .Include(i => i.Works)
+                    .Include(i => i.RepairOrderDefectives)
+                        .ThenInclude(j => j.Defective)
+                    .Include(i => i.RepairOrderWorks)
+                        .ThenInclude(j => j.Work)
                     .Include(i => i.IncludedComponents)
                     .Include(i => i.RepairOrderRepairPositions)
                         .ThenInclude(rp => rp.RepairPosition)
@@ -883,6 +900,59 @@ namespace CamCare.Services
                 _logger.LogError(ex, "Fehler in GetByIdAsync");
                 NotifyError("Fehler beim Abrufen des Datensatzes");
                 return ServiceResponse.Failure<RepairOrderVm>("Fehler beim Abrufen des Datensatzes", ex);
+            }
+        }
+
+        /// <summary>
+        /// Fügt eine neue Zuordnung (Join-Entität) ans Ende der Sammlung an. Die Reihenfolge
+        /// (<see cref="IRepairOrderAssignment.SortOrder"/>) ergibt sich aus der Anzahl der bereits
+        /// erfassten Einträge, sodass die Reihenfolge der Eingabe gespeichert wird.
+        /// </summary>
+        private static void AddAssignment<TAssignment>(ICollection<TAssignment> assignments, TAssignment assignment)
+            where TAssignment : class, IRepairOrderAssignment
+        {
+            assignment.SortOrder = assignments.Count;
+            assignments.Add(assignment);
+        }
+
+        /// <summary>
+        /// Synchronisiert eine Zuordnungssammlung (Join-Entitäten) mit den im Formular erfassten
+        /// Einträgen: Nicht mehr enthaltene Zuordnungen werden entfernt, fehlende angelegt und die
+        /// Reihenfolge (<see cref="IRepairOrderAssignment.SortOrder"/>) anhand der Reihenfolge im
+        /// Formular gesetzt.
+        /// </summary>
+        private static void SyncAssignments<TAssignment, TEntity>(
+            IAppDbContext context,
+            ICollection<TAssignment> assignments,
+            IReadOnlyList<TEntity> requested,
+            Func<TAssignment, TEntity> getEntity,
+            Func<TEntity, TAssignment> createAssignment)
+            where TAssignment : class, IRepairOrderAssignment
+            where TEntity : class
+        {
+            // Einträge, die dem Auftrag nicht mehr zugeordnet sind, werden entfernt.
+            var existing = assignments.ToList();
+            foreach (var assignment in existing.Where(a => !requested.Contains(getEntity(a))))
+            {
+                assignments.Remove(assignment);
+                context.Set<TAssignment>().Remove(assignment);
+            }
+
+            // Reihenfolge aus dem Formular übernehmen; fehlende Zuordnungen werden angelegt.
+            var targets = requested.Distinct().ToList();
+            for (var index = 0; index < targets.Count; index++)
+            {
+                var target = targets[index];
+                var assignment = assignments.FirstOrDefault(a => ReferenceEquals(getEntity(a), target))
+                    ?? existing.FirstOrDefault(a => ReferenceEquals(getEntity(a), target));
+
+                if (assignment is null)
+                {
+                    assignment = createAssignment(target);
+                    assignments.Add(assignment);
+                }
+
+                assignment.SortOrder = index;
             }
         }
 

@@ -10,5 +10,8 @@ namespace CamCare.Domain
 
         public virtual ICollection<RepairOrder> RepairOrders { get; set; } = [];
 
+        /// <summary>Auftragszuordnungen inklusive der am Auftrag gespeicherten Reihenfolge.</summary>
+        public virtual ICollection<RepairOrderDefective> RepairOrderDefectives { get; set; } = [];
+
     }
 }

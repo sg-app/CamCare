@@ -25,7 +25,10 @@
   - Erfassung und Bearbeitung von Reparaturaufträgen
   - Zuordnung von Kunden, Seriennummern und Geräten
   - Nachträgliche Änderung des Auftragskunden durch `admin` (Lieferanschrift und E-Mail-Adressen werden dabei zurückgesetzt)
-  - Erfassung von Defekten, mitgelieferten Komponenten und Reparaturpositionen
+  - **Defekte** und **ausgeführte Arbeiten** werden über ein AutoComplete erfasst (Suche im
+    Katalog oder freie Erfassung); übernommen wird mit **Enter** oder dem Button **Einfügen**
+  - Gespeicherte Reihenfolge dieser Einträge (`SortOrder`); nachträgliche Änderung per Drag&Drop
+  - Mitgelieferte Komponenten und Reparaturpositionen werden weiterhin über eine Tabelle erfasst
   - Statusverwaltung mit vollständigem Statusverlauf (History)
   - Archivierung von abgeschlossenen Aufträgen
 

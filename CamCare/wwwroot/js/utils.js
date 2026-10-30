@@ -68,3 +68,15 @@ window.camcareGetActiveElementValue = function () {
   }
   return null;
 };
+
+// Leert das Eingabefeld eines RadzenAutoComplete innerhalb des übergebenen Containers.
+// Wird nach dem Übernehmen einer Eingabe benötigt: Der gebundene Wert wird auf null gesetzt,
+// Radzen aktualisiert das Eingabefeld dabei aber nicht (es bleibt mit dem zuletzt erfassten
+// Text gefüllt). Das input-Event informiert Radzen anschließend über den geleerten Wert.
+window.camcareClearAutoComplete = function (container) {
+  if (!container) return;
+  var input = container.querySelector("input.rz-autocomplete-input");
+  if (!input) return;
+  input.value = "";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+};

@@ -59,9 +59,21 @@ namespace CamCare.Services
                     }
                     if (ro.EmailAddresses != null)
                         rovm.EmailAddresses = ro.EmailAddresses.Select(Map<EmailAddress, EmailAddressVm>).ToList();
-                    if (ro.Defectives != null)
+                    // Die Zuordnungen (Defekte und Arbeiten) werden in der am Auftrag
+                    // gespeicherten Reihenfolge (SortOrder) übernommen.
+                    if (ro.RepairOrderDefectives is { Count: > 0 })
+                        rovm.Defectives = ro.RepairOrderDefectives
+                            .OrderBy(j => j.SortOrder).ThenBy(j => j.DefectiveId)
+                            .Select(Map<RepairOrderDefective, DefectiveVm>)
+                            .ToList();
+                    else if (ro.Defectives != null)
                         rovm.Defectives = ro.Defectives.Select(Map<Defective, DefectiveVm>).ToList();
-                    if (ro.Works != null)
+                    if (ro.RepairOrderWorks is { Count: > 0 })
+                        rovm.Works = ro.RepairOrderWorks
+                            .OrderBy(j => j.SortOrder).ThenBy(j => j.WorkId)
+                            .Select(Map<RepairOrderWork, WorkVm>)
+                            .ToList();
+                    else if (ro.Works != null)
                         rovm.Works = ro.Works.Select(Map<Work, WorkVm>).ToList();
                     if (ro.IncludedComponents != null)
                         rovm.IncludedComponents = ro.IncludedComponents.Select(Map<IncludedComponent, IncludedComponentVm>).ToList();
@@ -109,6 +121,16 @@ namespace CamCare.Services
                         ro.PackagingWidth = null;
                         ro.PackagingHeight = null;
                     }
+                    break;
+                case RepairOrderDefective rod when destination is DefectiveVm rodvm:
+                    if (rod.Defective is not null)
+                        Map(rod.Defective, rodvm);
+                    rodvm.SortOrder = rod.SortOrder;
+                    break;
+                case RepairOrderWork row when destination is WorkVm rowvm:
+                    if (row.Work is not null)
+                        Map(row.Work, rowvm);
+                    rowvm.SortOrder = row.SortOrder;
                     break;
                 case RepairOrderRepairPosition rorp when destination is RepairPositionVm rpvm:
                     rpvm.Id = rorp.RepairPositionId;

@@ -8,6 +8,9 @@ namespace CamCare.Models
         public int Id { get; set; }
         public string Description { get; set; } = string.Empty;
 
+        /// <summary>Reihenfolge des Eintrags innerhalb des Auftrags (beginnend bei 0).</summary>
+        public int SortOrder { get; set; }
+
         public virtual ICollection<RepairOrderVm> RepairOrders { get; set; } = [];
 
         public DateTime CreatedAt { get; set; }
