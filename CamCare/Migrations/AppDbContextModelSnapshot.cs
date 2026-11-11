@@ -773,6 +773,10 @@ namespace CamCare.Migrations
                     b.Property<DateTime>("ChangedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("ChangedByUserGroup")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("FontColor")
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");

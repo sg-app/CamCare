@@ -509,7 +509,8 @@ namespace CamCare.Services
                         StatusName = newStatus?.Name,
                         BackgroundColor = newStatus?.BackgroundColor,
                         FontColor = newStatus?.FontColor,
-                        ChangedAt = DateTime.UtcNow
+                        ChangedAt = DateTime.UtcNow,
+                        ChangedByUserGroup = vm.CurrentUserGroup
                     });
                 }
 

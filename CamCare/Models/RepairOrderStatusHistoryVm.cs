@@ -12,6 +12,12 @@ namespace CamCare.Models
         public string? FontColor { get; set; }
         public DateTime ChangedAt { get; set; }
 
+        /// <summary>
+        /// Name der Benutzergruppe (admin/buero/werkstatt), die den Status geändert hat
+        /// (Snapshot aus der Anmeldung).
+        /// </summary>
+        public string? ChangedByUserGroup { get; set; }
+
         public RepairOrderStatusVm? RepairOrderStatus { get; set; }
 
         /// <summary>

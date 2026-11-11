@@ -165,6 +165,13 @@ else
                                 <RadzenStack Orientation="Orientation.Horizontal">
                                     <RadzenText>@history.ChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</RadzenText>
                                     <RadzenBadge Style="@history.BadageStyle">@history.DisplayStatusName</RadzenBadge>
+                                    @if (!string.IsNullOrWhiteSpace(history.ChangedByUserGroup))
+                                    {
+                                        <RadzenText TextStyle="TextStyle.Subtitle2" class="text-secondary">
+                                            (@history.ChangedByUserGroup)
+                                        </RadzenText>
+                                    }
+
                                 </RadzenStack>
                             }
                         </RadzenStack>

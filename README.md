@@ -32,7 +32,8 @@
     exakt dessen Beschreibung entspricht; bereits zugeordnete Einträge werden nicht doppelt angelegt
   - Gespeicherte Reihenfolge dieser Einträge (`SortOrder`); nachträgliche Änderung per Drag&Drop
   - Mitgelieferte Komponenten und Reparaturpositionen werden weiterhin über eine Tabelle erfasst
-  - Statusverwaltung mit vollständigem Statusverlauf (History)
+  - Statusverwaltung mit vollständigem Statusverlauf (History) – inklusive der Benutzergruppe
+    (`admin`, `buero`, `werkstatt`), die den Status geändert hat
   - Archivierung von abgeschlossenen Aufträgen
 
 - **Stammdatenverwaltung**
@@ -164,6 +165,11 @@ Die Anwendung nutzt eine einfache Gruppenanmeldung (ohne einzelne Benutzerkonten
 | `werkstatt` | `werk` | Zugriff auf Aufträge und Stammdaten, keine Auftragserstellung |
 
 Die Anmeldung erfolgt über einen Anmeldedialog (Benutzergruppe + Passwort). Eine Benutzergruppe bleibt angemeldet, bis über „Abmelden" abgemeldet wird. Nach dem ersten Anmelden sollten die Standard-Passwörter über **Stammdaten → Benutzergruppen** (nur `admin`) geändert werden. Die Passwörter werden gesalzen und gehasht (PBKDF2) gespeichert.
+
+Bei jedem Statuswechsel eines Reparaturauftrags wird die angemeldete Benutzergruppe in der
+Statushistorie (`RepairOrderStatusHistories.ChangedByUserGroup`) mitgespeichert. Der Verlauf
+zeigt damit, **welche Gruppe wann** welchen Status gesetzt hat (sichtbar in den Auftragsdetails
+und auf der Seite **Logbuch**).
 
 ## Docker-Deployment
 

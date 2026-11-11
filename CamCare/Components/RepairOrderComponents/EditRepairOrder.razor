@@ -80,6 +80,13 @@ else
     [Inject] protected IDispatcher Dispatcher { get; set; } = default!;
     [Inject] protected IJSRuntime JS { get; set; } = default!;
 
+    /// <summary>
+    /// AuthenticationState der aktuellen Sitzung (bereitgestellt durch
+    /// <c>AddCascadingAuthenticationState()</c> in Program.cs). Liefert den Namen der
+    /// angemeldeten Benutzergruppe für das Statuswechsel-Logging.
+    /// </summary>
+    [CascadingParameter] protected Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
     [Parameter] public int RepairOrderId { get; set; }
 
     private RepairOrderVm? RepairOrder => RepairOrderState.Value.CurrentRepairOrder;
@@ -244,6 +251,10 @@ else
     {
         if (RepairOrder == null) return;
 
+        // Benutzergruppe der aktuellen Sitzung mitgeben, damit in der Statushistorie
+        // nachvollziehbar ist, welche Gruppe den Status geändert hat.
+        RepairOrder.CurrentUserGroup = await GetCurrentUserGroupAsync();
+
         var response = await RepairOrderService.UpdateAsync(RepairOrder.Id, RepairOrder);
         if (response.Success)
         {
@@ -259,6 +270,19 @@ else
                 Duration = 5000
             });
         }
+    }
+
+    /// <summary>
+    /// Ermittelt den Namen der aktuell angemeldeten Benutzergruppe aus dem
+    /// AuthenticationState (Name-Claim der Cookie-Anmeldung, z. B. "admin").
+    /// </summary>
+    private async Task<string?> GetCurrentUserGroupAsync()
+    {
+        if (AuthenticationStateTask is null)
+            return null;
+
+        var authState = await AuthenticationStateTask;
+        return authState.User.Identity?.Name;
     }
 
     private void OnCancelClicked(MouseEventArgs args)
