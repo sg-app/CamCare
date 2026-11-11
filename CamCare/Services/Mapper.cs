@@ -254,6 +254,7 @@ namespace CamCare.Services
                     vm.BackgroundColor = history.BackgroundColor;
                     vm.FontColor = history.FontColor;
                     vm.ChangedAt = history.ChangedAt.ToLocalTime();
+                    vm.ChangedByUserGroup = history.ChangedByUserGroup;
                     if (history.RepairOrderStatus != null)
                         vm.RepairOrderStatus = Map<RepairOrderStatus, RepairOrderStatusVm>(history.RepairOrderStatus);
                     break;
@@ -265,6 +266,7 @@ namespace CamCare.Services
                     history.BackgroundColor = vm.BackgroundColor;
                     history.FontColor = vm.FontColor;
                     history.ChangedAt = vm.ChangedAt.ToUniversalTime();
+                    history.ChangedByUserGroup = vm.ChangedByUserGroup;
                     break;
                 case RepairOrderSerial serial when destination is RepairOrderSerialVm serialVm:
                     serialVm.Id = serial.Id;

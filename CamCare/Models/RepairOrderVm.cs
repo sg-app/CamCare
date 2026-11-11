@@ -71,6 +71,15 @@ namespace CamCare.Models
         public ICollection<RepairOrderStatusHistoryVm>? RepairOrderStatusHistories { get; set; }
         public ICollection<DataStoreVm>? DataStores { get; set; }
 
+        /// <summary>
+        /// Name der aktuell angemeldeten Benutzergruppe. Wird von der UI aus dem
+        /// AuthenticationState befüllt und beim Speichern eines Statuswechsels in der
+        /// Statushistorie (<see cref="RepairOrderStatusHistoryVm.ChangedByUserGroup"/>)
+        /// protokolliert. Nicht Teil der Serialisierung (z. B. Redux DevTools).
+        /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        public string? CurrentUserGroup { get; set; }
+
         /// <summary>Anzeigename für Auswahllisten.</summary>
         public string DisplayName => $"[{Id}] {OrderNumber ?? "ohne Auftragsnummer"} – {CameraSerialNumber ?? "ohne Seriennummer"}";
 
