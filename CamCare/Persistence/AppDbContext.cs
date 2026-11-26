@@ -138,6 +138,13 @@ namespace CamCare.Persistence
                .HasForeignKey(s => s.RepairOrderId)
                .OnDelete(DeleteBehavior.Cascade);
 
+            // Die Statushistorie gehört zum Auftrag und wird mit ihm gelöscht.
+            modelBuilder.Entity<RepairOrder>()
+               .HasMany(ro => ro.RepairOrderStatusHistory)
+               .WithOne()
+               .HasForeignKey(h => h.RepairOrderId)
+               .OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<RepairOrderStatus>()
                 .HasData(
                     new RepairOrderStatus { Id = 1, Order = 1, Name = "In Anlieferung", Description = "Reparatur wurde von Kunden angemeldet.", BackgroundColor = "rgb(206, 206, 206)", FontColor = "rgb(0, 0, 0)", IsDefault = true },
